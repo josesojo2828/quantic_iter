@@ -1,0 +1,120 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  email     String    @unique
+  password  String
+  firstName String
+  lastName  String
+  roleId    String    @db.ObjectId
+  role      Role      @relation(fields: [roleId], references: [id])
+  tenantId  String?   @db.ObjectId
+  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("users")
+}
+
+model Tenant {
+  id            String        @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  slug          String        @unique
+  isActive      Boolean       @default(true)
+  ownerId       String?       @db.ObjectId
+  
+  // Metadata
+  address       String?
+  phone         String?
+  workshopEmail String?
+  website       String?
+  logo          String?
+  legalName     String?
+  taxId         String?
+
+  users         User[]
+  subscription Subscription?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  deletedAt    DateTime?
+
+  @@map("tenants")
+}
+
+
+model SubscriptionPlan {
+  id            String         @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  slug          String         @unique
+  description   String?
+  price         Float
+  billingCycle  String         @default("MONTHLY") // MONTHLY, YEARLY
+  config        Json? // Used for limits: { maxUsers: 10, maxVehicles: 50, etc. }
+  isActive      Boolean        @default(true)
+  subscriptions Subscription[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  deletedAt     DateTime?
+
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id        String             @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId  String             @unique @db.ObjectId
+  tenant    Tenant             @relation(fields: [tenantId], references: [id])
+  status    SubscriptionStatus @default(ACTIVE)
+  expiresAt DateTime
+  planId    String             @db.ObjectId
+  plan      SubscriptionPlan   @relation(fields: [planId], references: [id])
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  deletedAt DateTime?
+
+  @@map("subscriptions")
+}
+
+model Permission {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  action      String    @unique // e.g., 'inventory.view'
+  module      String? // e.g., 'inventory'
+  description String?
+  roles       Role[]    @relation(fields: [roleIds], references: [id])
+  roleIds     String[]  @db.ObjectId
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+
+  @@map("permissions")
+}
+
+model Role {
+  id            String       @id @default(auto()) @map("_id") @db.ObjectId
+  name          String
+  slug          String       @unique // e.g., 'admin', 'mechanic', 'owner'
+  description   String?
+  tenantId      String?      @db.ObjectId // If null, it's a GLOBAL role (Level 0/1)
+  users         User[]
+  permissions   Permission[] @relation(fields: [permissionIds], references: [id])
+  permissionIds String[]     @db.ObjectId
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  @@map("roles")
+}
+
+enum SubscriptionStatus {
+  ACTIVE
+  PAST_DUE
+  CANCELED
+}

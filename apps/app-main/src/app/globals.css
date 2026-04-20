@@ -1,0 +1,103 @@
+@import "tailwindcss";
+@plugin "daisyui" {
+  themes: "light";
+}
+
+@theme {
+  --color-primary: #059669; /* Quantic Green Pro */
+  --color-primary-content: #ffffff;
+  --color-secondary: #334155; /* Slate secondary */
+  --color-accent: #10b981;
+  --color-neutral: #064e3b;
+  --color-base-100: #ffffff;
+  --color-base-200: #f1f5f9;
+  --color-base-300: #e2e8f0;
+  --radius-xl: 8px;
+  --radius-2xl: 12px;
+}
+
+:root {
+  --bg-app: #f8fafc;
+  --bg-surface: #ffffff;
+  --text-main: #064e3b;
+  --text-muted: #475569;
+  --border-subtle: #e2e8f0;
+  --accent-pro: #059669;
+}
+
+
+body {
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Administrative Card - Solid & Reliable */
+.admin-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+  border-radius: 12px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.admin-card:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -2px rgba(0, 0, 0, 0.05);
+}
+
+/* Data Density Utility */
+.tight-grid {
+  display: grid;
+  gap: 1rem;
+}
+
+.heading-admin {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: var(--text-main);
+  letter-spacing: -0.02em;
+}
+
+.subheading-admin {
+  font-size: 0.875rem;
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+/* Administrative Button */
+.btn-admin {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.btn-admin-primary {
+  background: var(--accent-pro);
+  color: white;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.btn-admin-primary:hover {
+  background: #1d4ed8;
+  transform: translateY(-1px);
+}
+
+/* Custom Scrollbar for Admin Views */
+.admin-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+.admin-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.admin-scroll::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}

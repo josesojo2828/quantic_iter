@@ -1,0 +1,79 @@
+
+services:
+  nginx-gateway:
+    image: nginx:latest
+    container_name: workshop_gateway
+    ports:
+      - "80:80"
+    volumes:
+      - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    networks:
+      - workshop_network
+    depends_on:
+      - auth-tenant
+
+  auth-tenant:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/auth-tenant
+    container_name: workshop_auth
+    volumes:
+      - ./services/auth-tenant:/app
+      - /app/node_modules
+      - ./libs/shared:/libs/shared
+    environment:
+      - DATABASE_URL=mongodb://workshop_mongo:27017/auth_db?replicaSet=rs0
+      - JWT_SECRET=super-secret-key-change-me
+      - PORT=3000
+    networks:
+      - workshop_network
+    command: npm run start:dev
+
+  app-main:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./apps/app-main
+    container_name: workshop_app_main
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./apps/app-main:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - PORT=3001
+      - NEXT_PUBLIC_API_URL=http://localhost:80/api # Via Nginx Gateway
+    networks:
+      - workshop_network
+    command: npm run dev
+
+  admin-front:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./apps/admin-front
+    container_name: workshop_admin_front
+    ports:
+      - "3002:3002"
+    volumes:
+      - ./apps/admin-front:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - PORT=3002
+      - NEXT_PUBLIC_API_URL=http://localhost:80/api
+    networks:
+      - workshop_network
+    command: npm run dev
+
+  # Add other services as we implement them...
+
+networks:
+  workshop_network:
+    external: true
+    name: workshop_network
