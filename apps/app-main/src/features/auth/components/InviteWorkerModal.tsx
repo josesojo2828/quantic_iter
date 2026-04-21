@@ -1,6 +1,7 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -21,18 +22,38 @@ interface InviteWorkerModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  workerToEdit?: Worker | null;
 }
 
-export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, onClose, onSuccess }) => {
+export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, onClose, onSuccess, workerToEdit }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const { register, handleSubmit, formState: { errors }, reset } = useForm<InviteWorkerValues>({
+  const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<InviteWorkerValues>({
     resolver: zodResolver(inviteWorkerSchema),
     defaultValues: {
       roleSlug: 'mechanic',
     }
   });
+
+  const selectedRole = watch('roleSlug');
+
+  useEffect(() => {
+    if (workerToEdit) {
+      setValue('firstName', workerToEdit.firstName);
+      setValue('lastName', workerToEdit.lastName);
+      setValue('email', workerToEdit.email);
+      const roleSlug = typeof workerToEdit.role === 'object' ? (workerToEdit.role as any).slug : workerToEdit.role;
+      setValue('roleSlug', roleSlug as any);
+    } else {
+      reset({
+        firstName: '',
+        lastName: '',
+        email: '',
+        roleSlug: 'mechanic',
+      });
+    }
+  }, [workerToEdit, isOpen, setValue, reset]);
 
   if (!isOpen) return null;
 
@@ -40,14 +61,19 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
     setIsLoading(true);
     setError(null);
     try {
-      await workersService.inviteWorker(data);
-      toast.success('Colaborador invitado con éxito');
+      if (workerToEdit) {
+        await workersService.updateWorker(workerToEdit.id, data);
+        toast.success('Usuario actualizado con éxito');
+      } else {
+        await workersService.inviteWorker(data);
+        toast.success('Usuario creado con éxito');
+      }
       reset();
       onSuccess();
       onClose();
     } catch (err: any) {
-      console.error('Error inviting worker:', err);
-      setError(err.message || 'Error al invitar al colaborador. Verificá los límites de tu plan.');
+      console.error('Error saving worker:', err);
+      setError(err.message || 'Error al guardar el usuario. Verificá los límites de tu plan.');
     } finally {
       setIsLoading(false);
     }
@@ -67,11 +93,15 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
           <div className="flex items-center justify-between mb-8">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center text-primary">
-                <UserPlus className="w-5 h-5" />
+                <Shield className="w-5 h-5" />
               </div>
               <div>
-                <h3 className="text-lg font-black text-neutral uppercase tracking-tight">Invitar Miembro</h3>
-                <p className="text-[10px] text-neutral/40 font-black uppercase tracking-widest">Añadir nuevo colaborador al taller</p>
+                <h3 className="text-lg font-black text-neutral uppercase tracking-tight">
+                  {workerToEdit ? 'Actualizar' : 'Crear'} <span className="font-light">Usuario</span>
+                </h3>
+                <p className="text-[10px] text-neutral/40 font-black uppercase tracking-widest">
+                  {workerToEdit ? 'Modifica los datos del colaborador' : 'Añadir nuevo colaborador al taller'}
+                </p>
               </div>
             </div>
             <button 
@@ -125,7 +155,8 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
                 <input 
                   {...register('email')}
                   type="email"
-                  className="w-full bg-neutral/5 border border-transparent rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold placeholder:text-neutral/20 outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all text-neutral"
+                  disabled={!!workerToEdit}
+                  className="w-full bg-neutral/5 border border-transparent rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold placeholder:text-neutral/20 outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all text-neutral disabled:opacity-50 disabled:cursor-not-allowed"
                   placeholder="juan.perez@taller.map"
                 />
               </div>
@@ -133,10 +164,10 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-black text-neutral/40 uppercase tracking-widest ml-1">Rol en el Taller</label>
+              <label className="text-[10px] font-black text-neutral/40 uppercase tracking-widest ml-1">Rol Operativo</label>
               <div className="grid grid-cols-2 gap-3">
                 <label className={`relative flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                  register('roleSlug').name && 'hover:bg-neutral/5'
+                  selectedRole === 'mechanic' ? 'border-primary bg-primary/5' : 'border-neutral/5 hover:border-neutral/10 bg-neutral/5'
                 }`}>
                   <input 
                     type="radio" 
@@ -144,14 +175,14 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
                     {...register('roleSlug')}
                     className="sr-only"
                   />
-                  <div className="w-8 h-8 rounded-lg bg-blue-500/10 flex items-center justify-center text-blue-500">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedRole === 'mechanic' ? 'bg-primary text-white' : 'bg-neutral/10 text-neutral/40'}`}>
                     <Shield className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-black uppercase text-neutral">Mecánico</span>
+                  <span className={`text-[10px] font-black uppercase ${selectedRole === 'mechanic' ? 'text-primary' : 'text-neutral/40'}`}>Técnico</span>
                 </label>
 
                 <label className={`relative flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                  register('roleSlug').name && 'hover:bg-neutral/5'
+                  selectedRole === 'receptionist' ? 'border-primary bg-primary/5' : 'border-neutral/5 hover:border-neutral/10 bg-neutral/5'
                 }`}>
                   <input 
                     type="radio" 
@@ -159,10 +190,10 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
                     {...register('roleSlug')}
                     className="sr-only"
                   />
-                  <div className="w-8 h-8 rounded-lg bg-purple-500/10 flex items-center justify-center text-purple-500">
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedRole === 'receptionist' ? 'bg-primary text-white' : 'bg-neutral/10 text-neutral/40'}`}>
                     <Shield className="w-4 h-4" />
                   </div>
-                  <span className="text-[10px] font-black uppercase text-neutral">Recepción</span>
+                  <span className={`text-[10px] font-black uppercase ${selectedRole === 'receptionist' ? 'text-primary' : 'text-neutral/40'}`}>Gestión</span>
                 </label>
               </div>
               {errors.roleSlug && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.roleSlug.message}</p>}
@@ -182,11 +213,11 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
               >
                 {isLoading ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Procesando...
+                    <Loader2 className="w-4 h-4 animate-spin" /> Guardando...
                   </>
                 ) : (
                   <>
-                    Enviar Invitación
+                    {workerToEdit ? 'Guardar Cambios' : 'Crear Usuario'}
                   </>
                 )}
               </button>
@@ -197,3 +228,4 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
     </div>
   );
 };
+
