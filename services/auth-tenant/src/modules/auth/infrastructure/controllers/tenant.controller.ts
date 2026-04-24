@@ -1,6 +1,6 @@
-import { Controller, Get, Put, Body, UseGuards, Req } from '@nestjs/common';
-import { JwtAuthGuard } from '../../../../common/auth/guards/jwt-auth.guard';
+import { Controller, Get, Put, Req, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from '../../application/auth.service';
+import { JwtAuthGuard } from '../../../../common/auth/guards/jwt-auth.guard';
 
 @Controller('tenant')
 @UseGuards(JwtAuthGuard)

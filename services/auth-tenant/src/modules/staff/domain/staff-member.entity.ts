@@ -9,5 +9,7 @@ export class StaffMember {
     public readonly createdAt: Date,
     public readonly deletedAt: Date | null,
     public readonly role?: { id: string; name: string; slug: string },
+    public readonly branchId?: string | null,
+    public readonly avatarUrl?: string | null,
   ) {}
 }

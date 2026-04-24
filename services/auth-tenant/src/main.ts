@@ -14,7 +14,7 @@ async function bootstrap() {
   app.useGlobalInterceptors(new TransformInterceptor());
   // Enable CORS for frontend via Nginx
   app.enableCors({
-    origin: ['http://localhost', 'http://localhost:3001'],
+    origin: ['http://localhost', 'http://localhost:3001', 'http://admin.localhost'],
     credentials: true,
   });
 

@@ -1,13 +1,12 @@
 import { Controller, Get, Post, Body, UseGuards } from '@nestjs/common';
 import { SubscriptionService } from '../../application/subscription.service';
 import { JwtAuthGuard } from '../../../../common/auth/guards/jwt-auth.guard';
-import {
-  PermissionsGuard,
-  CheckPermissions,
-  PermissionAction,
-} from '@workshop/shared/nestjs';
-import { GetUser } from '../../../../common/auth/decorators/get-user.decorator';
-import { AuthUser } from '../../../../common/auth/interfaces/auth-user.interface';
+import { 
+  CheckPermissions, 
+  PermissionAction, 
+  type AuthUser, 
+  GetUser 
+} from '@workshop/shared';
 
 class UpgradePlanDto {
   planSlug!: string;
@@ -27,13 +26,13 @@ export class SubscriptionController {
   @Get('my')
   @CheckPermissions(PermissionAction.WORKSHOP_READ)
   async getMySubscription(@GetUser() user: AuthUser) {
-    return this.subscriptionService.getTenantSubscription(user.tenantId);
+    return this.subscriptionService.getSubscriptionStatus(user.tenantId);
   }
 
   @Post('upgrade')
   @CheckPermissions(PermissionAction.WORKSHOP_UPDATE)
   async upgrade(@GetUser() user: AuthUser, @Body() dto: UpgradePlanDto) {
-    return this.subscriptionService.upgradePlan(
+    return this.subscriptionService.subscribeToPlan(
       user.tenantId,
       user.userId,
       dto.planSlug,

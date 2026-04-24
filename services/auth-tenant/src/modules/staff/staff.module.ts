@@ -5,9 +5,13 @@ import { StaffService } from './application/staff.service';
 import { PrismaStaffRepository } from './infrastructure/persistence/prisma-staff.repository';
 import { KafkaModule } from '@workshop/shared';
 import { PermissionsGuard } from '@workshop/shared/nestjs';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
 @Module({
-  imports: [KafkaModule.register('staff-producer', 'staff-group')],
+  imports: [
+    KafkaModule.register('staff-producer', 'staff-group'),
+    SubscriptionModule,
+  ],
   controllers: [StaffController],
   providers: [
     StaffService,

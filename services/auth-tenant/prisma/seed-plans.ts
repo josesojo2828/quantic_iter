@@ -12,7 +12,12 @@ async function main() {
       description: 'Ideal para pequeños talleres que recién comienzan.',
       price: 29.99,
       billingCycle: 'MONTHLY',
-      config: { maxUsers: 2, maxVehicles: 50 },
+      config: { 
+        maxUsers: 2, 
+        maxVehicles: 50, 
+        maxBranches: 1,
+        features: ['dashboard', 'staff']
+      },
     },
     {
       name: 'Plan Profesional',
@@ -20,7 +25,12 @@ async function main() {
       description: 'Perfecto para talleres en crecimiento.',
       price: 59.99,
       billingCycle: 'MONTHLY',
-      config: { maxUsers: 5, maxVehicles: 200 },
+      config: { 
+        maxUsers: 5, 
+        maxVehicles: 200, 
+        maxBranches: 3,
+        features: ['dashboard', 'staff', 'inventory', 'crm']
+      },
     },
     {
       name: 'Plan Premium',
@@ -28,7 +38,12 @@ async function main() {
       description: 'Toda la potencia de WorkshopArch sin límites.',
       price: 99.99,
       billingCycle: 'MONTHLY',
-      config: { maxUsers: 20, maxVehicles: 1000 },
+      config: { 
+        maxUsers: 20, 
+        maxVehicles: 1000, 
+        maxBranches: 10,
+        features: ['dashboard', 'staff', 'inventory', 'crm', 'billing', 'reports']
+      },
     },
   ];
 

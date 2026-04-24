@@ -5,8 +5,9 @@ import React, { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { X, UserPlus, Mail, User, Shield, Loader2, AlertCircle } from 'lucide-react';
-import { workersService } from '../services/workers.service';
+import { X, UserPlus, Mail, User, Shield, Loader2, AlertCircle, MapPin } from 'lucide-react';
+import { workersService, Worker } from '../services/workers.service';
+import { branchesService, Branch } from '../services/branches.service';
 import { toast } from 'react-hot-toast';
 
 const inviteWorkerSchema = z.object({
@@ -14,6 +15,7 @@ const inviteWorkerSchema = z.object({
   firstName: z.string().min(2, 'El nombre es muy corto'),
   lastName: z.string().min(2, 'El apellido es muy corto'),
   roleSlug: z.enum(['mechanic', 'receptionist']),
+  branchId: z.string().optional(),
 });
 
 type InviteWorkerValues = z.infer<typeof inviteWorkerSchema>;
@@ -28,6 +30,8 @@ interface InviteWorkerModalProps {
 export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, onClose, onSuccess, workerToEdit }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [isFetchingBranches, setIsFetchingBranches] = useState(false);
 
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<InviteWorkerValues>({
     resolver: zodResolver(inviteWorkerSchema),
@@ -39,18 +43,40 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
   const selectedRole = watch('roleSlug');
 
   useEffect(() => {
+    const fetchBranches = async () => {
+      setIsFetchingBranches(true);
+      try {
+        const data = await branchesService.getBranches();
+        setBranches(data);
+      } catch (err) {
+        console.error('Error fetching branches:', err);
+      } finally {
+        setIsFetchingBranches(false);
+      }
+    };
+
+    if (isOpen) {
+      fetchBranches();
+    }
+  }, [isOpen]);
+
+  useEffect(() => {
     if (workerToEdit) {
       setValue('firstName', workerToEdit.firstName);
       setValue('lastName', workerToEdit.lastName);
       setValue('email', workerToEdit.email);
       const roleSlug = typeof workerToEdit.role === 'object' ? (workerToEdit.role as any).slug : workerToEdit.role;
       setValue('roleSlug', roleSlug as any);
+      if (workerToEdit.branchId) {
+        setValue('branchId', workerToEdit.branchId);
+      }
     } else {
       reset({
         firstName: '',
         lastName: '',
         email: '',
         roleSlug: 'mechanic',
+        branchId: '',
       });
     }
   }, [workerToEdit, isOpen, setValue, reset]);
@@ -199,6 +225,32 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
               {errors.roleSlug && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.roleSlug.message}</p>}
             </div>
 
+            {branches.length > 0 && (
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-neutral/40 uppercase tracking-widest ml-1">Sede / Sucursal</label>
+                <div className="relative group">
+                  <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral/30 group-focus-within:text-primary transition-colors" />
+                  <select 
+                    {...register('branchId')}
+                    className="w-full bg-neutral/5 border border-transparent rounded-2xl pl-12 pr-10 py-3.5 text-sm font-bold outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all text-neutral appearance-none cursor-pointer"
+                  >
+                    <option value="">Oficina Central / Sin Sede</option>
+                    {branches.map(branch => (
+                      <option key={branch.id} value={branch.id}>
+                        {branch.name}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+                    <Loader2 className={`w-3 h-3 text-neutral/30 transition-opacity ${isFetchingBranches ? 'opacity-100 animate-spin' : 'opacity-0'}`} />
+                  </div>
+                </div>
+                <p className="px-1 text-[9px] text-neutral/30 font-medium leading-tight">
+                  Asigná al trabajador a una ubicación física específica.
+                </p>
+              </div>
+            )}
+
             <div className="pt-4 flex items-center gap-3">
               <button 
                 type="button"
@@ -228,4 +280,3 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
     </div>
   );
 };
-

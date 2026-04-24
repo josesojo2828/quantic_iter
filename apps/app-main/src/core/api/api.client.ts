@@ -31,7 +31,7 @@ export const apiClient = {
     }
 
     if (response.status === 401) {
-      if (typeof window !== 'undefined' && !path.includes('/login')) {
+      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login') && !path.includes('/login')) {
         window.location.href = '/login?expired=true';
       }
       // If it's a login attempt, we don't redirect, just let the error bubble up
@@ -41,6 +41,11 @@ export const apiClient = {
 
     // Try to parse JSON safely
     const text = await response.text();
+    if (!text) {
+      console.log('[apiClient] 📦 Empty response received');
+      return {} as T;
+    }
+
     let result: any;
     try {
       result = JSON.parse(text);
@@ -48,6 +53,7 @@ export const apiClient = {
       console.error('[apiClient] 🔴 Response is not JSON:', text.substring(0, 200));
       throw new Error('Respuesta inesperada del servidor.');
     }
+
 
     console.log('[apiClient] 📦 Parsed response:', result);
 

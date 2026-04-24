@@ -9,20 +9,43 @@ datasource db {
 }
 
 model User {
-  id        String    @id @default(auto()) @map("_id") @db.ObjectId
-  email     String    @unique
-  password  String
-  firstName String
-  lastName  String
-  roleId    String    @db.ObjectId
-  role      Role      @relation(fields: [roleId], references: [id])
-  tenantId  String?   @db.ObjectId
-  tenant    Tenant?   @relation(fields: [tenantId], references: [id])
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  email        String     @unique
+  password     String
+  firstName    String
+  lastName     String
+  isActive     Boolean    @default(true)
+  lastTenantId String?    @db.ObjectId
+  avatarUrl    String?
+  
+  // New Multitenancy Relation
+  userRoles    UserRole[]
+
+  // Legacy/Owner relation (can be kept or migrated to UserRole)
+  managedTenants Tenant[] @relation("TenantOwner")
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
 
   @@map("users")
+}
+
+model UserRole {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String   @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  roleId    String   @db.ObjectId
+  role      Role     @relation(fields: [roleId], references: [id])
+  tenantId  String?  @db.ObjectId
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id])
+  branchId  String?  @db.ObjectId
+  branch    Branch?  @relation(fields: [branchId], references: [id])
+  
+  extraPermissions String[] // Manual overrides for this specific user in this specific tenant
+  
+  @@unique([userId, tenantId, roleId])
+  @@map("user_roles")
 }
 
 model Tenant {
@@ -31,6 +54,7 @@ model Tenant {
   slug          String        @unique
   isActive      Boolean       @default(true)
   ownerId       String?       @db.ObjectId
+  owner         User?         @relation("TenantOwner", fields: [ownerId], references: [id])
   
   // Metadata
   address       String?
@@ -41,13 +65,30 @@ model Tenant {
   legalName     String?
   taxId         String?
 
-  users         User[]
+  userRoles     UserRole[]
+  branches      Branch[]
   subscription Subscription?
+  subscriptionHistory SubscriptionHistory[]
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   deletedAt    DateTime?
 
   @@map("tenants")
+}
+
+model Branch {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  address   String?
+  phone     String?
+  tenantId  String    @db.ObjectId
+  tenant    Tenant    @relation(fields: [tenantId], references: [id])
+  userRoles UserRole[]
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@map("branches")
 }
 
 
@@ -60,7 +101,9 @@ model SubscriptionPlan {
   billingCycle  String         @default("MONTHLY") // MONTHLY, YEARLY
   config        Json? // Used for limits: { maxUsers: 10, maxVehicles: 50, etc. }
   isActive      Boolean        @default(true)
-  subscriptions Subscription[]
+  subscriptions Subscription[] @relation("CurrentPlan")
+  nextSubscriptions Subscription[] @relation("NextPlan")
+  subscriptionHistory SubscriptionHistory[]
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
   deletedAt     DateTime?
@@ -74,14 +117,55 @@ model Subscription {
   tenant    Tenant             @relation(fields: [tenantId], references: [id])
   status    SubscriptionStatus @default(ACTIVE)
   expiresAt DateTime
+  customConfig Json?           // Used for add-ons: { extraUsers: 5, extraFeatures: ['inventory'] }
+  
   planId    String             @db.ObjectId
-  plan      SubscriptionPlan   @relation(fields: [planId], references: [id])
+  plan      SubscriptionPlan   @relation("CurrentPlan", fields: [planId], references: [id])
+  
+  nextPlanId String?           @db.ObjectId
+  nextPlan   SubscriptionPlan? @relation("NextPlan", fields: [nextPlanId], references: [id])
+
   createdAt DateTime           @default(now())
   updatedAt DateTime           @updatedAt
   deletedAt DateTime?
 
   @@map("subscriptions")
 }
+
+model SubscriptionHistory {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId  String   @db.ObjectId
+  tenant    Tenant   @relation(fields: [tenantId], references: [id])
+  
+  planId    String   @db.ObjectId
+  plan      SubscriptionPlan @relation(fields: [planId], references: [id])
+  
+  action    String   // ACTIVATION, RENEWAL, UPGRADE, DOWNGRADE, CANCELLATION
+  price     Float
+  config    Json?
+  
+  startDate DateTime
+  endDate   DateTime
+  
+  createdAt DateTime @default(now())
+
+  @@map("subscription_history")
+}
+
+model Invitation {
+  id         String    @id @default(auto()) @map("_id") @db.ObjectId
+  email      String
+  token      String    @unique
+  roleId     String    @db.ObjectId
+  tenantId   String    @db.ObjectId
+  branchId   String?   @db.ObjectId
+  expiresAt  DateTime
+  acceptedAt DateTime?
+  createdAt  DateTime  @default(now())
+
+  @@map("invitations")
+}
+
 
 model Permission {
   id          String    @id @default(auto()) @map("_id") @db.ObjectId
@@ -103,7 +187,7 @@ model Role {
   slug          String       @unique // e.g., 'admin', 'mechanic', 'owner'
   description   String?
   tenantId      String?      @db.ObjectId // If null, it's a GLOBAL role (Level 0/1)
-  users         User[]
+  userRoles     UserRole[]
   permissions   Permission[] @relation(fields: [permissionIds], references: [id])
   permissionIds String[]     @db.ObjectId
   createdAt     DateTime     @default(now())

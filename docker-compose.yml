@@ -71,7 +71,8 @@ services:
       - workshop_network
     command: npm run dev
 
-  # Add other services as we implement them...
+volumes:
+  minio_data:
 
 networks:
   workshop_network:

@@ -6,6 +6,10 @@ export class Subscription {
     public readonly tenantId: string,
     public readonly expiresAt: Date,
     public readonly status: string,
-    public readonly plan?: SubscriptionPlan,
+    public readonly plan: SubscriptionPlan,
+    public readonly customConfig?: any,
+    public readonly nextPlanId?: string | null,
+    public readonly nextPlan?: SubscriptionPlan | null,
+    public readonly createdAt?: Date,
   ) {}
 }

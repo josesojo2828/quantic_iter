@@ -8,6 +8,7 @@ export class RegisterData {
   workshopName!: string;
   planId?: string;
   roleId?: string;
+  avatarUrl?: string;
 }
 
 export class CreateUserData {
@@ -17,6 +18,8 @@ export class CreateUserData {
   lastName!: string;
   tenantId!: string;
   roleId!: string;
+  branchId?: string;
+  avatarUrl?: string;
 }
 
 export interface UserData {
@@ -25,12 +28,19 @@ export interface UserData {
   password: string;
   firstName: string;
   lastName: string;
-  tenantId: string | null;
+  lastTenantId: string | null;
+  createdAt: Date;
   deletedAt: Date | null;
-  role: {
-    slug: string;
-    permissions: Array<{ action: string }>;
-  };
+  avatarUrl?: string | null;
+
+  roles: Array<{
+    tenantId: string | null;
+    tenantName: string | null;
+    tenantSlug: string | null;
+    roleSlug: string;
+    branchId: string | null;
+    permissions: string[]; // List of permission actions
+  }>;
 }
 
 export interface RoleData {
@@ -44,9 +54,13 @@ export interface IAuthRepository {
   createTenantAndOwner(data: RegisterData): Promise<User>;
 
   createUser(data: CreateUserData): Promise<User>;
-  findWorkers(tenantId: string): Promise<UserData[]>;
+  findWorkers(tenantId: string, filters: { search?: string; page?: number; limit?: number }): Promise<{ workers: UserData[]; total: number }>;
+
+  updateUser(id: string, data: Partial<CreateUserData>): Promise<UserData | null>;
+  deleteUser(id: string): Promise<void>;
   findRoleBySlug(slug: string): Promise<RoleData | null>;
+
   findTenantById(id: string): Promise<any>;
   updateTenant(id: string, data: any): Promise<any>;
+  findAllUsers(filters: { search?: string; page?: number; limit?: number; roleId?: string }): Promise<{ items: UserData[]; total: number }>;
 }
-

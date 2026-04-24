@@ -4,8 +4,15 @@ export class User {
     public readonly email: string,
     public readonly firstName: string,
     public readonly lastName: string,
-    public readonly tenantId: string,
-    public readonly role: string,
-    public readonly permissions: string[],
+    public readonly roles: Array<{
+      tenantId: string;
+      tenantName: string;
+      tenantSlug: string;
+      roleSlug: string;
+      branchId: string | null;
+      permissions: string[];
+    }>,
+    public readonly lastTenantId: string | null = null,
+    public readonly avatarUrl: string | null = null,
   ) {}
 }

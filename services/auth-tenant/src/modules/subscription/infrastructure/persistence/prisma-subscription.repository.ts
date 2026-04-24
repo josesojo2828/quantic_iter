@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../../../common/prisma/prisma.service';
-import { ISubscriptionRepository } from '../../domain/subscription.repository';
+import { ISubscriptionRepository, SubscriptionQuery } from '../../domain/subscription.repository';
 import { SubscriptionPlan } from '../../domain/subscription-plan.entity';
 import { Subscription } from '../../domain/subscription.entity';
 import { Prisma } from '@prisma/client';
@@ -40,71 +40,216 @@ export class PrismaSubscriptionRepository implements ISubscriptionRepository {
     return this.mapPlan(p);
   }
 
+  async findPlanById(id: string): Promise<SubscriptionPlan | null> {
+    const p = await this.prisma.subscriptionPlan.findUnique({
+      where: { id },
+    });
+    if (!p) return null;
+    return this.mapPlan(p);
+  }
+
+  async createPlan(data: Partial<SubscriptionPlan>): Promise<SubscriptionPlan> {
+    const p = await this.prisma.subscriptionPlan.create({
+      data: {
+        name: data.name!,
+        slug: data.slug!,
+        description: data.description,
+        price: data.price!,
+        billingCycle: (data as any) .billingCycle || 'MONTHLY',
+        config: data.config as any,
+      },
+    });
+    return this.mapPlan(p);
+  }
+
+  async updatePlan(id: string, data: Partial<SubscriptionPlan>): Promise<SubscriptionPlan> {
+    const p = await this.prisma.subscriptionPlan.update({
+      where: { id },
+      data: {
+        ...data,
+        config: data.config as any,
+      } as any,
+    });
+    return this.mapPlan(p);
+  }
+
+  async deletePlan(id: string): Promise<void> {
+    await this.prisma.subscriptionPlan.delete({
+      where: { id },
+    });
+  }
+
   async findByTenantId(tenantId: string): Promise<Subscription | null> {
     const s = await this.prisma.subscription.findUnique({
       where: { tenantId },
-      include: { plan: true },
+      include: { 
+        plan: true,
+        nextPlan: true,
+      } as any,
     });
 
     if (!s) return null;
 
-    const sub = s as SubscriptionWithPlan;
-    const plan = sub.plan ? this.mapPlan(sub.plan) : undefined;
+    return this.mapSubscription(s);
+  }
+
+  private mapSubscription(s: any): Subscription {
+    const plan = s.plan ? this.mapPlan(s.plan) : undefined;
+    const nextPlan = s.nextPlan ? this.mapPlan(s.nextPlan) : undefined;
 
     return new Subscription(
-      sub.id,
-      sub.tenantId,
-      sub.expiresAt,
-      sub.status.toLowerCase(),
-      plan,
+      s.id,
+      s.tenantId,
+      s.expiresAt,
+      s.status,
+      plan!,
+      s.customConfig,
+      s.nextPlanId,
+      nextPlan,
+      s.createdAt,
     );
   }
 
-  async create(tenantId: string, planId: string): Promise<Subscription> {
+  async createSubscription(data: {
+    tenantId: string;
+    planId: string;
+    expiresAt: Date;
+    status: string;
+  }): Promise<Subscription> {
     const s = await this.prisma.subscription.create({
       data: {
-        tenantId,
-        planId,
-        expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        tenantId: data.tenantId,
+        planId: data.planId,
+        expiresAt: data.expiresAt,
+        status: data.status as any,
       },
       include: { plan: true },
     });
 
-    const sub = s as SubscriptionWithPlan;
-    const plan = sub.plan ? this.mapPlan(sub.plan) : undefined;
-
-    return new Subscription(
-      sub.id,
-      sub.tenantId,
-      sub.expiresAt,
-      sub.status.toLowerCase(),
-      plan,
-    );
+    return this.mapSubscription(s);
   }
 
-  async update(
-    tenantId: string,
-    planId: string,
-    expiresAt: Date,
+  async updateSubscription(
+    id: string,
+    data: Partial<{
+      planId: string;
+      nextPlanId: string | null;
+      expiresAt: Date;
+      status: string;
+    }>,
   ): Promise<Subscription> {
     const s = await this.prisma.subscription.update({
-      where: { tenantId },
+      where: { id },
       data: {
-        planId,
-        expiresAt,
+        ...data,
+        status: data.status ? (data.status as any) : undefined,
       },
-      include: { plan: true },
+      include: { 
+        plan: true,
+        nextPlan: true,
+      } as any,
     });
 
-    const sub = s as SubscriptionWithPlan;
-    const plan = sub.plan ? this.mapPlan(sub.plan) : undefined;
+    return this.mapSubscription(s);
+  }
 
-    return new Subscription(
-      sub.id,
-      sub.tenantId,
-      sub.expiresAt,
-      sub.status.toLowerCase(),
-      plan,
-    );
+  async findAll(query: SubscriptionQuery): Promise<{ items: Subscription[]; total: number }> {
+    const where: Prisma.SubscriptionWhereInput = {};
+
+    if (query.search) {
+      where.OR = [
+        { tenantId: { contains: query.search, mode: 'insensitive' } },
+        { plan: { name: { contains: query.search, mode: 'insensitive' } } },
+      ];
+    }
+
+    const [items, total] = await Promise.all([
+      this.prisma.subscription.findMany({
+        where,
+        skip: query.skip,
+        take: query.take,
+        include: {
+          plan: true,
+          tenant: true,
+        },
+        orderBy: {
+          createdAt: 'desc',
+        },
+      }),
+      this.prisma.subscription.count({ where }),
+    ]);
+
+    return {
+      items: items.map((s) => this.mapSubscription(s)),
+      total,
+    };
+  }
+
+  async getAdminStats(): Promise<{
+    totalSubscriptions: number;
+    activeSubscriptions: number;
+    expiredSubscriptions: number;
+    revenueByPlan: { planName: string; total: number }[];
+  }> {
+    const [total, active, canceled, plans] = await Promise.all([
+      this.prisma.subscription.count(),
+      this.prisma.subscription.count({ where: { status: 'ACTIVE' as any } }),
+      this.prisma.subscription.count({ where: { status: 'CANCELED' as any } }),
+      this.prisma.subscriptionPlan.findMany({
+        include: { subscriptions: true },
+      }),
+    ]);
+
+    const revenueByPlan = plans.map((p) => ({
+      planName: p.name,
+      total: p.subscriptions.length * (p.price ? Number(p.price.toString()) : 0),
+    }));
+
+    return {
+      totalSubscriptions: total,
+      activeSubscriptions: active,
+      expiredSubscriptions: canceled,
+      revenueByPlan,
+    };
+  }
+
+  async countTenantUsers(tenantId: string): Promise<number> {
+    return this.prisma.user.count({
+      where: { 
+        userRoles: { some: { tenantId } },
+        OR: [
+          { deletedAt: null },
+          { deletedAt: { isSet: false } }
+        ]
+      },
+    });
+  }
+
+  async countTenantBranches(tenantId: string): Promise<number> {
+    return (this.prisma as any).branch.count({
+      where: { tenantId },
+    });
+  }
+
+  async createHistoryEntry(data: any): Promise<void> {
+    await this.prisma.subscriptionHistory.create({
+      data: {
+        tenantId: data.tenantId,
+        planId: data.planId,
+        action: data.action,
+        price: data.price,
+        config: data.config,
+        startDate: data.startDate,
+        endDate: data.endDate,
+      },
+    });
+  }
+
+  async findHistoryByTenantId(tenantId: string): Promise<any[]> {
+    return this.prisma.subscriptionHistory.findMany({
+      where: { tenantId },
+      include: { plan: true },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 }

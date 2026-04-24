@@ -27,14 +27,14 @@ export interface SubscriptionStatus {
 
 export const subscriptionService = {
   async getPlans(): Promise<Plan[]> {
-    return apiClient.get<Plan[]>('/subscription/plans');
+    return apiClient.get<Plan[]>('/subscriptions/plans');
   },
 
-  async getStatus(): Promise<SubscriptionStatus> {
-    return apiClient.get<SubscriptionStatus>('/subscription/status');
+  async getMySubscription(): Promise<SubscriptionStatus> {
+    return apiClient.get<SubscriptionStatus>('/subscriptions/my');
   },
   
-  async subscribe(planSlug: string): Promise<any> {
-    return apiClient.post('/subscription/subscribe', { planSlug });
+  async upgrade(planSlug: string): Promise<any> {
+    return apiClient.post('/subscriptions/upgrade', { planSlug });
   }
 };

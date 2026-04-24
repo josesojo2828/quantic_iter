@@ -106,7 +106,30 @@ async function main() {
       module: 'workshop',
       description: 'Cancelar órden',
     },
+
+    // Multi-branch (Enterprise)
+    {
+      action: 'branches:read',
+      module: 'branches',
+      description: 'Ver sucursales',
+    },
+    {
+      action: 'branches:create',
+      module: 'branches',
+      description: 'Crear nueva sucursal',
+    },
+    {
+      action: 'branches:update',
+      module: 'branches',
+      description: 'Editar sucursal',
+    },
+    {
+      action: 'branches:delete',
+      module: 'branches',
+      description: 'Cerrar sucursal',
+    },
   ];
+
 
   const permissions = [];
   for (const p of permissionsData) {
@@ -227,6 +250,43 @@ async function main() {
       config: { maxUsers: 10, maxVehicles: 500 },
     },
   });
+
+  await prisma.subscriptionPlan.upsert({
+    where: { slug: 'enterprise' },
+    update: {
+      name: 'Quantic Enterprise Basic',
+      description: 'Expansión controlada para grupos de talleres',
+      price: 149.99,
+      config: { maxUsers: 500, maxVehicles: 10000, multiBranch: true, maxBranches: 5, vipSupport: true },
+    },
+    create: {
+      name: 'Quantic Enterprise Basic',
+      slug: 'enterprise',
+      description: 'Expansión controlada para grupos de talleres',
+      price: 149.99,
+      config: { maxUsers: 500, maxVehicles: 10000, multiBranch: true, maxBranches: 5, vipSupport: true },
+    },
+  });
+
+  await prisma.subscriptionPlan.upsert({
+    where: { slug: 'enterprise_pro' },
+    update: {
+      name: 'Quantic Enterprise Pro',
+      description: 'Control total de flota y corporativo multinivel',
+      price: 299.99,
+      config: { maxUsers: 1500, maxVehicles: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true },
+    },
+    create: {
+      name: 'Quantic Enterprise Pro',
+      slug: 'enterprise_pro',
+      description: 'Control total de flota y corporativo multinivel',
+      price: 299.99,
+      config: { maxUsers: 1500, maxVehicles: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true },
+    },
+  });
+
+
+
 
   const plansCount = await prisma.subscriptionPlan.count();
   const rolesCount = await prisma.role.count();

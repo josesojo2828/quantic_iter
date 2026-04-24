@@ -27,10 +27,17 @@ export enum PermissionAction {
   ORDERS_UPDATE = 'orders:update',
   ORDERS_DELETE = 'orders:delete',
 
+  // Multi-branch
+  BRANCHES_CREATE = 'branches:create',
+  BRANCHES_READ = 'branches:read',
+  BRANCHES_UPDATE = 'branches:update',
+  BRANCHES_DELETE = 'branches:delete',
+
   // Generic Wildcards
   ALL = '*',
   WORKSHOP_ALL = 'workshop:*',
   INVENTORY_ALL = 'inventory:*',
   STAFF_ALL = 'staff:*',
   ORDERS_ALL = 'orders:*',
+  BRANCHES_ALL = 'branches:*',
 }

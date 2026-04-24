@@ -1,4 +1,11 @@
 export * from './auth/decorators/permissions.decorator';
+export * from './auth/decorators/subscription-limit.decorator';
+export * from './auth/decorators/is-public.decorator';
+export * from './auth/decorators/get-user.decorator';
 export * from './auth/guards/permissions.guard';
+export * from './auth/guards/jwt-auth.guard';
+export * from './auth/interfaces/auth-user.interface';
 export * from './kafka/kafka.module';
-export { PermissionAction } from '../enums/permissions.enum';
+export * from './storage/storage.module';
+export * from './storage/storage.interface';
+export * from './storage/s3-storage.service';

@@ -1,47 +1,53 @@
-import { Module } from '@nestjs/common';
+import { Module, Global } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { AuthController } from './infrastructure/controllers/auth.controller';
-import { SubscriptionController } from './infrastructure/controllers/subscription.controller';
 import { TenantController } from './infrastructure/controllers/tenant.controller';
 import { DashboardController } from './infrastructure/controllers/dashboard.controller';
 import { AuthService } from './application/auth.service';
-import { SubscriptionService } from './application/subscription.service';
-import { SubscriptionTasksService } from './application/subscription-tasks.service';
 import { PrismaAuthRepository } from './infrastructure/persistence/prisma-auth.repository';
-import { PrismaSubscriptionRepository } from './infrastructure/persistence/prisma-subscription.repository';
+import { SubscriptionModule } from '../subscription/subscription.module';
+import { StaffModule } from '../staff/staff.module';
+import { ClientsModule, Transport } from '@nestjs/microservices';
 import { JwtStrategy } from '../../common/auth/strategies/jwt.strategy';
-import { KafkaModule } from '@workshop/shared';
-
 import { SidebarService } from './application/sidebar.service';
 
+@Global()
 @Module({
   imports: [
-    PassportModule,
+    PassportModule.register({ defaultStrategy: 'jwt' }),
     JwtModule.register({
       secret: process.env.JWT_SECRET || 'secret',
       signOptions: { expiresIn: '1d' },
     }),
-    KafkaModule.register('auth-producer', 'auth-group'),
+    ClientsModule.register([
+      {
+        name: 'AUDIT_SERVICE',
+        transport: Transport.KAFKA,
+        options: {
+          client: {
+            clientId: 'auth-producer',
+            brokers: [process.env.KAFKA_BROKERS || 'localhost:9092'],
+          },
+          consumer: {
+            groupId: 'auth-group',
+          },
+        },
+      },
+    ]),
+    SubscriptionModule,
+    StaffModule,
   ],
-  controllers: [AuthController, SubscriptionController, TenantController, DashboardController],
+  controllers: [AuthController, TenantController, DashboardController],
   providers: [
     AuthService,
-    SubscriptionService,
     SidebarService,
-    SubscriptionTasksService,
     JwtStrategy,
-
-
     {
       provide: 'IAuthRepository',
       useClass: PrismaAuthRepository,
     },
-    {
-      provide: 'ISubscriptionRepository',
-      useClass: PrismaSubscriptionRepository,
-    },
   ],
-  exports: [AuthService, SubscriptionService],
+  exports: [AuthService, SidebarService, 'IAuthRepository', JwtStrategy, PassportModule],
 })
 export class AuthModule { }

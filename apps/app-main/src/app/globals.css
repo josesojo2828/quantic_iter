@@ -17,13 +17,20 @@
 }
 
 :root {
+  --quantic-primary: #10b981;
+  --quantic-primary-dark: #059669;
+  --quantic-dark: #09090b;
+  --quantic-glow: rgba(16, 185, 129, 0.25);
+  --quantic-blue: #3b82f6;
+
   --bg-app: #f8fafc;
   --bg-surface: #ffffff;
-  --text-main: #064e3b;
+  --text-main: #09090b;
   --text-muted: #475569;
   --border-subtle: #e2e8f0;
-  --accent-pro: #059669;
+  --accent-pro: var(--quantic-primary);
 }
+
 
 
 body {

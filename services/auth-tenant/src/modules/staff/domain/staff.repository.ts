@@ -5,6 +5,10 @@ export class StaffQuery {
   take?: number;
   orderBy?: string;
   search?: string;
+  branchId?: string;
+  role?: string;
+  excludeRole?: string;
+  excludeUserId?: string;
 }
 
 export class CreateStaffDto {
@@ -14,6 +18,8 @@ export class CreateStaffDto {
   lastName!: string;
   roleSlug!: string;
   tenantId!: string;
+  branchId?: string;
+  avatarUrl?: string;
 }
 
 export class UpdateStaffDto {
@@ -21,6 +27,8 @@ export class UpdateStaffDto {
   lastName?: string;
   email?: string;
   roleSlug?: string;
+  branchId?: string;
+  avatarUrl?: string;
 }
 
 export class UpdateFieldDto {
@@ -33,7 +41,7 @@ export interface IStaffRepository {
     tenantId: string,
     query: StaffQuery,
   ): Promise<{ items: StaffMember[]; total: number }>;
-  findById(id: string, tenantId: string): Promise<StaffMember | null>;
+  findById(id: string, tenantId: string, branchId?: string): Promise<StaffMember | null>;
   create(data: CreateStaffDto): Promise<StaffMember>;
   update(id: string, data: UpdateStaffDto): Promise<StaffMember>;
   softDelete(id: string): Promise<void>;

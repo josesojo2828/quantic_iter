@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { SubscriptionService } from './application/subscription.service';
+import { SubscriptionTasksService } from './application/subscription-tasks.service';
 import { SubscriptionController } from './infrastructure/controllers/subscription.controller';
 import { PrismaSubscriptionRepository } from './infrastructure/persistence/prisma-subscription.repository';
 import { KafkaModule } from '@workshop/shared';
@@ -9,11 +10,12 @@ import { KafkaModule } from '@workshop/shared';
   controllers: [SubscriptionController],
   providers: [
     SubscriptionService,
+    SubscriptionTasksService,
     {
       provide: 'ISubscriptionRepository',
       useClass: PrismaSubscriptionRepository,
     },
   ],
-  exports: [SubscriptionService],
+  exports: [SubscriptionService, 'ISubscriptionRepository'],
 })
 export class SubscriptionModule { }

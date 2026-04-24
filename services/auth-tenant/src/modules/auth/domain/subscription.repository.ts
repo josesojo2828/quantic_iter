@@ -16,14 +16,18 @@ export interface SubscriptionData {
   status: 'ACTIVE' | 'PAST_DUE' | 'CANCELED';
   expiresAt: Date;
   plan: SubscriptionPlanData;
+  nextPlanId?: string | null;
+  nextPlan?: SubscriptionPlanData | null;
 }
 
 export interface ISubscriptionRepository {
   findTenantSubscription(tenantId: string): Promise<SubscriptionData | null>;
   findAllPlans(): Promise<SubscriptionPlanData[]>;
-  updateSubscription(id: string, data: Partial<SubscriptionData>): Promise<void>;
+  updateSubscription(id: string, data: any): Promise<void>;
   countTenantUsers(tenantId: string): Promise<number>;
+  countTenantBranches(tenantId: string): Promise<number>;
   findPlanBySlug(slug: string): Promise<SubscriptionPlanData | null>;
   createSubscription(data: { tenantId: string; planId: string; expiresAt: Date }): Promise<void>;
 }
+
 
