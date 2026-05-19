@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
-import { AuditAction } from '@workshop/shared';
+import { AuditAction } from '@mentor/shared';
 import { ClientKafka } from '@nestjs/microservices';
 import type { ITenantRepository } from '../domain/tenant.repository';
 import type { IAuthRepository } from '../../auth/domain/auth.repository';
@@ -89,7 +89,7 @@ export class AdminService {
 
   async getTenantById(id: string) {
     const tenant = await this.tenantRepository.findById(id);
-    if (!tenant) throw new NotFoundException('Taller no encontrado');
+    if (!tenant) throw new NotFoundException('Academia no encontrado');
     
     // Aggregate subscription data
     try {
@@ -114,7 +114,7 @@ export class AdminService {
     const owner = await this.tenantRepository.findOwnerByTenantId(tenantId);
     
     if (!owner) {
-      throw new NotFoundException('Dueño del taller no encontrado para impersonation');
+      throw new NotFoundException('Dueño del mentoría no encontrado para impersonation');
     }
 
     // The owner object from the new repository follow the multitenant structure

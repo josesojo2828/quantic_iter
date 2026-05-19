@@ -1,0 +1,19 @@
+<svg width="512" height="512" viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Standalone Monogram IT Curves (32px Stroke Weight) -->
+  <!-- Left 'I' Loop forming path -->
+  <path d="M170 360 V220 C170 170 240 170 240 220 V360" stroke="url(#aura-grad-monogram)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Right 'T' horizontal bar -->
+  <path d="M220 150 H342" stroke="url(#aura-grad-monogram)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <!-- Right 'T' vertical stem (perfectly centered at 281) -->
+  <path d="M281 150 V360" stroke="url(#aura-grad-monogram)" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" />
+  
+  <defs>
+    <!-- Perfect Aura Chill Gradient Coordinates -->
+    <linearGradient id="aura-grad-monogram" x1="170" y1="150" x2="342" y2="360" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#818CF8" />
+      <stop offset="100%" stop-color="#6366F1" />
+    </linearGradient>
+  </defs>
+</svg>

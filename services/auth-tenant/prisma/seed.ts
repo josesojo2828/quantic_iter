@@ -24,16 +24,16 @@ async function main() {
       description: 'Acceso total al SaaS (Súper Admin)',
     },
 
-    // Workshop Core
+    // Mentor Core
     {
-      action: 'workshop:read',
-      module: 'workshop',
-      description: 'Ver datos del taller',
+      action: 'mentor:read',
+      module: 'mentor',
+      description: 'Ver datos de mentoría',
     },
     {
-      action: 'workshop:update',
-      module: 'workshop',
-      description: 'Editar datos del taller',
+      action: 'mentor:update',
+      module: 'mentor',
+      description: 'Editar datos de mentoría',
     },
 
     // Inventory
@@ -85,26 +85,26 @@ async function main() {
       description: 'Dar de baja empleado',
     },
 
-    // Vehicles / Work Orders (Workshop Core)
+    // Programs & Tasks
     {
-      action: 'orders:create',
-      module: 'workshop',
-      description: 'Crear orden de trabajo',
+      action: 'tasks:create',
+      module: 'mentor',
+      description: 'Crear tarea/objetivo',
     },
     {
-      action: 'orders:read',
-      module: 'workshop',
-      description: 'Ver órdenes',
+      action: 'tasks:read',
+      module: 'mentor',
+      description: 'Ver tareas',
     },
     {
-      action: 'orders:update',
-      module: 'workshop',
-      description: 'Modificar órden',
+      action: 'tasks:update',
+      module: 'mentor',
+      description: 'Modificar tarea',
     },
     {
-      action: 'orders:delete',
-      module: 'workshop',
-      description: 'Cancelar órden',
+      action: 'tasks:delete',
+      module: 'mentor',
+      description: 'Cancelar/Borrar tarea',
     },
 
     // Multi-branch (Enterprise)
@@ -159,16 +159,16 @@ async function main() {
   });
 
   await prisma.role.upsert({
-    where: { slug: 'workshop_owner' },
+    where: { slug: 'mentor_owner' },
     update: {
       permissionIds: permissions
         .filter((p) => p.module !== 'admin')
         .map((p) => p.id),
     },
     create: {
-      name: 'Dueño de Taller',
-      slug: 'workshop_owner',
-      description: 'Administrador del taller (Tenant)',
+      name: 'Dueño de Mentoría',
+      slug: 'mentor_owner',
+      description: 'Administrador de la organización (Tenant)',
       permissionIds: permissions
         .filter((p) => p.module !== 'admin')
         .map((p) => p.id),
@@ -176,50 +176,50 @@ async function main() {
   });
 
   await prisma.role.upsert({
-    where: { slug: 'mechanic' },
+    where: { slug: 'facilitator' },
     update: {
       permissionIds: permissions
-        .filter((p) => p.module && ['workshop', 'inventory'].includes(p.module))
+        .filter((p) => p.module && ['mentor', 'inventory'].includes(p.module))
         .map((p) => p.id),
     },
     create: {
-      name: 'Mecánico',
-      slug: 'mechanic',
-      description: 'Operario de taller',
+      name: 'Facilitador / Coach',
+      slug: 'facilitator',
+      description: 'Mentor encargado de guiar estudiantes',
       permissionIds: permissions
-        .filter((p) => p.module && ['workshop', 'inventory'].includes(p.module))
+        .filter((p) => p.module && ['mentor', 'inventory'].includes(p.module))
         .map((p) => p.id),
     },
   });
 
   await prisma.role.upsert({
-    where: { slug: 'receptionist' },
+    where: { slug: 'support' },
     update: {
       permissionIds: permissions
-        .filter((p) => p.module && ['workshop', 'auth'].includes(p.module) && p.action.includes(':read'))
+        .filter((p) => p.module && ['mentor', 'auth'].includes(p.module) && p.action.includes(':read'))
         .map((p) => p.id),
     },
     create: {
-      name: 'Recepcionista',
-      slug: 'receptionist',
-      description: 'Gestión de clientes y turnos',
+      name: 'Staff de Soporte',
+      slug: 'support',
+      description: 'Gestión de alumnos y asistencia',
       permissionIds: permissions
-        .filter((p) => p.module && ['workshop', 'auth'].includes(p.module) && p.action.includes(':read'))
+        .filter((p) => p.module && ['mentor', 'auth'].includes(p.module) && p.action.includes(':read'))
         .map((p) => p.id),
     },
   });
 
   await prisma.role.upsert({
-    where: { slug: 'client' },
+    where: { slug: 'mentee' },
     update: {
       permissionIds: permissions
         .filter((p) => p.action.endsWith(':read'))
         .map((p) => p.id),
     },
     create: {
-      name: 'Cliente',
-      slug: 'client',
-      description: 'Usuario final / dueño de vehículo',
+      name: 'Estudiante / Mentoreado',
+      slug: 'mentee',
+      description: 'Usuario final que recibe mentoría',
       permissionIds: permissions
         .filter((p) => p.action.endsWith(':read'))
         .map((p) => p.id),
@@ -233,9 +233,9 @@ async function main() {
     create: {
       name: 'Plan Básico',
       slug: 'basico',
-      description: 'Para talleres pequeños',
+      description: 'Para mentores independientes',
       price: 0,
-      config: { maxUsers: 2, maxVehicles: 20 },
+      config: { maxUsers: 2, maxMentees: 20 },
     },
   });
 
@@ -245,43 +245,43 @@ async function main() {
     create: {
       name: 'Plan Profesional',
       slug: 'pro',
-      description: 'Para talleres en crecimiento',
+      description: 'Para coaches en crecimiento',
       price: 29.99,
-      config: { maxUsers: 10, maxVehicles: 500 },
+      config: { maxUsers: 10, maxMentees: 500 },
     },
   });
 
   await prisma.subscriptionPlan.upsert({
     where: { slug: 'enterprise' },
     update: {
-      name: 'Quantic Enterprise Basic',
-      description: 'Expansión controlada para grupos de talleres',
+      name: 'MentorQuantic Enterprise Basic',
+      description: 'Expansión para academias y grupos',
       price: 149.99,
-      config: { maxUsers: 500, maxVehicles: 10000, multiBranch: true, maxBranches: 5, vipSupport: true },
+      config: { maxUsers: 500, maxMentees: 10000, multiBranch: true, maxBranches: 5, vipSupport: true },
     },
     create: {
-      name: 'Quantic Enterprise Basic',
+      name: 'MentorQuantic Enterprise Basic',
       slug: 'enterprise',
-      description: 'Expansión controlada para grupos de talleres',
+      description: 'Expansión para academias y grupos',
       price: 149.99,
-      config: { maxUsers: 500, maxVehicles: 10000, multiBranch: true, maxBranches: 5, vipSupport: true },
+      config: { maxUsers: 500, maxMentees: 10000, multiBranch: true, maxBranches: 5, vipSupport: true },
     },
   });
 
   await prisma.subscriptionPlan.upsert({
     where: { slug: 'enterprise_pro' },
     update: {
-      name: 'Quantic Enterprise Pro',
-      description: 'Control total de flota y corporativo multinivel',
+      name: 'MentorQuantic Enterprise Pro',
+      description: 'Control total corporativo multinivel',
       price: 299.99,
-      config: { maxUsers: 1500, maxVehicles: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true },
+      config: { maxUsers: 1500, maxMentees: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true },
     },
     create: {
-      name: 'Quantic Enterprise Pro',
+      name: 'MentorQuantic Enterprise Pro',
       slug: 'enterprise_pro',
-      description: 'Control total de flota y corporativo multinivel',
+      description: 'Control total corporativo multinivel',
       price: 299.99,
-      config: { maxUsers: 1500, maxVehicles: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true },
+      config: { maxUsers: 1500, maxMentees: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true },
     },
   });
 

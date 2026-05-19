@@ -49,15 +49,15 @@ export class PermissionsGuard implements CanActivate {
     const requestedTenantId = params.tenantId || query.tenantId || body.tenantId || headers['x-tenant-id'];
 
     if (requestedTenantId && requestedTenantId !== user.tenantId) {
-      throw new ForbiddenException('No tienes acceso a este taller');
+      throw new ForbiddenException('No tienes acceso a este mentoría');
     }
 
     // 3. Validate Branch Context
     // If the user is restricted to a branch (user.branchId is set)
     // and the request specifies a branchId, they MUST match.
-    // We also check if the user is a workshop_owner (who has access to all branches in their tenant)
+    // We also check if the user is a mentor_owner (who has access to all branches in their tenant)
     
-    const isOwner = user.role === 'workshop_owner';
+    const isOwner = user.role === 'mentor_owner';
     const requestedBranchId = params.branchId || query.branchId || body.branchId || headers['x-branch-id'];
 
     // If user is restricted to a branch and tries to access another one

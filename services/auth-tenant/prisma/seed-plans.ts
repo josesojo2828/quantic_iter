@@ -9,12 +9,12 @@ async function main() {
     {
       name: 'Plan Inicial',
       slug: 'basic',
-      description: 'Ideal para pequeños talleres que recién comienzan.',
+      description: 'Ideal para pequeños mentoríaes que recién comienzan.',
       price: 29.99,
       billingCycle: 'MONTHLY',
       config: { 
         maxUsers: 2, 
-        maxVehicles: 50, 
+        maxMentees: 50, 
         maxBranches: 1,
         features: ['dashboard', 'staff']
       },
@@ -22,12 +22,12 @@ async function main() {
     {
       name: 'Plan Profesional',
       slug: 'pro',
-      description: 'Perfecto para talleres en crecimiento.',
+      description: 'Perfecto para mentoríaes en crecimiento.',
       price: 59.99,
       billingCycle: 'MONTHLY',
       config: { 
         maxUsers: 5, 
-        maxVehicles: 200, 
+        maxMentees: 200, 
         maxBranches: 3,
         features: ['dashboard', 'staff', 'inventory', 'crm']
       },
@@ -35,12 +35,12 @@ async function main() {
     {
       name: 'Plan Premium',
       slug: 'premium',
-      description: 'Toda la potencia de WorkshopArch sin límites.',
+      description: 'Toda la potencia de MentorQuantic sin límites.',
       price: 99.99,
       billingCycle: 'MONTHLY',
       config: { 
         maxUsers: 20, 
-        maxVehicles: 1000, 
+        maxMentees: 1000, 
         maxBranches: 10,
         features: ['dashboard', 'staff', 'inventory', 'crm', 'billing', 'reports']
       },

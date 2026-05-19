@@ -88,7 +88,7 @@ export const BranchModal: React.FC<BranchModalProps> = ({ isOpen, onClose, onSuc
                   {branchToEdit ? 'Actualizar' : 'Crear'} <span className="font-light">Sucursal</span>
                 </h3>
                 <p className="text-[10px] text-neutral/40 font-black uppercase tracking-widest">
-                  {branchToEdit ? 'Modifica los datos de la sede' : 'Añadir nueva sede a tu red de talleres'}
+                  {branchToEdit ? 'Modifica los datos de la sede' : 'Añadir nueva sede a tu red de mentoríaes'}
                 </p>
               </div>
             </div>
@@ -115,7 +115,7 @@ export const BranchModal: React.FC<BranchModalProps> = ({ isOpen, onClose, onSuc
                 <input 
                   {...register('name')}
                   className="w-full bg-neutral/5 border border-transparent rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold placeholder:text-neutral/20 outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all text-neutral"
-                  placeholder="Ej. Taller Central - Norte"
+                  placeholder="Ej. Academia Central - Norte"
                 />
               </div>
               {errors.name && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.name.message}</p>}

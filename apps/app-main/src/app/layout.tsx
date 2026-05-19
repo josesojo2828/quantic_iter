@@ -10,7 +10,7 @@ const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
   title: 'Quantic Ecosystem | Portal',
-  description: 'Enterprise Workshop & Client Management Portal',
+  description: 'Enterprise Mentor & Client Management Portal',
 };
 
 export default function RootLayout({

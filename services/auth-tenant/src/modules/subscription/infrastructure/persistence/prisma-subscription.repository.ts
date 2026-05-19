@@ -226,8 +226,14 @@ export class PrismaSubscriptionRepository implements ISubscriptionRepository {
   }
 
   async countTenantBranches(tenantId: string): Promise<number> {
-    return (this.prisma as any).branch.count({
-      where: { tenantId },
+    return this.prisma.branch.count({
+      where: { 
+        tenantId,
+        OR: [
+          { deletedAt: null },
+          { deletedAt: { isSet: false } }
+        ]
+      } as any,
     });
   }
 

@@ -4,9 +4,9 @@ export enum PermissionAction {
   AUTH_REGISTER = 'auth:register',
   SAAS_ADMIN = 'saas:admin',
 
-  // Workshop Core
-  WORKSHOP_READ = 'workshop:read',
-  WORKSHOP_UPDATE = 'workshop:update',
+  // Mentor Core
+  MENTOR_READ = 'mentor:read',
+  MENTOR_UPDATE = 'mentor:update',
 
   // Inventory
   INVENTORY_CREATE = 'inventory:create',
@@ -35,7 +35,7 @@ export enum PermissionAction {
 
   // Generic Wildcards
   ALL = '*',
-  WORKSHOP_ALL = 'workshop:*',
+  MENTOR_ALL = 'mentor:*',
   INVENTORY_ALL = 'inventory:*',
   STAFF_ALL = 'staff:*',
   ORDERS_ALL = 'orders:*',

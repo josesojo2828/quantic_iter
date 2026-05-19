@@ -1,7 +1,7 @@
 import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
 import type { ISubscriptionRepository } from '../domain/subscription.repository';
 import { ClientKafka } from '@nestjs/microservices';
-import { AuditAction, AuditPayload } from '@workshop/shared';
+import { AuditAction, AuditPayload } from '@mentor/shared';
 import { Subscription } from '../domain/subscription.entity';
 
 @Injectable()
@@ -20,7 +20,7 @@ export class SubscriptionService {
     const sub = await this.subscriptionRepository.findByTenantId(tenantId);
     
     if (!sub) {
-      throw new ForbiddenException('No se encontró una suscripción activa para este taller.');
+      throw new ForbiddenException('No se encontró una suscripción activa para este mentoría.');
     }
 
     if (sub.status !== 'ACTIVE') {

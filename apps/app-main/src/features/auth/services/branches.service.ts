@@ -12,7 +12,8 @@ export interface Branch {
 
 export const branchesService = {
   getBranches: async (): Promise<Branch[]> => {
-    return apiClient.get<Branch[]>('/branches');
+    const response = await apiClient.get<any>('/branches');
+    return Array.isArray(response) ? response : (response.items || []);
   },
 
   getBranchById: async (id: string): Promise<Branch> => {

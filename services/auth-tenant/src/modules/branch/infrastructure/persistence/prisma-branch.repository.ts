@@ -89,4 +89,13 @@ export class PrismaBranchRepository implements IBranchRepository {
       data: { deletedAt: new Date() },
     });
   }
+
+  async countStaff(id: string, tenantId: string): Promise<number> {
+    return this.prisma.userRole.count({
+      where: {
+        branchId: id,
+        tenantId,
+      }
+    });
+  }
 }

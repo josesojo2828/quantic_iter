@@ -81,7 +81,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
   };
 
   if (loading) return <div className="p-8 text-neutral/30 italic">Cargando ficha técnica...</div>;
-  if (!tenant) return <div className="p-8 text-red-500">No se encontró el taller solicitado.</div>;
+  if (!tenant) return <div className="p-8 text-red-500">No se encontró el mentoría solicitado.</div>;
 
   return (
     <div className="p-8 max-w-6xl mx-auto space-y-8">
@@ -187,7 +187,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                 </div>
               ) : (
                 <div className="py-10 text-center bg-neutral-50 rounded-2xl border border-dashed border-neutral-100 italic text-neutral/30 text-sm">
-                  Este taller no tiene métricas de uso porque no registra una suscripción válida.
+                  Este mentoría no tiene métricas de uso porque no registra una suscripción válida.
                 </div>
               )}
             </div>
@@ -235,7 +235,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
                           </div>
                         </td>
                         <td className="px-8 py-4">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight ${user.role?.slug === 'workshop_owner' ? 'bg-indigo-50 text-indigo-600' : 'bg-neutral-100 text-neutral/50'}`}>
+                          <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-tight ${user.role?.slug === 'mentor_owner' ? 'bg-indigo-50 text-indigo-600' : 'bg-neutral-100 text-neutral/50'}`}>
                             {user.role?.name}
                           </span>
                         </td>
@@ -372,7 +372,7 @@ export default function TenantDetailPage({ params }: { params: Promise<{ id: str
               <h3 className="text-xl font-bold text-neutral tracking-tight">
                 {editingBranch ? 'Editar Sucursal' : 'Nueva Sucursal'}
               </h3>
-              <p className="text-xs text-neutral/40 mt-1">Cargá los datos de la sede operativa del taller.</p>
+              <p className="text-xs text-neutral/40 mt-1">Cargá los datos de la sede operativa del mentoría.</p>
             </div>
             <form onSubmit={handleBranchSubmit} className="p-8 space-y-6">
               <div className="space-y-4">

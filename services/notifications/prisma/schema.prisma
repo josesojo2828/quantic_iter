@@ -1,0 +1,50 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model NotificationTemplate {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  name      String
+  subject   String
+  content   String   // Handlebars template
+  type      String   // EMAIL, APP, SMS
+  tenantId  String?  @db.ObjectId // Optional override for specific tenants
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, tenantId])
+  @@map("notification_templates")
+}
+
+model NotificationLog {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  templateId      String?  @db.ObjectId
+  recipient       String
+  status          String   // SENT, FAILED
+  providerResponse Json?
+  errorMessage    String?
+  context         Json?
+  channels        String[]
+
+  createdAt DateTime @default(now())
+}
+
+model InAppNotification {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String    @db.ObjectId
+  tenantId  String?   @db.ObjectId
+  title     String
+  message   String
+  readAt    DateTime?
+  
+  createdAt DateTime  @default(now())
+
+  @@map("in_app_notifications")
+}

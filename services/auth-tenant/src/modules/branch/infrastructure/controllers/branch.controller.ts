@@ -15,9 +15,9 @@ import type { CreateBranchDto, UpdateBranchDto, BranchQuery } from '../../domain
 import { 
   CheckPermissions, 
   GetUser,
-} from '@workshop/shared/nestjs';
-import { PermissionAction } from '@workshop/shared';
-import type { AuthUser } from '@workshop/shared/nestjs';
+} from '@mentor/shared/nestjs';
+import { PermissionAction } from '@mentor/shared';
+import type { AuthUser } from '@mentor/shared/nestjs';
 
 @Controller('branches')
 @UseGuards(JwtAuthGuard)

@@ -118,20 +118,21 @@ export class PrismaAuthRepository implements IAuthRepository {
       password,
       firstName,
       lastName,
-      workshopName,
+      mentorName,
       planId,
       roleId,
     } = data;
 
     return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
-      const slug = workshopName
+      const tenantName = mentorName || `${firstName} Academy`;
+      const slug = tenantName
         .toLowerCase()
         .replace(/ /g, '-')
-        .replace(/[^\w-]+/g, '');
+        .replace(/[^\w-]+/g, '') || 'my-academy';
 
       const tenant = await tx.tenant.create({
         data: {
-          name: workshopName,
+          name: tenantName,
           slug,
         },
       });
@@ -167,7 +168,7 @@ export class PrismaAuthRepository implements IAuthRepository {
 
       await tx.tenant.update({
         where: { id: tenant.id },
-        data: { ownerId: user.id },
+        data: { mentor_ownerId: user.id },
       });
 
       if (planId) {
@@ -190,7 +191,7 @@ export class PrismaAuthRepository implements IAuthRepository {
             tenantId: tenant.id,
             tenantName: tenant.name,
             tenantSlug: tenant.slug,
-            roleSlug: 'workshop_owner',
+            roleSlug: 'mentor_owner',
             branchId: branch.id,
             permissions: [],
           },
@@ -410,6 +411,15 @@ export class PrismaAuthRepository implements IAuthRepository {
       include: {
         branches: true,
         subscription: true,
+        mentor_owner: {
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            email: true,
+            avatarUrl: true,
+          }
+        }
       },
     });
   }

@@ -26,7 +26,7 @@
     "@nestjs/microservices": "^11.1.19",
     "@nestjs/mongoose": "^11.0.4",
     "@nestjs/platform-express": "^11.0.1",
-    "@workshop/shared": "file:../../libs/shared",
+    "@mentor/shared": "file:../../libs/shared",
     "kafkajs": "^2.2.4",
     "mongoose": "^9.4.1",
     "reflect-metadata": "^0.2.2",

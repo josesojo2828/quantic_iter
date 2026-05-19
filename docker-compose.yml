@@ -2,13 +2,17 @@
 services:
   nginx-gateway:
     image: nginx:latest
-    container_name: workshop_gateway
+    container_name: mentor_gateway
     ports:
       - "80:80"
     volumes:
       - ./infra/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     networks:
-      - workshop_network
+      - mentor_network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
     depends_on:
       - auth-tenant
 
@@ -18,18 +22,60 @@ services:
       dockerfile: ./infra/docker/Dockerfile
       args:
         SERVICE_PATH: ./services/auth-tenant
-    container_name: workshop_auth
+    container_name: mentor_auth
     volumes:
       - ./services/auth-tenant:/app
       - /app/node_modules
       - ./libs/shared:/libs/shared
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 512M
     environment:
-      - DATABASE_URL=mongodb://workshop_mongo:27017/auth_db?replicaSet=rs0
+      - DATABASE_URL=mongodb://mentor_mongo:27017/auth_db?replicaSet=rs0&directConnection=true
+      - KAFKA_BROKERS=mentor_kafka:29092
       - JWT_SECRET=super-secret-key-change-me
       - PORT=3000
+      - NODE_OPTIONS=--max-old-space-size=768
     networks:
-      - workshop_network
-    command: npm run start:dev
+      - mentor_network
+    command: sh -c "./node_modules/.bin/prisma generate && npm run start:dev"
+
+
+  mentor-core:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/mentor-core
+    container_name: mentor_core
+    ports:
+      - "3004:3004"
+    volumes:
+      - ./services/mentor-core:/app
+      - /app/node_modules
+      - ./libs/shared:/libs/shared
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 512M
+    environment:
+      - DATABASE_URL=mongodb://mentor_mongo:27017/mentor_core_db?replicaSet=rs0&directConnection=true
+      - KAFKA_BROKERS=mentor_kafka:29092
+      - PORT=3004
+      - JWT_SECRET=super-secret-key-change-me
+      - NODE_OPTIONS=--max-old-space-size=768
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+
+    command: sh -c "./node_modules/.bin/prisma generate && npm run start:dev"
+
 
   app-main:
     build:
@@ -37,7 +83,7 @@ services:
       dockerfile: ./infra/docker/Dockerfile
       args:
         SERVICE_PATH: ./apps/app-main
-    container_name: workshop_app_main
+    container_name: mentor_app_main
     ports:
       - "3001:3001"
     volumes:
@@ -46,10 +92,17 @@ services:
       - /app/.next
     environment:
       - PORT=3001
-      - NEXT_PUBLIC_API_URL=http://localhost:80/api # Via Nginx Gateway
+      - NEXT_PUBLIC_API_URL=/api # Relative URL for cross-machine compatibility
     networks:
-      - workshop_network
+      - mentor_network
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+        reservations:
+          memory: 512M
     command: npm run dev
+
 
   admin-front:
     build:
@@ -57,7 +110,7 @@ services:
       dockerfile: ./infra/docker/Dockerfile
       args:
         SERVICE_PATH: ./apps/admin-front
-    container_name: workshop_admin_front
+    container_name: mentor_admin_front
     ports:
       - "3002:3002"
     volumes:
@@ -66,15 +119,209 @@ services:
       - /app/.next
     environment:
       - PORT=3002
-      - NEXT_PUBLIC_API_URL=http://localhost:80/api
+      - NEXT_PUBLIC_API_URL=/api
     networks:
-      - workshop_network
+      - mentor_network
+    deploy:
+      resources:
+        limits:
+          memory: 1536M
+        reservations:
+          memory: 512M
     command: npm run dev
+
+  audit-service:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/audit-service
+    container_name: mentor_audit
+    volumes:
+      - ./services/audit-service:/app
+      - /app/node_modules
+      - ./libs/shared:/libs/shared
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 512M
+    environment:
+      - KAFKA_BROKERS=mentor_kafka:29092
+      - PORT=3005
+      - MONGO_AUDIT_URI=mongodb://mentor_mongo:27017/mentor_audit?replicaSet=rs0&directConnection=true
+      - NODE_OPTIONS=--max-old-space-size=768
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+
+    command: npm run start:dev
+
+  subscription-worker:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/subscription-worker
+    container_name: mentor_subscription_worker
+    deploy:
+      replicas: 1
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    volumes:
+      - ./services/subscription-worker:/app
+      - /app/node_modules
+      - ./libs/shared:/libs/shared
+    environment:
+      - KAFKA_BROKERS=mentor_kafka:29092
+      - DATABASE_URL=mongodb://mentor_mongo:27017/auth_db?replicaSet=rs0&directConnection=true
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+    command: sh -c "./node_modules/.bin/prisma generate && npm run start:dev"
+
+  crm-engagement:
+    container_name: mentor_crm
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/crm-engagement
+    volumes:
+      - ./services/crm-engagement:/app
+      - /app/node_modules
+    environment:
+      - DATABASE_URL=mongodb://mentor_mongo:27017/crm_db?replicaSet=rs0&directConnection=true
+      - KAFKA_BROKERS=mentor_kafka:29092
+      - CRM_PORT=3003
+      - JWT_SECRET=super-secret-key-change-me
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    command: sh -c "./node_modules/.bin/prisma generate && npm run start:dev"
+      
+  notifications:
+    container_name: mentor_notifications
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/notifications
+    volumes:
+      - ./services/notifications:/app
+      - /app/node_modules
+    environment:
+      - DATABASE_URL=mongodb://mentor_mongo:27017/notifications_db?replicaSet=rs0&directConnection=true
+      - KAFKA_BROKERS=mentor_kafka:29092
+      - SMTP_HOST=smtp.gmail.com
+      - SMTP_PORT=587
+      - SMTP_USER=josesojo2828@gmail.com
+      - SMTP_PASS=bbxa afzj eedr came
+      - SMTP_FROM=Quantic <josesojo2828@gmail.com>
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    command: sh -c "./node_modules/.bin/prisma generate && npm run start:dev"
+
+  finance:
+    container_name: mentor_finance
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/finance
+    volumes:
+      - ./services/finance:/app
+      - /app/node_modules
+    environment:
+      - PORT=3004
+      - DATABASE_URL=mongodb://mentor_mongo:27017/finance_db?replicaSet=rs0&directConnection=true
+      - MINIO_ENDPOINT=mentor-minio
+      - MINIO_PORT=9000
+      - MINIO_ACCESS_KEY=minioadmin
+      - MINIO_SECRET_KEY=minioadmin
+      - MINIO_BUCKET=mentor-finance
+      - MINIO_USE_SSL=false
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    command: sh -c "./node_modules/.bin/prisma generate && npm run start:dev"
+
+  finance-docs:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/finance-docs
+    container_name: mentor_finance_docs
+    volumes:
+      - ./services/finance-docs:/app
+      - /app/node_modules
+    environment:
+      - PORT=3000
+    networks:
+      - mentor_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    command: npm run start:dev
+
+  realtime-gw:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/realtime-gw
+    container_name: mentor_realtime_gw
+    volumes:
+      - ./services/realtime-gw:/app
+      - /app/node_modules
+    environment:
+      - PORT=3000
+    networks:
+      - mentor_network
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+    command: npm run start:dev
 
 volumes:
   minio_data:
 
 networks:
-  workshop_network:
+  mentor_network:
     external: true
-    name: workshop_network
+    name: mentor_network

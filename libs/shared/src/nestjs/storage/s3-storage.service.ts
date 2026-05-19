@@ -24,7 +24,7 @@ export class S3StorageService implements IStorageService {
       },
       forcePathStyle: true, // Required for MinIO
     });
-    this.defaultBucket = process.env.STORAGE_BUCKET || 'workshop-assets';
+    this.defaultBucket = process.env.STORAGE_BUCKET || 'mentor-assets';
   }
 
   async uploadFile(

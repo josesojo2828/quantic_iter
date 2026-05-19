@@ -1,6 +1,6 @@
 import { Controller, Get, Req, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from '../../../../common/auth/guards/jwt-auth.guard';
-import { CheckPermissions, PermissionAction, AuthUser } from '@workshop/shared';
+import { CheckPermissions, PermissionAction, AuthUser } from '@mentor/shared';
 import { StaffService } from '../../../staff/application/staff.service';
 import { SubscriptionService } from '../../../subscription/application/subscription.service';
 
@@ -45,8 +45,8 @@ export class DashboardController {
 
       recentRepairs: [
         // This will be replaced by real data once the Work module is implemented
-        { id: 'QM-101', vehicle: 'Toyota Corolla', client: 'Marcos Rodriguez', status: 'En Proceso', time: '2h' },
-        { id: 'QM-102', vehicle: 'Ford Raptor', client: 'Andres Peralta', status: 'Diagnóstico', time: '1h' },
+        { id: 'QM-101', program: 'Clean Architecture', client: 'Marcos Rodriguez', status: 'En Proceso', time: '2h' },
+        { id: 'QM-102', program: 'Hexagonal Architecture', client: 'Andres Peralta', status: 'Diagnóstico', time: '1h' },
       ],
 
       subscription: subscription ? {

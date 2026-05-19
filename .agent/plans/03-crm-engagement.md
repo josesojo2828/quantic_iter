@@ -1,28 +1,30 @@
 # Plan 03: CRM & Engagement
 
-Este microservicio se enfoca en la relación con el cliente, la gestión de turnos y la reputación del taller.
+Este microservicio se enfoca en la relación con el mentee final (B2C/B2B), la gestión de agenda y la reputación del negocio (Tenant). Su diseño debe ser completamente independiente del Core operativo.
 
 ## 🎯 Objetivos
-- Gestionar una base de datos centralizada de Clientes.
-- Implementar una Agenda Inteligente para citas.
-- Medir la satisfacción del cliente mediante Puntuación y Feedback.
-- Fomentar la lealtad del cliente.
+- Gestionar un directorio centralizado y genérico de Mentees/Usuarios Finales.
+- Proporcionar un motor de Agenda Inteligente para gestión de turnos/disponibilidad.
+- Unificar la retroalimentación (Reviews, Puntuaciones, NPS).
+- Ejecutar reglas de retención y engagement.
 
 ## 🛠️ Checklist de Implementación
 
 ### Backend (CRM Service)
-- [ ] **Clientes**: Perfil detallado, historial de contacto, preferencias.
-- [ ] **Agenda**: Gestión de disponibilidad por taller, bloqueos de fechas, sobre-asignación.
-- [ ] **Citas**: Sistema de reserva de turnos vinculado a servicios del microservicio **Core**.
-- [ ] **Reviews**: Lógica de calificación (estrellas y comentarios) post-servicio.
-- [ ] **Engagement**: Segmentación de clientes (ej: Clientes VIP, Clientes inactivos).
+- [ ] **Directorio (Contacts - TenantClient)**: Relación acotada (`tenantId` + `globalUserId`). Historial de comunicaciones, preferencias locales y etiquetas. La autenticación recae plenamente en Auth-Tenant (#1).
+- [ ] **Motor de Agenda**: Gestión de franjas horarias (Time Slots), disponibilidad de recursos (genéricos), bloqueos y horarios laborables.
+- [ ] **Booking (Citas)**: Entidad de reserva agnóstica que sólo mantiene fecha, recurso asignado y un `coreReferenceId` opcional.
+- [ ] **Reviews & Feedback**: Encuestas de satisfacción post-interacción.
+- [ ] **Engagement Rules**: Segmentación (ej. Usuarios Inactivos > 6 meses) y triggers temporales.
 
-### Frontend (Dashboard & Pública)
-- [ ] **Agenda Visual**: Calendario drag-and-drop para administración de turnos.
-- [ ] **Directorio de Clientes**: Búsqueda avanzada y CRM básico.
-- [ ] **Widget de Calificación**: Interfaz para que el cliente deje su feedback.
-- [ ] **Dashboard de Reputación**: Análisis de métricas de satisfacción.
+### Frontend (Dashboard & Interfaz Pública)
+- [ ] **Agenda Interactiva**: Calendario Drag-and-Drop (Vista por día/semana/mes).
+- [ ] **Directorio CRM**: Tabla de mentees con filtros avanzados.
+- [ ] **Gestor de Turnos**: Configurador de reglas de capacidad permitida por el Tenant.
+- [ ] **Dashboard de Reputación**: Métricas agregadas de comportamiento del mentee.
 
-## ⚙️ Integración
-- Consume datos del microservicio **Core** (servicios y disponibilidad de mecánicos).
-- Envía eventos a **Notifications** para confirmar citas y pedir reviews.
+## ⚙️ Arquitectura de Integración (Event-Driven)
+Al ser agnóstico, el CRM NO lee de las bases de datos de otros servicios. Todo es event-driven.
+- **Consulta/Caché CQRS:** Mantiene réplicas de sólo lectura de la agenda general alimentada por eventos de disponibilidad.
+- **Emite Eventos:** `AppointmentBooked`, `AppointmentCancelled`, etc.
+- **Escucha Eventos:** Reacciona a eventos del **Core** (ej: `ServiceCompleted`) para enviarle al mentee la solicitud de review a través de notificaciones.

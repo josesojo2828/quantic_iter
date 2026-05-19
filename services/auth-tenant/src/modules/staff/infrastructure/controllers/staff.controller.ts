@@ -17,7 +17,7 @@ import {
   PermissionAction, 
   type AuthUser,
   GetUser
-} from '@workshop/shared';
+} from '@mentor/shared';
 import { 
   StaffQuery, 
   CreateStaffDto, 
@@ -38,14 +38,14 @@ export class StaffController {
   @Get()
   @CheckPermissions(PermissionAction.STAFF_READ)
   async findAll(@GetUser() user: AuthUser, @Query() query: StaffQuery) {
-    const branchId = user.role !== 'workshop_owner' ? (user.branchId || undefined) : query.branchId;
+    const branchId = user.role !== 'mentor_owner' ? (user.branchId || undefined) : query.branchId;
     return this.staffService.findAll(user.tenantId, { ...query, branchId });
   }
 
   @Get(':id')
   @CheckPermissions(PermissionAction.STAFF_READ)
   async findOne(@GetUser() user: AuthUser, @Param('id') id: string) {
-    const branchId = user.role !== 'workshop_owner' ? (user.branchId || undefined) : undefined;
+    const branchId = user.role !== 'mentor_owner' ? (user.branchId || undefined) : undefined;
     return this.staffService.findOne(id, user.tenantId, branchId);
   }
 
@@ -56,7 +56,7 @@ export class StaffController {
     @Param('id') id: string,
     @Body() dto: UpdateStaffDto,
   ) {
-    const branchId = user.role !== 'workshop_owner' ? (user.branchId || undefined) : undefined;
+    const branchId = user.role !== 'mentor_owner' ? (user.branchId || undefined) : undefined;
     return this.staffService.updateGroup(id, user.tenantId, user.userId, dto, branchId);
   }
 
@@ -67,14 +67,14 @@ export class StaffController {
     @Param('id') id: string,
     @Body() dto: UpdateFieldDto,
   ) {
-    const branchId = user.role !== 'workshop_owner' ? (user.branchId || undefined) : undefined;
+    const branchId = user.role !== 'mentor_owner' ? (user.branchId || undefined) : undefined;
     return this.staffService.updateField(id, user.tenantId, user.userId, dto, branchId);
   }
 
   @Delete(':id')
   @CheckPermissions(PermissionAction.STAFF_DELETE)
   async remove(@GetUser() user: AuthUser, @Param('id') id: string) {
-    const branchId = user.role !== 'workshop_owner' ? (user.branchId || undefined) : undefined;
+    const branchId = user.role !== 'mentor_owner' ? (user.branchId || undefined) : undefined;
     return this.staffService.remove(id, user.tenantId, user.userId, branchId);
   }
 }

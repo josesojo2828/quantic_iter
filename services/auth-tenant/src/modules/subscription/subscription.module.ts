@@ -3,7 +3,7 @@ import { SubscriptionService } from './application/subscription.service';
 import { SubscriptionTasksService } from './application/subscription-tasks.service';
 import { SubscriptionController } from './infrastructure/controllers/subscription.controller';
 import { PrismaSubscriptionRepository } from './infrastructure/persistence/prisma-subscription.repository';
-import { KafkaModule } from '@workshop/shared';
+import { KafkaModule } from '@mentor/shared';
 
 @Module({
   imports: [KafkaModule.register('subscription-producer', 'subscription-group')],

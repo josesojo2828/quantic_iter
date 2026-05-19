@@ -1,8 +1,8 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
 import type { IBranchRepository, BranchQuery, CreateBranchDto, UpdateBranchDto } from '../domain/branch.repository';
 import { SubscriptionService } from '../../subscription/application/subscription.service';
 import { ClientKafka } from '@nestjs/microservices';
-import { AuditAction, AuditPayload } from '@workshop/shared';
+import { AuditAction, AuditPayload } from '@mentor/shared';
 
 @Injectable()
 export class BranchService {
@@ -14,7 +14,7 @@ export class BranchService {
   ) {}
 
   private emitAudit(data: Omit<AuditPayload, 'timestamp'>) {
-    this.auditClient.emit('audit.log', { ...data, timestamp: new Date() });
+    this.auditClient.emit('quantic.audit', { ...data, timestamp: new Date() });
   }
 
   async findAll(tenantId: string, query: BranchQuery) {
@@ -62,6 +62,13 @@ export class BranchService {
 
   async remove(id: string, tenantId: string, userId: string) {
     const current = await this.findOne(id, tenantId);
+    
+    // Strict Validation: Branch cannot be deleted if there are staff assigned
+    const staffCount = await this.repository.countStaff(id, tenantId);
+    if (staffCount > 0) {
+      throw new BadRequestException(`No se puede eliminar la sucursal porque tiene ${staffCount} empleado(s) asignado(s).`);
+    }
+
     await this.repository.softDelete(id, tenantId);
     
     this.emitAudit({

@@ -37,7 +37,7 @@ function CallbackContent() {
         Validando <span className="text-primary text-3xl italic">Credenciales</span>
       </h1>
       <p className="text-neutral-500 font-bold uppercase text-[10px] tracking-[0.3em] animate-pulse">
-        Accediendo al taller como administrador...
+        Accediendo al mentoría como administrador...
       </p>
     </div>
   );

@@ -14,7 +14,7 @@ const inviteWorkerSchema = z.object({
   email: z.string().email('Email inválido'),
   firstName: z.string().min(2, 'El nombre es muy corto'),
   lastName: z.string().min(2, 'El apellido es muy corto'),
-  roleSlug: z.enum(['mechanic', 'receptionist']),
+  roleSlug: z.enum(['facilitator', 'support']),
   branchId: z.string().optional(),
 });
 
@@ -36,7 +36,7 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
   const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<InviteWorkerValues>({
     resolver: zodResolver(inviteWorkerSchema),
     defaultValues: {
-      roleSlug: 'mechanic',
+      roleSlug: 'facilitator',
     }
   });
 
@@ -75,7 +75,7 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
         firstName: '',
         lastName: '',
         email: '',
-        roleSlug: 'mechanic',
+        roleSlug: 'facilitator',
         branchId: '',
       });
     }
@@ -126,7 +126,7 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
                   {workerToEdit ? 'Actualizar' : 'Crear'} <span className="font-light">Usuario</span>
                 </h3>
                 <p className="text-[10px] text-neutral/40 font-black uppercase tracking-widest">
-                  {workerToEdit ? 'Modifica los datos del colaborador' : 'Añadir nuevo colaborador al taller'}
+                  {workerToEdit ? 'Modifica los datos del colaborador' : 'Añadir nuevo colaborador al mentoría'}
                 </p>
               </div>
             </div>
@@ -183,7 +183,7 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
                   type="email"
                   disabled={!!workerToEdit}
                   className="w-full bg-neutral/5 border border-transparent rounded-2xl pl-12 pr-4 py-3.5 text-sm font-bold placeholder:text-neutral/20 outline-none focus:bg-white focus:border-primary/20 focus:ring-4 focus:ring-primary/5 transition-all text-neutral disabled:opacity-50 disabled:cursor-not-allowed"
-                  placeholder="juan.perez@taller.map"
+                  placeholder="juan.perez@mentoría.map"
                 />
               </div>
               {errors.email && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.email.message}</p>}
@@ -193,33 +193,33 @@ export const InviteWorkerModal: React.FC<InviteWorkerModalProps> = ({ isOpen, on
               <label className="text-[10px] font-black text-neutral/40 uppercase tracking-widest ml-1">Rol Operativo</label>
               <div className="grid grid-cols-2 gap-3">
                 <label className={`relative flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                  selectedRole === 'mechanic' ? 'border-primary bg-primary/5' : 'border-neutral/5 hover:border-neutral/10 bg-neutral/5'
+                  selectedRole === 'facilitator' ? 'border-primary bg-primary/5' : 'border-neutral/5 hover:border-neutral/10 bg-neutral/5'
                 }`}>
                   <input 
                     type="radio" 
-                    value="mechanic" 
+                    value="facilitator" 
                     {...register('roleSlug')}
                     className="sr-only"
                   />
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedRole === 'mechanic' ? 'bg-primary text-white' : 'bg-neutral/10 text-neutral/40'}`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedRole === 'facilitator' ? 'bg-primary text-white' : 'bg-neutral/10 text-neutral/40'}`}>
                     <Shield className="w-4 h-4" />
                   </div>
-                  <span className={`text-[10px] font-black uppercase ${selectedRole === 'mechanic' ? 'text-primary' : 'text-neutral/40'}`}>Técnico</span>
+                  <span className={`text-[10px] font-black uppercase ${selectedRole === 'facilitator' ? 'text-primary' : 'text-neutral/40'}`}>Facilitador</span>
                 </label>
 
                 <label className={`relative flex items-center gap-3 p-4 rounded-2xl border-2 cursor-pointer transition-all ${
-                  selectedRole === 'receptionist' ? 'border-primary bg-primary/5' : 'border-neutral/5 hover:border-neutral/10 bg-neutral/5'
+                  selectedRole === 'support' ? 'border-primary bg-primary/5' : 'border-neutral/5 hover:border-neutral/10 bg-neutral/5'
                 }`}>
                   <input 
                     type="radio" 
-                    value="receptionist" 
+                    value="support" 
                     {...register('roleSlug')}
                     className="sr-only"
                   />
-                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedRole === 'receptionist' ? 'bg-primary text-white' : 'bg-neutral/10 text-neutral/40'}`}>
+                  <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${selectedRole === 'support' ? 'bg-primary text-white' : 'bg-neutral/10 text-neutral/40'}`}>
                     <Shield className="w-4 h-4" />
                   </div>
-                  <span className={`text-[10px] font-black uppercase ${selectedRole === 'receptionist' ? 'text-primary' : 'text-neutral/40'}`}>Gestión</span>
+                  <span className={`text-[10px] font-black uppercase ${selectedRole === 'support' ? 'text-primary' : 'text-neutral/40'}`}>Gestión</span>
                 </label>
               </div>
               {errors.roleSlug && <p className="text-[10px] text-red-500 font-bold ml-1">{errors.roleSlug.message}</p>}

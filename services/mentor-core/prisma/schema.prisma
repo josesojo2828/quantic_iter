@@ -1,0 +1,409 @@
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// === GRUPOS ===
+model Group {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  coachId     String   @db.ObjectId // Reference to the mentor/coach
+  name        String
+  description String?
+  status      String   @default("active") // active, completed, archived
+  programId   String?  @db.ObjectId // Optional link to a program
+  members     GroupMember[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("groups")
+}
+
+model GroupMember {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  groupId   String   @db.ObjectId
+  group     Group    @relation(fields: [groupId], references: [id])
+  menteeId  String   @db.ObjectId
+  joinedAt  DateTime @default(now())
+
+  @@unique([groupId, menteeId])
+  @@map("group_members")
+}
+
+// === PROGRAMAS ===
+model Program {
+  id          String        @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String        @db.ObjectId
+  coachId     String?       @db.ObjectId // null if it belongs to the org owner
+  menteeId    String?       @db.ObjectId // Reference to the student for personalized instances
+  name        String
+  description String?
+  duration    String?       // e.g., "4 weeks"
+  status      String        @default("DRAFT") // DRAFT, ACTIVE, COMPLETED, ARCHIVED
+  isTemplate  Boolean       @default(false)
+  type        String        @default("CURRICULUM") // CURRICULUM, HABITS, ROUTINE
+  isPublic    Boolean       @default(false)
+  category    String?
+  authorId    String?       @db.ObjectId
+  phases      Phase[]
+  enrollments Enrollment[]
+  milestones  Milestone[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("programs")
+}
+
+model Phase {
+  id             String      @id @default(auto()) @map("_id") @db.ObjectId
+  programId      String      @db.ObjectId
+  program        Program     @relation(fields: [programId], references: [id])
+  name           String
+  order          Int
+  description    String?
+  startDate      DateTime?
+  endDate        DateTime?
+  startTime      String?
+  endTime        String?
+  estimatedWeeks Int?
+  color          String?
+  milestones     Milestone[]
+  createdAt      DateTime    @default(now())
+
+  @@map("phases")
+}
+
+model Enrollment {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  programId   String   @db.ObjectId
+  program     Program  @relation(fields: [programId], references: [id])
+  menteeId    String   @db.ObjectId
+  tenantId    String   @db.ObjectId
+  status      String   @default("ACTIVE") // ACTIVE, COMPLETED, DROPPED
+  enrolledAt  DateTime @default(now())
+  completedAt DateTime?
+
+  @@unique([programId, menteeId])
+  @@map("enrollments")
+}
+
+// === TAREAS ===
+model Task {
+  id           String     @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String     @db.ObjectId
+  assigneeId   String     @db.ObjectId // menteeId
+  coachId      String     @db.ObjectId // Coach managing the task
+  programId    String?    @db.ObjectId
+  title        String
+  description  String?
+  priority     String     @default("MEDIUM") // LOW, MEDIUM, HIGH, URGENT
+  status       String     @default("PENDING") // PENDING, IN_PROGRESS, SUBMITTED, APPROVED
+  dueDate      DateTime?
+  xpReward     Int        @default(50)
+  evidenceUrls String[]
+  completedAt  DateTime?
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  @@map("tasks")
+}
+
+// === HÁBITOS ===
+model Habit {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String         @db.ObjectId
+  assigneeId  String         @db.ObjectId // menteeId
+  coachId     String         @db.ObjectId
+  name        String
+  description String?
+  frequency   String         @default("DAILY") // DAILY, WEEKLY
+  isActive    Boolean        @default(true)
+  checkins    HabitCheckin[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("habits")
+}
+
+model HabitCheckin {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  habitId   String   @db.ObjectId
+  habit     Habit    @relation(fields: [habitId], references: [id])
+  date      DateTime // Day of check-in (normalized to 00:00)
+  createdAt DateTime @default(now())
+
+  @@unique([habitId, date])
+  @@map("habit_checkins")
+}
+
+// === SESIONES ===
+model Session {
+  id           String        @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String        @db.ObjectId
+  coachId      String        @db.ObjectId
+  groupId      String?       @db.ObjectId
+  menteeId     String?       @db.ObjectId // Para sesiones 1-on-1
+  type         String        @default("ONE_ON_ONE") // ONE_ON_ONE, GROUP
+  title        String
+  description  String?
+  scheduledAt  DateTime
+  duration     Int           @default(60) // Minutos
+  meetingUrl   String?
+  status       String        @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  notes        String?       // Mentor notes
+  isNotesPrivate Boolean     @default(true)
+  feedbackRating Int?        // 1 to 5
+  feedbackComment String?    
+  attendance   SessionAttendance[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@map("sessions")
+}
+
+model SessionAttendance {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  sessionId     String   @db.ObjectId
+  session       Session  @relation(fields: [sessionId], references: [id])
+  menteeId      String   @db.ObjectId
+  status        String   @default("PRESENT") // PRESENT, ABSENT, JUSTIFIED
+  checkinTime   DateTime?
+  checkinMethod String   @default("MANUAL") // MANUAL, QR
+  createdAt     DateTime @default(now())
+
+  @@unique([sessionId, menteeId])
+  @@map("session_attendance")
+}
+
+// === GAMIFICACIÓN ===
+model MenteeProfile {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId          String   @unique @db.ObjectId
+  tenantId        String   @db.ObjectId
+  totalXp         Int      @default(0)
+  level           Int      @default(1)
+  currentStreak   Int      @default(0)
+  highestStreak   Int      @default(0)
+  lastActivityAt  DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("mentee_profiles")
+}
+
+model XpTransaction {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId      String   @db.ObjectId
+  tenantId    String   @db.ObjectId
+  amount      Int
+  type        String   // TASK_COMPLETED, HABIT_CHECKIN, etc.
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  @@map("xp_transactions")
+}
+
+// === ANUNCIOS ===
+model Announcement {
+  id          String             @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String             @db.ObjectId
+  coachId     String             @db.ObjectId // Author
+  title       String
+  content     String
+  type        String             @default("GENERAL") // GENERAL, IMPORTANT, PROGRAM, GROUP
+  programId   String?            @db.ObjectId
+  groupId     String?            @db.ObjectId
+  views       AnnouncementView[]
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  @@map("announcements")
+}
+
+model AnnouncementView {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  announcementId String       @db.ObjectId
+  announcement   Announcement @relation(fields: [announcementId], references: [id])
+  menteeId       String       @db.ObjectId
+  viewedAt       DateTime     @default(now())
+
+  @@unique([announcementId, menteeId])
+  @@map("announcement_views")
+}
+
+// === MEDICIONES ===
+model Measurement {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  menteeId    String   @db.ObjectId
+  coachId     String   @db.ObjectId // Coach who registered it
+  type        String   // WEIGHT, HEIGHT, BODY_FAT, GLUCOSE, etc.
+  value       Float
+  unit        String   // kg, cm, %, mg/dL, etc.
+  notes       String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("measurements")
+}
+
+// === INVITACIONES ===
+model Invitation {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  coachId     String   @db.ObjectId
+  token       String   @unique
+  type        String   @default("PROGRAM") // PROGRAM, GROUP, TENANT
+  programId   String?  @db.ObjectId
+  groupId     String?  @db.ObjectId
+  maxUses     Int?     @default(0) // 0 = unlimited
+  uses        Int      @default(0)
+  isActive    Boolean  @default(true)
+  expiresAt   DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("invitations")
+}
+
+// === PROGRESO Y ACTIVIDAD ===
+
+model Milestone {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  programId   String   @db.ObjectId
+  phaseId     String?  @db.ObjectId
+  title       String
+  description String?
+  order       Int      @default(0)
+  xpReward    Int      @default(500)
+  dueDate     DateTime? // Target date for completion
+  frequency   String   @default("ONCE") // ONCE, DAILY, WEEKLY
+  daysOfWeek  Int[]    // 0-6
+  requiredEvidence String @default("NONE") // NONE, IMAGE, TEXT, LINK
+  isHabit     Boolean  @default(false)
+  program     Program  @relation(fields: [programId], references: [id])
+  phase       Phase?   @relation(fields: [phaseId], references: [id])
+  completions MilestoneCompletion[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("milestones")
+}
+
+model MilestoneCompletion {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  milestoneId String   @db.ObjectId
+  menteeId    String   @db.ObjectId
+  completedAt DateTime @default(now())
+  date        DateTime? // Day of check-in (normalized to 00:00) for habits
+  evidenceUrl String?
+  notes       String?
+  milestone   Milestone @relation(fields: [milestoneId], references: [id])
+
+  @@unique([milestoneId, menteeId, date])
+  @@map("milestone_completions")
+}
+
+model ActivityLog {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  menteeId    String   @db.ObjectId
+  type        String   // TASK_COMPLETED, HABIT_STREAK, SESSION_ATTENDED, MILESTONE_REACHED, MEASUREMENT_RECORDED
+  title       String
+  description String?
+  metadata    Json?    // Related IDs, XP earned, etc.
+  createdAt   DateTime @default(now())
+
+  @@map("activity_logs")
+}
+
+// === SUSCRIPCIONES Y NEGOCIO ===
+
+model SubscriptionPlan {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  type        String         @default("PRO_COACH") // PRO_COACH, ENTERPRISE
+  price       Float
+  features    String[]
+  maxCoaches  Int            @default(1)
+  maxMentees  Int?           @default(0) // 0 = unlimited
+  subscriptions Subscription[]
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@map("subscription_plans")
+}
+
+model Subscription {
+  id          String           @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String           @unique @db.ObjectId
+  planId      String           @db.ObjectId
+  plan        SubscriptionPlan @relation(fields: [planId], references: [id])
+  status      String           @default("ACTIVE") // ACTIVE, CANCELLED, PAST_DUE
+  expiresAt   DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  @@map("subscriptions")
+}
+
+// === TIERS DE NEGOCIO (Lo que el mentee paga al coach/org) ===
+
+model BusinessTier {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  name        String
+  description String?
+  price       Float
+  currency    String   @default("USD")
+  interval    String   @default("MONTHLY") // MONTHLY, QUARTERLY, YEARLY, ONE_TIME
+  features    String[]
+  isActive    Boolean  @default(true)
+  menteeSubscriptions BusinessSubscription[]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("business_tiers")
+}
+
+model BusinessSubscription {
+  id          String       @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String       @db.ObjectId
+  menteeId    String       @db.ObjectId
+  tierId      String       @db.ObjectId
+  tier        BusinessTier @relation(fields: [tierId], references: [id])
+  status      String       @default("ACTIVE") // ACTIVE, EXPIRED, CANCELLED
+  startDate   DateTime     @default(now())
+  endDate     DateTime?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  @@map("business_subscriptions")
+}
+
+// === RECURSOS (Biblioteca de Contenido) ===
+
+model Resource {
+  id          String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String   @db.ObjectId
+  coachId     String   @db.ObjectId
+  title       String
+  description String?
+  type        String   @default("ARTICLE") // ARTICLE, VIDEO, PDF, LINK, TEMPLATE
+  url         String?
+  content     String?  // Para contenido en markdown si es ARTICLE
+  category    String   @default("GENERAL")
+  isPublic    Boolean  @default(false) // Si es true, accesible para todo el tenant
+  programId   String?  @db.ObjectId
+  phaseId     String?  @db.ObjectId
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("resources")
+}

@@ -1,0 +1,11 @@
+node_modules
+.next
+dist
+.git
+.vscode
+*.log
+.agent
+apps/*/node_modules
+services/*/node_modules
+apps/*/.next
+services/*/dist

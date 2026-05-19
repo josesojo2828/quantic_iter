@@ -9,7 +9,7 @@ import { BranchModule } from './modules/branch/branch.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { DiscoveryModule, Reflector, APP_GUARD } from '@nestjs/core';
-import { PermissionsGuard, StorageModule } from '@workshop/shared/nestjs';
+import { PermissionsGuard, StorageModule } from '@mentor/shared/nestjs';
 import { ScheduleModule } from '@nestjs/schedule';
 import { InternalEventBusModule } from './common/kafka/kafka.module';
 import { ThrottlerModule } from '@nestjs/throttler';

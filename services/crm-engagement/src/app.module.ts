@@ -1,10 +1,30 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { Module, NestModule, MiddlewareConsumer } from '@nestjs/common';
+import { AgendaModule } from './modules/agenda/agenda.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
+import { ConfigModule } from '@nestjs/config';
+import { ContactsModule } from './modules/contacts/contacts.module';
+import { InternalEventBusModule } from './common/kafka/kafka.module';
+import { InteractionsModule } from './modules/interactions/interactions.module';
+import { AuthMiddleware } from './common/middleware/auth.middleware';
 
 @Module({
-  imports: [],
-  controllers: [AppController],
-  providers: [AppService],
+  imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
+    ContactsModule,
+    AgendaModule,
+    ReviewsModule,
+    InternalEventBusModule,
+    InteractionsModule,
+  ],
+  controllers: [],
+  providers: [],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer
+      .apply(AuthMiddleware)
+      .forRoutes('*');
+  }
+}

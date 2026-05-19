@@ -1,25 +1,26 @@
 # Plan 04: Finance & Document
 
-Este microservicio gestiona la parte administrativa, presupuestaria y documental de los servicios mecánicos.
+Este microservicio gestiona la parte económica, presupuestaria y de almacenamiento documental que resulta de los servicios operativos. Es estrictamente agnóstico al dominio central.
 
 ## 🎯 Objetivos
-- Generar Presupuestos (Cotizaciones) precisos y técnicos.
-- Gestionar el almacenamiento de Archivos (Fotos de vehículos, facturas de terceros, documentos legales).
-- Proporcionar Reportes de rendimiento financiero para el Dueño.
+- Emitir Cotizaciones/Presupuestos genéricos basados en líneas de cobro (Line Items).
+- Centralizar el almacenamiento transaccional de Archivos con permisos transverales.
+- Procesar analíticas financieras a nivel global para el Tenant.
 
 ## 🛠️ Checklist de Implementación
 
 ### Backend (Finance Service)
-- [ ] **Presupuestos**: Generación de PDFs a partir de datos de la Work Order (Microservicio **Core**).
-- [ ] **Almacenamiento**: Integración con un servicio de storage (S3 o similar) para guardado de fotos y documentos.
-- [ ] **Reportes**: Agregación de datos financieros (Costos vs Ingresos) por periodo.
-- [ ] **Facturación**: Integración (opcional) con servicios de impuestos locales.
+- [ ] **Motor de Presupuestos (Quotes/Invoices)**: Entidad basada en listas de precios (`Item`, `Qty`, `Tax`, `Discount`), vinculada abstractamente a un `coreEntityId` (ej. ID de Reparación o ID de Consulta Médica).
+- [ ] **Storage Gateway**: Adaptador robusto (AWS S3/GCS) que maneje subida segregada por tenant, firmas de URL limitadas (Presigned URLs) y validación de cuotas.
+- [ ] **Documentos Adjuntos**: Entidad de DB de metadatos para archivos multimedia con tags o contextos (ej: `"before_service_photo"`, `"legal_id"`).
+- [ ] **Aggregations & Analytics**: CRON u OLAP simplificado para sumarizar el flujo de caja del Tenant (Revenue vs Costs).
 
 ### Frontend (Dashboard)
-- [ ] **Editor de Presupuestos**: Interfaz para añadir ítems, mano de obra y descuentos.
-- [ ] **Gestor Documental**: Galería de fotos del auto (Antes/Después) y visor de archivos.
-- [ ] **Centro de Reportes**: Gráficos interactivos de rentabilidad y gastos de stock.
+- [ ] **Editor de Quotes/Presupuestos**: Interfaz estándar para crear proformas detalladas.
+- [ ] **Gestor Documental (File Manager)**: Visor de archivos reutilizable como componente UI (`<FileUploader context="medical_scan" />`).
+- [ ] **Dashboard Financiero**: Reportes, gráficos interactivos e indicadores contables básicos.
 
-## ⚙️ Integración
-- Depende de los datos operativos de **Core** (Work Orders y Repuestos).
-- Verifica límites de suscripción en **Auth-Tenant** (ej: Límite de almacenamiento).
+## ⚙️ Arquitectura de Integración (Event-Driven)
+- **Desacoplamiento Absoluto:** Todo documento operativo se maneja como `SubjectId` polimórfico. No hay hardcode de 'Mentees' o 'Alumnos'.
+- **Escucha Eventos:** Recibe mensajes del **Core** (ej: `BillableItemsGenerated`) para auto-generar presupuestos y enviarlos.
+- **Validación transversal:** Realiza llamadas (síncronas vía gRPC o asíncronas) a **Auth-Tenant** para verificar reglas de negocio ligadas a subscripciones (ej: Superó el límite de archivos en disco).

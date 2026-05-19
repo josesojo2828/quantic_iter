@@ -34,7 +34,7 @@
     "@nestjs/throttler": "^6.5.0",
     "@prisma/client": "^6.19.3",
     "@types/cookie-parser": "^1.4.10",
-    "@workshop/shared": "file:../../libs/shared",
+    "@mentor/shared": "file:../../libs/shared",
     "bcrypt": "^6.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",

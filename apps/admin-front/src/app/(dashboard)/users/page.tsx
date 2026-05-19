@@ -53,7 +53,7 @@ export default function UsersPage() {
         <div>
           <h1 className="text-4xl font-bold text-neutral tracking-tight mb-2">Directorio de Usuarios</h1>
           <p className="text-sm text-neutral/40 max-w-md">
-            Gestión global de identidades y roles a través de todo el ecosistema de talleres Quantic.
+            Gestión global de identidades y roles a través de todo el ecosistema de mentoríaes Quantic.
           </p>
         </div>
         
@@ -100,7 +100,7 @@ export default function UsersPage() {
             <thead>
               <tr className="bg-neutral-50/50">
                 <th className="px-8 py-5 text-[10px] font-black text-neutral/30 uppercase tracking-[0.2em]">Identidad</th>
-                <th className="px-8 py-5 text-[10px] font-black text-neutral/30 uppercase tracking-[0.2em]">Workshop / Tenant</th>
+                <th className="px-8 py-5 text-[10px] font-black text-neutral/30 uppercase tracking-[0.2em]">Mentor / Tenant</th>
                 <th className="px-8 py-5 text-[10px] font-black text-neutral/30 uppercase tracking-[0.2em]">Rol & Permisos</th>
                 <th className="px-8 py-5 text-[10px] font-black text-neutral/30 uppercase tracking-[0.2em]">Fecha Alta</th>
                 <th className="px-8 py-5 text-[10px] font-black text-neutral/30 uppercase tracking-[0.2em] text-right">Acciones</th>
@@ -167,9 +167,9 @@ export default function UsersPage() {
                     </td>
                     <td className="px-8 py-6">
                       <div className="flex items-center gap-2">
-                        <div className={`w-2 h-2 rounded-full ${user.role.slug === 'workshop_owner' ? 'bg-indigo-500' : 'bg-neutral-300'}`}></div>
+                        <div className={`w-2 h-2 rounded-full ${user.role.slug === 'mentor_owner' ? 'bg-indigo-500' : 'bg-neutral-300'}`}></div>
                         <span className={`px-2 py-0.5 rounded-lg text-[10px] font-bold uppercase tracking-tight ${
-                          user.role.slug === 'workshop_owner' 
+                          user.role.slug === 'mentor_owner' 
                             ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' 
                             : 'bg-neutral-100 text-neutral/60 border border-neutral-200'
                         }`}>

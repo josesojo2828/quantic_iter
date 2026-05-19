@@ -44,7 +44,7 @@ export function validateRegisterForm(data: {
   firstName: string;
   lastName: string;
   email: string;
-  workshopName: string;
+  mentorName: string;
   password: string;
   confirmPassword: string;
 }): ValidationResult {
@@ -66,10 +66,10 @@ export function validateRegisterForm(data: {
     validators.required(data.email, 'Correo electrónico') ?? validators.email(data.email);
   if (emailErr) errors.email = emailErr;
 
-  const workshopErr =
-    validators.required(data.workshopName, 'Nombre del taller') ??
-    validators.minLength(data.workshopName, 3, 'Nombre del taller');
-  if (workshopErr) errors.workshopName = workshopErr;
+  const mentorErr =
+    validators.required(data.mentorName, 'Nombre del mentoría') ??
+    validators.minLength(data.mentorName, 3, 'Nombre del mentoría');
+  if (mentorErr) errors.mentorName = mentorErr;
 
   const passwordErr =
     validators.required(data.password, 'Contraseña') ??

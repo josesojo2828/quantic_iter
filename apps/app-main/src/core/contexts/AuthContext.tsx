@@ -21,6 +21,7 @@ interface User {
   permissions: string[];
   modules: ModuleItem[];
   tenantId: string;
+  avatarUrl?: string;
 }
 
 interface AuthContextType {

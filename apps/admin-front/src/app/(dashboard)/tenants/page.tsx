@@ -56,7 +56,7 @@ export default function TenantsPage() {
       {/* Header Section */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-neutral tracking-tight">Talleres</h1>
+          <h1 className="text-2xl font-bold text-neutral tracking-tight">Academiaes</h1>
           <p className="text-sm text-neutral/50 mt-1">
             Gestión y monitoreo de instancias activas del ecosistema.
           </p>
@@ -68,7 +68,7 @@ export default function TenantsPage() {
           </button>
           <button className="flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-lg text-xs font-semibold hover:bg-primary/90 transition-colors shadow-sm">
             <Plus className="w-3.5 h-3.5" />
-            Nuevo Taller
+            Nuevo Academia
           </button>
         </div>
       </div>
@@ -135,7 +135,7 @@ export default function TenantsPage() {
                 </tr>
               ) : tenants.length === 0 ? (
                 <tr>
-                  <td colSpan={4} className="px-6 py-20 text-center text-sm text-neutral/30">No se encontraron talleres activos.</td>
+                  <td colSpan={4} className="px-6 py-20 text-center text-sm text-neutral/30">No se encontraron mentoríaes activos.</td>
                 </tr>
               ) : (
                 tenants.map((t) => (

@@ -26,7 +26,7 @@ export class PrismaTenantRepository implements ITenantRepository {
           userRoles: {
             where: {
               role: {
-                slug: 'workshop_owner',
+                slug: 'mentor_owner',
               },
             },
             take: 1,
@@ -116,7 +116,7 @@ export class PrismaTenantRepository implements ITenantRepository {
       createdAt: t.createdAt,
       active: (t as any).isActive,
       logo: t.logo ?? undefined,
-      owner: users.find(u => u.role.slug === 'workshop_owner'),
+      owner: users.find(u => u.role.slug === 'mentor_owner'),
       users,
       branches: t.branches,
       subscription: t.subscription
@@ -128,7 +128,7 @@ export class PrismaTenantRepository implements ITenantRepository {
       where: {
         tenantId,
         role: {
-          slug: 'workshop_owner',
+          slug: 'mentor_owner',
         },
       },
       include: {

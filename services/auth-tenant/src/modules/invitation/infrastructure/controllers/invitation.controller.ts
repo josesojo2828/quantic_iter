@@ -1,7 +1,7 @@
 import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
 import { InvitationService } from '../../application/invitation.service';
 import { JwtAuthGuard } from '../../../../common/auth/guards/jwt-auth.guard';
-import { CheckPermissions, PermissionAction, AuthUser } from '@workshop/shared';
+import { CheckPermissions, PermissionAction, AuthUser } from '@mentor/shared';
 
 @Controller('invitation')
 export class InvitationController {
@@ -9,7 +9,7 @@ export class InvitationController {
 
   @Post('send')
   @UseGuards(JwtAuthGuard)
-  @CheckPermissions(PermissionAction.STAFF_CREATE, PermissionAction.SAAS_ADMIN)
+  @CheckPermissions(PermissionAction.STAFF_CREATE)
   async sendInvitation(@Request() req: any, @Body() dto: { 
     email: string; 
     roleId: string; 
@@ -18,7 +18,7 @@ export class InvitationController {
   }) {
     const user = req.user as AuthUser;
     const tenantId = user.role === 'saas_admin' ? (dto.tenantId || user.tenantId) : user.tenantId;
-    const branchId = (user.role !== 'workshop_owner' && user.role !== 'saas_admin') 
+    const branchId = (user.role !== 'mentor_owner' && user.role !== 'saas_admin') 
       ? (user.branchId || undefined) 
       : dto.branchId;
 
@@ -43,7 +43,7 @@ export class InvitationController {
     
     // TODO: Add logic to link req.user.userId to invitation.tenantId/branchId
     return {
-      message: 'Te has unido al taller con éxito',
+      message: 'Te has unido al mentoría con éxito',
       invitation,
     };
   }

@@ -43,13 +43,13 @@ export const workersService = {
     email: string;
     firstName: string;
     lastName: string;
-    roleSlug: 'mechanic' | 'receptionist';
+    roleSlug: 'facilitator' | 'support';
     branchId?: string;
     password?: string;
   }): Promise<Worker> => {
     const payload = {
       ...data,
-      password: data.password || 'Workshop2026*',
+      password: data.password || 'Mentor2026*',
     };
     return apiClient.post<Worker>('/staff', payload);
   },

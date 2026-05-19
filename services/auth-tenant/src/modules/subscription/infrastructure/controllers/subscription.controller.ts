@@ -6,7 +6,7 @@ import {
   PermissionAction, 
   type AuthUser, 
   GetUser 
-} from '@workshop/shared';
+} from '@mentor/shared';
 
 class UpgradePlanDto {
   planSlug!: string;
@@ -18,19 +18,19 @@ export class SubscriptionController {
   constructor(private readonly subscriptionService: SubscriptionService) { }
 
   @Get('plans')
-  @CheckPermissions(PermissionAction.WORKSHOP_READ) // Using standard actions
+  @CheckPermissions(PermissionAction.MENTOR_READ) // Using standard actions
   async getPlans() {
     return this.subscriptionService.getPlans();
   }
 
   @Get('my')
-  @CheckPermissions(PermissionAction.WORKSHOP_READ)
+  @CheckPermissions(PermissionAction.MENTOR_READ)
   async getMySubscription(@GetUser() user: AuthUser) {
     return this.subscriptionService.getSubscriptionStatus(user.tenantId);
   }
 
   @Post('upgrade')
-  @CheckPermissions(PermissionAction.WORKSHOP_UPDATE)
+  @CheckPermissions(PermissionAction.MENTOR_UPDATE)
   async upgrade(@GetUser() user: AuthUser, @Body() dto: UpgradePlanDto) {
     return this.subscriptionService.subscribeToPlan(
       user.tenantId,

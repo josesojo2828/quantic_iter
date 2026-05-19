@@ -9,7 +9,7 @@ import {
   SUBSCRIPTION_LIMIT_KEY, 
   SubscriptionResource,
   AuthUser
-} from '@workshop/shared';
+} from '@mentor/shared';
 import { SubscriptionService } from '../../../modules/subscription/application/subscription.service';
 
 @Injectable()
@@ -33,7 +33,7 @@ export class SubscriptionLimitGuard implements CanActivate {
     const authUser = user as AuthUser;
 
     if (!authUser || !authUser.tenantId) {
-      throw new ForbiddenException('No se detectó un contexto de taller (TenantID)');
+      throw new ForbiddenException('No se detectó un contexto de mentoría (TenantID)');
     }
 
     // Bypass for Super Admin if needed, or enforce same limits
@@ -46,7 +46,7 @@ export class SubscriptionLimitGuard implements CanActivate {
       case SubscriptionResource.BRANCHES:
         await this.subscriptionService.checkBranchLimit(authUser.tenantId);
         break;
-      case SubscriptionResource.VEHICLES:
+      case SubscriptionResource.MENTEES:
         // await this.subscriptionService.checkVehicleLimit(authUser.tenantId);
         break;
       default:

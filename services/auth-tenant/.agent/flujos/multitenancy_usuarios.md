@@ -1,9 +1,9 @@
 # Multitenancy de Usuarios (Context Switching) 👥🌐🔄
 
-En el ecosistema **Quantic**, un usuario no está "atado" a un solo taller de por vida. Este flujo permite que una sola identidad digital (`User`) interactúe con múltiples organizaciones (`Tenants`) con diferentes privilegios.
+En el ecosistema **Quantic**, un usuario no está "atado" a un solo mentoría de por vida. Este flujo permite que una sola identidad digital (`User`) interactúe con múltiples organizaciones (`Tenants`) con diferentes privilegios.
 
 ## El Concepto de Contexto
-El **Contexto** es la combinación de `(Usuario, Taller, Rol)`. 
+El **Contexto** es la combinación de `(Usuario, Academia, Rol)`. 
 Un usuario puede tener N contextos activos en la base de datos, pero solo **UNO** activo en su sesión de navegación (JWT).
 
 ## Diagrama de Flujo: Login y Cambio de Contexto
@@ -17,7 +17,7 @@ graph TD
     E --> F[Backend emite JWT para ese contexto]
     
     F --> G[Navegación normal]
-    G --> H[Usuario elige 'Cambiar Taller']
+    G --> H[Usuario elige 'Cambiar Academia']
     H --> I[POST /auth/switch-tenant {tenantId}]
     I --> J{¿Tiene permiso en ese Tenant?}
     J -- Sí --> K[Emitir NUEVO JWT con otro Tenant context]
@@ -48,7 +48,7 @@ El token JWT debe contener siempre el `tenantId` y los `permissions` asociados a
   "sub": "user_id_123",
   "email": "juan@mail.com",
   "tenantId": "tenant_a_456",
-  "role": "mechanic",
+  "role": "facilitator",
   "permissions": ["service:read", "inventory:update"],
   "iat": 171378...",
   "exp": 171383..."
@@ -59,7 +59,7 @@ El token JWT debe contener siempre el `tenantId` y los `permissions` asociados a
 
 ### 1. Perfil y Contextos
 `GET /auth/me`
-Devuelve el usuario actual y un array de todos sus contextos (Talleres donde tiene rol).
+Devuelve el usuario actual y un array de todos sus contextos (Academiaes donde tiene rol).
 
 ### 2. Cambio de Contexto
 `POST /auth/switch-context`

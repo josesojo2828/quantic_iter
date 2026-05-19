@@ -25,4 +25,5 @@ export interface IBranchRepository {
   create(tenantId: string, data: CreateBranchDto): Promise<Branch>;
   update(id: string, tenantId: string, data: UpdateBranchDto): Promise<Branch>;
   softDelete(id: string, tenantId: string): Promise<void>;
+  countStaff(id: string, tenantId: string): Promise<number>;
 }

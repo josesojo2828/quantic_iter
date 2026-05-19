@@ -7,7 +7,7 @@ import {
   PermissionAction, 
   type AuthUser, 
   GetUser 
-} from '@workshop/shared';
+} from '@mentor/shared';
 
 @Controller('admin')
 @UseGuards(JwtAuthGuard)

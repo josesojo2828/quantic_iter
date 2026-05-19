@@ -19,11 +19,7 @@ import { AuthService } from '../../application/auth.service';
 import { AdminService } from '../../../admin/application/admin.service';
 import { SubscriptionService } from '../../../subscription/application/subscription.service';
 import { JwtAuthGuard } from '../../../../common/auth/guards/jwt-auth.guard';
-import { 
-  type AuthUser, 
-  GetUser,
-  Public 
-} from '@workshop/shared';
+import { type AuthUser, GetUser, Public } from '@mentor/shared';
 import { RegisterData } from '../../domain/auth.repository';
 
 class LoginDto {
@@ -39,6 +35,12 @@ export class AuthController {
   @Post('register')
   async register(@Body() dto: RegisterData) {
     return this.authService.register(dto);
+  }
+
+  @Public()
+  @Post('recover-password')
+  async recoverPassword(@Body() dto: { email: string }) {
+    return this.authService.recoverPassword(dto.email);
   }
 
   @Public()
@@ -66,7 +68,10 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async me(@Req() req: any) {
-    return this.authService.getProfileWithModules(req.user.userId, req.user.tenantId);
+    return this.authService.getProfileWithModules(
+      req.user.userId,
+      req.user.tenantId,
+    );
   }
 
   @UseGuards(JwtAuthGuard)
@@ -77,7 +82,10 @@ export class AuthController {
     @Req() req: any,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const result = await this.authService.switchContext(req.user.userId, body.tenantId);
+    const result = await this.authService.switchContext(
+      req.user.userId,
+      body.tenantId,
+    );
 
     // Refresh HttpOnly cookie with the new token (new context)
     response.cookie('access_token', result.access_token, {
@@ -126,9 +134,8 @@ export class AuthController {
   @Patch('profile')
   async updateProfile(
     @GetUser() user: AuthUser,
-    @Body() dto: { firstName?: string; lastName?: string; password?: string }
+    @Body() dto: { firstName?: string; lastName?: string; password?: string },
   ) {
     return this.authService.updateProfile(user.userId, dto);
   }
 }
-

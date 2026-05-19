@@ -48,8 +48,6 @@ export class StaffService {
     return this.AVATAR_POOL[randomIndex];
   }
 
-
-
   async findAll(tenantId: string, query: StaffQuery) {
     const { items, total } = await this.staffRepository.findAll(
       tenantId,
@@ -73,12 +71,12 @@ export class StaffService {
     // 1. Validate subscription and user limits
     await this.subscriptionService.checkUserLimit(tenantId);
 
-    const password = await bcrypt.hash(dto.password || 'workshop123', 10);
+    const password = await bcrypt.hash(dto.password || 'mentor123', 10);
     const newUser = await this.staffRepository.create({
       ...dto,
       tenantId,
       password,
-      roleSlug: dto.roleSlug || 'mechanic',
+      roleSlug: dto.roleSlug || 'facilitator',
       avatarUrl: this.getRandomAvatar(),
     });
 

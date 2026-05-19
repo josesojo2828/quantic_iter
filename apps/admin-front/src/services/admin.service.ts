@@ -128,4 +128,17 @@ export const adminService = {
     const response = await apiClient.get<any>(`/admin/tenants/${tenantId}/subscription-history`);
     return response.data;
   },
+
+  getAuditLogs: async (params: { tenantId?: string; userId?: string; module?: string; skip?: number; take?: number } = {}) => {
+    const query = new URLSearchParams();
+    if (params.tenantId) query.append('tenantId', params.tenantId);
+    if (params.userId) query.append('userId', params.userId);
+    if (params.module) query.append('module', params.module);
+    if (params.skip !== undefined) query.append('skip', params.skip.toString());
+    if (params.take !== undefined) query.append('take', params.take.toString());
+    
+    // We assume the API Gateway maps `/audit` to the audit service securely for admins
+    const response = await apiClient.get<any>(`/audit?${query.toString()}`);
+    return response.data;
+  },
 };

@@ -3,8 +3,8 @@ import { DiscoveryModule, Reflector } from '@nestjs/core';
 import { StaffController } from './infrastructure/controllers/staff.controller';
 import { StaffService } from './application/staff.service';
 import { PrismaStaffRepository } from './infrastructure/persistence/prisma-staff.repository';
-import { KafkaModule } from '@workshop/shared';
-import { PermissionsGuard } from '@workshop/shared/nestjs';
+import { KafkaModule } from '@mentor/shared';
+import { PermissionsGuard } from '@mentor/shared/nestjs';
 import { SubscriptionModule } from '../subscription/subscription.module';
 
 @Module({

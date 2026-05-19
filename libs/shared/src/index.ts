@@ -4,10 +4,10 @@ export * from './nestjs';
 
 export enum UserRole {
   SUPER_ADMIN = 'super_admin',
-  WORKSHOP_OWNER = 'workshop_owner',
-  MECHANIC = 'mechanic',
+  MENTOR_OWNER = 'mentor_owner',
+  FACILITATOR = 'facilitator',
   RECEPTIONIST = 'receptionist',
-  CLIENT = 'client',
+  MENTEE = 'mentee',
 }
 
 export * from './types/audit.types';
@@ -16,27 +16,27 @@ export * from './types/audit.types';
 // This serves as a reference and initial seeding logic
 export const RolePermissions: Record<string, string[]> = {
   [UserRole.SUPER_ADMIN]: ['*'],
-  [UserRole.WORKSHOP_OWNER]: [
-    'workshop.*',
+  [UserRole.MENTOR_OWNER]: [
+    'mentor.*',
     'inventory.*',
     'staff.*',
     'orders.*',
     'branches.*',
     'auth.*',
   ],
-  [UserRole.MECHANIC]: [
-    'workshop.read',
+  [UserRole.FACILITATOR]: [
+    'mentor.read',
     'inventory.*',
     'orders.update',
     'orders.read',
   ],
   [UserRole.RECEPTIONIST]: [
-    'workshop.read',
+    'mentor.read',
     'orders.*',
     'auth:login',
   ],
-  [UserRole.CLIENT]: [
-    'workshop.read',
+  [UserRole.MENTEE]: [
+    'mentor.read',
     'orders.read',
   ],
 };

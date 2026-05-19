@@ -1,28 +1,27 @@
 # Plan 05: Notifications Service
 
-Este microservicio es el encargado de la comunicación asíncrona hacia los usuarios (Talleres, Trabajadores y Clientes).
+Microservicio de infraestructura agnóstica responsable de unificar, renderizar y despachar TODAS las comunicaciones del SaaS hacia el exterior de forma asíncrona.
 
 ## 🎯 Objetivos
-- Automatizar el envío de alertas de avances en trabajos mecánicos.
-- Gestionar recordatorios de citas y turnos.
-- Alertar sobre niveles bajos de stock en el inventario.
-- Centralizar todos los canales de notificación (Email, SMS, Push, WhatsApp).
+- Desvincular al resto del entorno de la pesada de procesar envíos a APIs de terceros.
+- Centralizar un solo Motor de Plantillas que aplique el Branding/White-labeling del SaaS o Tenant.
+- Actuar como hub multicanal (Email, Push, SMS, Webhooks).
 
 ## 🛠️ Checklist de Implementación
 
 ### Backend (Notification Service)
-- [ ] **Event Broker**: Implementar la lógica para escuchar eventos de todos los microservicios (usando Kafka, RabbitMQ o Redis Pub/Sub).
-- [ ] **Plantillas**: Sistema de gestión de templates para correos y mensajes dinámicos.
-- [ ] **Canales**:
-    - [ ] Email (Nodemailer/SendGrid).
-    - [ ] WhatsApp API Integration.
-    - [ ] Notificaciones Push para la App Mobile.
-- [ ] **Preferencias**: Lógica para que cada usuario decida qué alertas recibir y por qué canal.
+- [ ] **Message Consumer**: Suscriptores activos al Event Bus/Broker que escuchen intenciones estándar (ej. `SendNotificationCommand`).
+- [ ] **Template Renderer**: Motor de renderizado (EJS u Handlebars) capaz de recibir payloads dinámicos y compilarlos con una Master Template.
+- [ ] **Gestor de Proveedores (Adapters Strategy)**:
+    - [ ] Módulo Email (Nodemailer, SendGrid, Amazon SES).
+    - [ ] Módulo Push (Firebase Cloud Messaging - FCM).
+    - [ ] Módulo Texting (Twilio, Gupshup, Vonage).
+- [ ] **Reliability / Log de Envíos**: Rastro en Base de Datos de envíos exitosos y fallidos, y sistema automático de reintentos (Dead Letter Queue routing).
 
 ### Frontend (Dashboard)
-- [ ] **Centro de Notificaciones**: Bandeja de entrada interna para alertas rápidas.
-- [ ] **Configuración de Alertas**: Panel de control para que el taller configure sus mensajes automáticos.
+- [ ] **Centro In-App (Bandeja)**: Feed interno de alertas (la clásica campanita) para avisos inmediatos en vivo al equipo utilizando WebSockets/Realtime Gateway.
+- [ ] **Notification Settings**: Control granular de switch de notificaciones por usuario final (Opt-In / Opt-Out de canales).
 
-## ⚙️ Integración
-- Es un microservicio totalmente reactivo; reacciona a eventos de **Core** (Trabajos), **CRM** (Citas) e **Inventario**.
-- Valida identidades consultando al microservicio **Auth-Tenant** si es necesario.
+## ⚙️ Arquitectura de Integración (Event-Driven)
+- Naturaleza: Es el **sumidero de eventos** definitivo. **Auth-Tenant** envía acá para avisos de bienvenida, **CRM** para turnos, **Finance** para facturar, **Core** para alertas operativas.
+- Simpleza en contratos: Solo espera en su payload cosas lógicas: `{ templateId, to, context: { name, extraData } }`. No sabe qué es un core ni para qué industria trabaja el SaaS.

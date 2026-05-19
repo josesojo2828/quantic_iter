@@ -30,7 +30,7 @@ export default function PlansPage() {
     config: {
       maxUsers: 5,
       maxBranches: 1,
-      maxVehicles: 100,
+      maxMentees: 100,
       features: [] as string[]
     }
   });
@@ -62,7 +62,7 @@ export default function PlansPage() {
         config: {
           maxUsers: plan.config?.maxUsers || 0,
           maxBranches: plan.config?.maxBranches || 0,
-          maxVehicles: plan.config?.maxVehicles || 0,
+          maxMentees: plan.config?.maxMentees || 0,
           features: plan.config?.features || []
         }
       });
@@ -76,7 +76,7 @@ export default function PlansPage() {
         config: { 
           maxUsers: 5, 
           maxBranches: 1, 
-          maxVehicles: 100, 
+          maxMentees: 100, 
           features: ['inventory'] 
         }
       });
@@ -117,7 +117,7 @@ export default function PlansPage() {
         <div>
           <h1 className="text-4xl font-black text-neutral tracking-tight mb-2 uppercase italic">Gestión de Oferta</h1>
           <p className="text-sm text-neutral/40 max-w-lg font-medium">
-            Define los planes de suscripción, límites de recursos y capacidades técnicas para los talleres Quantic.
+            Define los planes de suscripción, límites de recursos y capacidades técnicas para los mentoríaes Quantic.
           </p>
         </div>
         
@@ -276,13 +276,13 @@ export default function PlansPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <label className="text-[10px] font-black text-neutral/40 uppercase tracking-widest ml-4">Límite Vehículos</label>
+                  <label className="text-[10px] font-black text-neutral/40 uppercase tracking-widest ml-4">Límite Mentees</label>
                   <div className="relative">
                     <Package className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral/30" />
                     <input 
                       type="number" 
-                      value={formData.config.maxVehicles}
-                      onChange={(e) => setFormData({ ...formData, config: { ...formData.config, maxVehicles: parseInt(e.target.value) } })}
+                      value={formData.config.maxMentees}
+                      onChange={(e) => setFormData({ ...formData, config: { ...formData.config, maxMentees: parseInt(e.target.value) } })}
                       className="w-full px-12 py-4 bg-neutral-50 rounded-2xl border-none text-sm font-bold focus:ring-2 focus:ring-primary/20 transition-all"
                       required
                     />

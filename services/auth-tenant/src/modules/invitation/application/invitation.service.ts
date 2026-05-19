@@ -25,7 +25,7 @@ export class InvitationService {
     // 1. Check if there is already a pending invitation for this email in this tenant
     const existing = await this.invitationRepository.findByEmailAndTenant(dto.email, dto.tenantId);
     if (existing) {
-      throw new BadRequestException('Ya existe una invitación pendiente para este correo en este taller');
+      throw new BadRequestException('Ya existe una invitación pendiente para este correo en este mentoría');
     }
 
     // 2. Generate secure token

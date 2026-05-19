@@ -53,17 +53,20 @@ model Tenant {
   name          String
   slug          String        @unique
   isActive      Boolean       @default(true)
-  ownerId       String?       @db.ObjectId
-  owner         User?         @relation("TenantOwner", fields: [ownerId], references: [id])
+  mentor_ownerId       String?       @db.ObjectId
+  mentor_owner         User?         @relation("TenantOwner", fields: [mentor_ownerId], references: [id])
   
   // Metadata
   address       String?
   phone         String?
-  workshopEmail String?
+  contactEmail  String?
   website       String?
   logo          String?
   legalName     String?
   taxId         String?
+  bio           String?
+  specialty     String?
+  socialLinks   Json?
 
   userRoles     UserRole[]
   branches      Branch[]
@@ -99,7 +102,7 @@ model SubscriptionPlan {
   description   String?
   price         Float
   billingCycle  String         @default("MONTHLY") // MONTHLY, YEARLY
-  config        Json? // Used for limits: { maxUsers: 10, maxVehicles: 50, etc. }
+  config        Json? // Used for limits: { maxUsers: 10, maxMentees: 50, etc. }
   isActive      Boolean        @default(true)
   subscriptions Subscription[] @relation("CurrentPlan")
   nextSubscriptions Subscription[] @relation("NextPlan")
@@ -184,7 +187,7 @@ model Permission {
 model Role {
   id            String       @id @default(auto()) @map("_id") @db.ObjectId
   name          String
-  slug          String       @unique // e.g., 'admin', 'mechanic', 'owner'
+  slug          String       @unique // e.g., 'admin', 'facilitator', 'mentor_owner'
   description   String?
   tenantId      String?      @db.ObjectId // If null, it's a GLOBAL role (Level 0/1)
   userRoles     UserRole[]

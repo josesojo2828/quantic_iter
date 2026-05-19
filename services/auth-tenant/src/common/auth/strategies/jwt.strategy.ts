@@ -1,7 +1,7 @@
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
-import type { AuthUser } from '@workshop/shared';
+import type { AuthUser } from '@mentor/shared';
 
 interface JwtPayload {
   userId: string;

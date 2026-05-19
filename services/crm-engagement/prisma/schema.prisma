@@ -1,0 +1,94 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Contact {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId     String   @map("tenant_id")
+  globalUserId String?  @map("global_user_id")
+  name         String
+  email     String?
+  phone     String?
+  avatarUrl String?  @map("avatar_url")
+  tags      String[] @default([])
+  metadata  Json?
+  
+  interactions Interaction[]
+  events       AgendaEvent[]
+  reviews      Review[]
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  @@unique([tenantId, email])
+  @@unique([tenantId, phone])
+  @@unique([tenantId, globalUserId])
+  @@map("contacts")
+}
+
+model Interaction {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId  String   @map("tenant_id")
+  contactId String   @map("contact_id") @db.ObjectId
+  type      String   // CALL, EMAIL, NOTE, VISIT
+  content   String
+  
+  contact   Contact  @relation(fields: [contactId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now()) @map("created_at")
+  @@map("interactions")
+}
+
+model AgendaEvent {
+  id              String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId        String   @map("tenant_id")
+  type            String   @default("CUSTOMER") // CUSTOMER, INVENTORY, INTERNAL
+  title           String?
+  description     String?
+  
+  start           DateTime
+  end             DateTime
+  status          String   @default("CONFIRMED")
+  
+  contactId       String?  @map("contact_id") @db.ObjectId
+  resourceId      String   @default("default") @map("resource_id")
+  
+  guestIds        String[] @default([]) @map("guest_ids") @db.ObjectId
+  groupIds        String[] @default([]) @map("group_ids") @db.ObjectId
+
+  coreReferenceId String?  @map("core_reference_id")
+  metadata        Json?
+
+  contact         Contact? @relation(fields: [contactId], references: [id])
+  review          Review?
+  
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("agenda_events")
+}
+
+model Review {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId  String   @map("tenant_id")
+  contactId String   @map("contact_id") @db.ObjectId
+  eventId   String   @unique @map("event_id") @db.ObjectId
+  score     Int
+  comment   String?
+  
+  contact   Contact  @relation(fields: [contactId], references: [id])
+  event     AgendaEvent @relation(fields: [eventId], references: [id])
+
+  createdAt DateTime @default(now()) @map("created_at")
+  @@map("reviews")
+}

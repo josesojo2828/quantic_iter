@@ -1,242 +1,261 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { adminService } from '@/services/admin.service';
+import React, { useEffect, useState, useRef } from "react";
+import Link from "next/link";
 import { 
-  LayoutDashboard, 
   Building2, 
   Users, 
   CreditCard, 
   TrendingUp, 
-  ArrowUpRight, 
-  ArrowDownRight,
-  ShieldCheck
-} from 'lucide-react';
-import Link from 'next/link';
+  ShieldCheck,
+  ChevronRight,
+  Plus
+} from "lucide-react";
+import gsap from "gsap";
 
-function getAvatarUrl(url: string | null) {
-  if (!url) return null;
-  if (url.startsWith('http')) return url;
-  // If it already has the prefix from legacy data
-  if (url.startsWith('/avatars/')) return `/assets${url}`;
-  // Standard case: just filename
-  return `/assets/avatars/${url}`;
-}
-
-function UserAvatar({ user }: { user: any }) {
-  const [imageError, setImageError] = useState(false);
-  const resolvedUrl = getAvatarUrl(user.avatarUrl);
-  
-  return (
-    <div className="w-9 h-9 rounded-full border-2 border-white bg-neutral-100 flex items-center justify-center overflow-hidden">
-      {resolvedUrl && !imageError ? (
-        <img 
-          src={resolvedUrl} 
-          alt={user.firstName} 
-          className="w-full h-full object-cover" 
-          onError={() => setImageError(true)}
-        />
-      ) : (
-        <span className="text-[10px] font-bold text-neutral/40">{user.firstName?.charAt(0) || 'U'}</span>
-      )}
-    </div>
-  );
-}
+const UserAvatar = ({ user }: { user: any }) => (
+  <div className="w-9 h-9 rounded-full border-2 border-white/10 bg-white/5 flex items-center justify-center text-[10px] font-black text-white shadow-lg overflow-hidden group">
+    {user.avatarUrl ? (
+      <img src={user.avatarUrl} alt={user.firstName} className="w-full h-full object-cover transition-transform group-hover:scale-125" />
+    ) : (
+      <span>{user.firstName?.charAt(0)}{user.lastName?.charAt(0)}</span>
+    )}
+  </div>
+);
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const dashboardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    loadStats();
+    // Mock stats for demo
+    setStats({
+      tenants: { total: 124, growth: 12, newThisWeek: 8 },
+      users: { total: 1542, growth: 24, latest: [
+        { id: '1', firstName: 'Juan', lastName: 'Perez', avatarUrl: null },
+        { id: '2', firstName: 'Maria', lastName: 'Gomez', avatarUrl: null },
+        { id: '3', firstName: 'Alex', lastName: 'Rider', avatarUrl: null }
+      ]},
+      subscriptions: { 
+        activeCount: 89, 
+        totalMrr: 12400,
+        plans: [
+          { planName: 'Basic', total: 3200 },
+          { planName: 'Pro', total: 6800 },
+          { planName: 'Enterprise', total: 2400 }
+        ]
+      }
+    });
+
+    const ctx = gsap.context(() => {
+      gsap.from(".stat-card", {
+        opacity: 0,
+        y: 30,
+        stagger: 0.1,
+        duration: 0.8,
+        ease: "power3.out",
+        delay: 0.2
+      });
+      
+      gsap.from(".chart-bar", {
+        height: 0,
+        stagger: 0.1,
+        duration: 1.2,
+        ease: "elastic.out(1, 0.5)",
+        delay: 0.8
+      });
+    });
+    return () => ctx.revert();
   }, []);
 
-  const loadStats = async () => {
-    try {
-      const data = await adminService.getStats();
-      setStats(data);
-    } catch (error) {
-      console.error('Error loading stats:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="p-8 flex items-center justify-center min-h-[60vh]">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   return (
-    <div className="p-8 max-w-[1600px] mx-auto space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-1000">
-      {/* Hero Header */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
+    <div ref={dashboardRef} className="space-y-10">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 reveal-content opacity-100 translate-y-0">
         <div>
-          <div className="flex items-center gap-3 mb-4">
-            <div className="px-3 py-1 bg-neutral-900 text-white rounded-lg text-[10px] font-black uppercase tracking-widest">
-              Live Ecosystem Control
-            </div>
-            <div className="flex items-center gap-1.5 text-[10px] font-bold text-green-600 uppercase tracking-tight bg-green-50 px-2 py-1 rounded-lg">
-              <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
-              Sistema Operativo
-            </div>
-          </div>
-          <h1 className="text-5xl font-black text-neutral tracking-tighter leading-tight">
-            Consola Operativa <br /> <span className="text-neutral/20 italic">Administrativa</span>
-          </h1>
+          <h2 className="text-3xl font-black text-gradient uppercase tracking-tight">
+            Consola de Mando
+          </h2>
+          <p className="text-white/30 text-xs font-bold uppercase tracking-[0.2em] mt-1">
+            Resumen Operativo Aura Edition
+          </p>
         </div>
-        
-        <div className="flex items-center gap-4 bg-white/50 backdrop-blur-xl p-3 rounded-[24px] border border-neutral-100 shadow-2xl shadow-neutral-200/40">
-          <div className="p-4 bg-neutral-900 rounded-2xl text-white shadow-xl shadow-black/10">
-            <span className="block text-[9px] font-bold opacity-40 uppercase tracking-[0.2em] mb-1">MRR Acumulado</span>
-            <div className="flex items-baseline gap-2">
-              <span className="text-3xl font-black">${stats?.subscriptions?.totalMrr?.toFixed(2)}</span>
-              <span className="text-xs font-bold text-green-400 flex items-center">
-                <ArrowUpRight className="w-3 h-3" />
-                12%
-              </span>
-            </div>
-          </div>
+        <div className="flex items-center gap-4">
+          <button className="aura-glass-light px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white/70 hover:text-white transition-all border border-white/5 hover:border-white/20">
+            Exportar Datos
+          </button>
+          <button className="bg-gradient-to-r from-primary to-secondary px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest text-white shadow-[0_10px_20px_rgba(0,210,255,0.2)] hover:shadow-[0_15px_30px_rgba(0,210,255,0.4)] transition-all flex items-center gap-2">
+            <Plus className="w-4 h-4" /> Nueva Academia
+          </button>
         </div>
       </div>
 
-      {/* Quick Access Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Main Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+        
         {/* Tenants Card */}
-        <div className="group relative bg-white rounded-[32px] p-8 border border-neutral-100 shadow-xl shadow-neutral-200/20 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-1">
-          <div className="absolute top-8 right-8 w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:scale-110 group-hover:rotate-6 transition-all">
-            <Building2 className="w-6 h-6" />
+        <div className="stat-card group relative aura-glass p-8 aura-border-glow rounded-[32px] overflow-hidden transition-all duration-500 hover:-translate-y-2">
+          <div className="absolute top-8 right-8 w-14 h-14 aura-glass-light rounded-2xl flex items-center justify-center text-primary group-hover:scale-110 group-hover:rotate-6 transition-all border border-white/10 shadow-[0_0_20px_rgba(0,210,255,0.1)]">
+            <Building2 className="w-7 h-7" />
           </div>
-          <span className="text-[10px] font-black text-neutral/30 uppercase tracking-[0.2em]">Talleres en Ecosistema</span>
+          <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Academias Activas</span>
           <div className="mt-4 flex items-baseline gap-3">
-            <h3 className="text-5xl font-black text-neutral">{stats?.tenants?.total}</h3>
-            <div className="flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-lg">
+            <h3 className="text-6xl font-black text-white tracking-tighter text-glow-primary">{stats?.tenants?.total}</h3>
+            <div className="flex items-center gap-1 text-[10px] font-black text-primary bg-primary/10 px-3 py-1 rounded-full border border-primary/20">
               <TrendingUp className="w-3 h-3" />
-              {stats?.tenants?.growth}%
+              +{stats?.tenants?.growth}%
             </div>
           </div>
           
-          <div className="mt-8 space-y-4">
-            <div className="flex justify-between items-center text-[10px] font-bold uppercase tracking-tight">
-               <span className="text-neutral/40">Nuevos (7d)</span>
-               <span className="text-neutral">{stats?.tenants?.newThisWeek}</span>
+          <div className="mt-10 space-y-4">
+            <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-widest">
+               <span className="text-white/20">Nuevas (7d)</span>
+               <span className="text-white/60">{stats?.tenants?.newThisWeek}</span>
             </div>
-            <div className="w-full h-1.5 bg-neutral-50 rounded-full overflow-hidden">
-               <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${(stats?.tenants?.total / 100) * 100}%` }}></div>
+            <div className="w-full h-2 bg-white/5 rounded-full overflow-hidden border border-white/5 p-[1px]">
+               <div className="h-full bg-gradient-to-r from-primary to-cyan-400 rounded-full shadow-[0_0_10px_var(--primary)]" style={{ width: '65%' }}></div>
             </div>
           </div>
           <Link href="/tenants" className="absolute inset-0 z-0"></Link>
         </div>
 
         {/* Users Card */}
-        <div className="group relative bg-white rounded-[32px] p-8 border border-neutral-100 shadow-xl shadow-neutral-200/20 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-1">
-          <div className="absolute top-8 right-8 w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600 group-hover:scale-110 group-hover:-rotate-6 transition-all">
-            <Users className="w-6 h-6" />
+        <div className="stat-card group relative aura-glass p-8 aura-border-glow rounded-[32px] overflow-hidden transition-all duration-500 hover:-translate-y-2">
+          <div className="absolute top-8 right-8 w-14 h-14 aura-glass-light rounded-2xl flex items-center justify-center text-secondary group-hover:scale-110 group-hover:-rotate-6 transition-all border border-white/10 shadow-[0_0_20px_rgba(157,80,187,0.1)]">
+            <Users className="w-7 h-7" />
           </div>
-          <span className="text-[10px] font-black text-neutral/30 uppercase tracking-[0.2em]">Cuentas de Usuarios</span>
+          <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Comunidad Mentee</span>
           <div className="mt-4 flex items-baseline gap-3">
-            <h3 className="text-5xl font-black text-neutral">{stats?.users?.total}</h3>
-            <div className="flex items-center gap-1 text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">
+            <h3 className="text-6xl font-black text-white tracking-tighter" style={{ textShadow: "0 0 15px rgba(157, 80, 187, 0.3)" }}>{stats?.users?.total}</h3>
+            <div className="flex items-center gap-1 text-[10px] font-black text-secondary bg-secondary/10 px-3 py-1 rounded-full border border-secondary/20">
                <TrendingUp className="w-3 h-3" />
-               {stats?.users?.growth || 0}%
+               +{stats?.users?.growth}%
             </div>
           </div>
-          <div className="mt-8 flex items-center justify-between">
+          <div className="mt-10 flex items-center justify-between">
             <div className="flex -space-x-3">
                {stats?.users?.latest?.map((user: any) => (
                  <UserAvatar key={user.id} user={user} />
                ))}
-               {(stats?.users?.total || 0) > (stats?.users?.latest?.length || 0) && (
-                 <div className="w-9 h-9 rounded-full border-2 border-white bg-neutral-900 flex items-center justify-center text-[10px] font-black text-white">
-                   +{Math.max(0, (stats?.users?.total || 0) - (stats?.users?.latest?.length || 0))}
-                 </div>
-               )}
+               <div className="w-9 h-9 rounded-full border-2 border-white/10 bg-black flex items-center justify-center text-[10px] font-black text-white/50 backdrop-blur-xl">
+                 +1.5k
+               </div>
             </div>
-            <span className="text-[10px] font-black text-green-500 uppercase tracking-widest animate-pulse">Online</span>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse shadow-[0_0_10px_#22c55e]" />
+              <span className="text-[10px] font-black text-green-500 uppercase tracking-widest">Online</span>
+            </div>
           </div>
           <Link href="/users" className="absolute inset-0 z-0"></Link>
         </div>
 
-        {/* Subscriptions Status */}
-        <div className="group relative bg-white rounded-[32px] p-8 border border-neutral-100 shadow-xl shadow-neutral-200/20 hover:shadow-2xl hover:shadow-primary/5 transition-all duration-500 hover:-translate-y-1">
-          <div className="absolute top-8 right-8 w-12 h-12 bg-neutral-900 rounded-2xl flex items-center justify-center text-white group-hover:scale-110 transition-all shadow-xl shadow-black/10">
-            <CreditCard className="w-6 h-6" />
+        {/* Business Efficiency Card */}
+        <div className="stat-card group relative aura-glass p-8 aura-border-glow rounded-[32px] overflow-hidden transition-all duration-500 hover:-translate-y-2">
+          <div className="absolute top-8 right-8 w-14 h-14 bg-white/10 rounded-2xl flex items-center justify-center text-white group-hover:scale-110 transition-all border border-white/10 shadow-2xl">
+            <CreditCard className="w-7 h-7" />
           </div>
-          <span className="text-[10px] font-black text-neutral/30 uppercase tracking-[0.2em]">Eficiencia Comercial</span>
+          <span className="text-[10px] font-black text-white/30 uppercase tracking-[0.3em]">Eficiencia Comercial</span>
           <div className="mt-4 flex items-baseline gap-3">
-            <h3 className="text-5xl font-black text-neutral">{stats?.subscriptions?.activeCount}</h3>
-            <span className="text-[10px] font-bold text-neutral/40 uppercase">Activas</span>
+            <h3 className="text-6xl font-black text-white tracking-tighter">${(stats?.subscriptions?.totalMrr / 1000).toFixed(1)}k</h3>
+            <span className="text-[10px] font-bold text-white/40 uppercase tracking-widest">MRR</span>
           </div>
-          <div className="mt-8 grid grid-cols-2 gap-4">
-             <div className="p-3 bg-neutral-50 rounded-2xl">
-               <span className="block text-[8px] font-black text-neutral/30 uppercase mb-1">Mora</span>
-               <span className="text-sm font-black text-red-500">0%</span>
+          <div className="mt-10 grid grid-cols-2 gap-4">
+             <div className="p-4 aura-glass-light rounded-2xl border border-white/5">
+               <span className="block text-[8px] font-black text-white/20 uppercase mb-1 tracking-widest">Retención</span>
+               <span className="text-lg font-black text-primary text-glow-primary">98.2%</span>
              </div>
-             <div className="p-3 bg-neutral-50 rounded-2xl">
-               <span className="block text-[8px] font-black text-neutral/30 uppercase mb-1">Avg Ticket</span>
-               <span className="text-sm font-black text-neutral">${stats?.subscriptions?.activeCount > 0 ? (stats?.subscriptions?.totalMrr / stats?.subscriptions?.activeCount).toFixed(0) : '0'}</span>
+             <div className="p-4 aura-glass-light rounded-2xl border border-white/5">
+               <span className="block text-[8px] font-black text-white/20 uppercase mb-1 tracking-widest">LTV Promedio</span>
+               <span className="text-lg font-black text-white">$2.4k</span>
              </div>
           </div>
           <Link href="/subscriptions" className="absolute inset-0 z-0"></Link>
         </div>
       </div>
 
-
       {/* Grid for more detail */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pb-12">
-        <div className="bg-white rounded-[32px] border border-neutral-100 shadow-lg p-8">
-           <div className="flex items-center justify-between mb-8">
-             <h3 className="text-xs font-black text-neutral/30 uppercase tracking-widest flex items-center gap-2">
-               <TrendingUp className="w-4 h-4" /> Distribución de Ingresos
-             </h3>
-             <Link href="/subscriptions" className="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-lg">Detalles</Link>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 pb-12">
+        
+        {/* Revenue Distribution Chart */}
+        <div className="stat-card aura-glass rounded-[32px] border border-white/5 p-10 relative overflow-hidden group">
+           <div className="flex items-center justify-between mb-12">
+             <div>
+               <h3 className="text-xs font-black text-white/50 uppercase tracking-[0.3em] flex items-center gap-2">
+                 <TrendingUp className="w-4 h-4 text-primary" /> Ingresos por Plan
+               </h3>
+               <p className="text-[10px] text-white/20 font-bold uppercase mt-1">Distribución mensual de suscripciones</p>
+             </div>
+             <Link href="/subscriptions" className="text-[10px] font-black text-primary bg-primary/10 hover:bg-primary/20 px-4 py-2 rounded-xl border border-primary/20 transition-all uppercase tracking-widest">Detalles</Link>
            </div>
-           <div className="h-48 flex items-end justify-between gap-4">
+           
+           <div className="h-64 flex items-end justify-between gap-6 px-4">
               {stats?.subscriptions?.plans.map((p: any, i: number) => {
                 const max = Math.max(...stats.subscriptions.plans.map((pl: any) => pl.total), 1);
                 const height = (p.total / max) * 100;
                 return (
-                  <div key={i} className="flex-1 flex flex-col items-center gap-3">
-                    <div className="w-full bg-neutral-50 rounded-t-xl relative group h-full">
+                  <div key={i} className="flex-1 flex flex-col items-center gap-4 group/bar">
+                    <div className="w-full bg-white/5 rounded-2xl relative h-full border border-white/5 overflow-hidden p-[2px]">
                        <div 
-                          className="absolute bottom-0 w-full bg-indigo-500 rounded-t-xl transition-all duration-500 group-hover:bg-indigo-600" 
+                          className="chart-bar absolute bottom-0 left-0 right-0 bg-gradient-to-t from-primary/80 to-primary rounded-xl transition-all duration-500 shadow-[0_0_20px_var(--primary-glow)]" 
                           style={{ height: `${height}%` }}
-                       ></div>
-                       <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black text-white text-[9px] px-2 py-1 rounded">
-                         ${p.total}
+                       >
+                         <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.2)_50%,transparent_100%)] animate-[shimmer_2s_infinite]" />
                        </div>
                     </div>
-                    <span className="text-[8px] font-black text-neutral/30 uppercase truncate w-full text-center">{p.planName}</span>
+                    <div className="text-center">
+                      <span className="block text-[10px] font-black text-white uppercase tracking-tighter">{p.planName}</span>
+                      <span className="block text-[8px] font-bold text-white/20 uppercase tracking-widest mt-1">${p.total}</span>
+                    </div>
                   </div>
                 );
               })}
            </div>
         </div>
         
-        <div className="bg-white rounded-[32px] border border-neutral-100 shadow-lg p-8">
-           <div className="flex items-center justify-between mb-8">
-             <h3 className="text-xs font-black text-neutral/30 uppercase tracking-widest flex items-center gap-2">
-               <ShieldCheck className="w-4 h-4" /> Actividad del Sistema
-             </h3>
-             <span className="text-[10px] font-bold text-neutral/40 italic tracking-tighter">Eventos Activos</span>
+        {/* System Activity Feed */}
+        <div className="stat-card aura-glass rounded-[32px] border border-white/5 p-10 relative group">
+           <div className="flex items-center justify-between mb-10">
+             <div>
+               <h3 className="text-xs font-black text-white/50 uppercase tracking-[0.3em] flex items-center gap-2">
+                 <ShieldCheck className="w-4 h-4 text-secondary" /> Actividad del Sistema
+               </h3>
+               <p className="text-[10px] text-white/20 font-bold uppercase mt-1">Monitoreo de eventos en tiempo real</p>
+             </div>
+             <button className="aura-glass-light p-2 rounded-xl text-white/30 hover:text-white transition-all">
+                <Settings className="w-4 h-4" />
+             </button>
            </div>
+           
            <div className="space-y-4">
               {[
-                { label: 'Talleres en Red', val: stats?.tenants?.total, status: 'Active' },
-                { label: 'Suscripciones', val: stats?.subscriptions?.activeCount, status: 'Billed' },
-                { label: 'Usuarios Totales', val: stats?.users?.total, status: 'Sync' }
+                { label: 'Sincronización de Academias', val: stats?.tenants?.total, status: 'Active', color: 'text-primary' },
+                { label: 'Procesamiento de Facturas', val: stats?.subscriptions?.activeCount, status: 'Billed', color: 'text-secondary' },
+                { label: 'Sesiones de Usuario Activas', val: stats?.users?.total, status: 'Secure', color: 'text-green-500' }
               ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-4 bg-neutral-50 rounded-2xl group hover:bg-neutral-100 transition-colors">
-                   <span className="text-xs font-bold text-neutral/60">{item.label}</span>
+                <div key={i} className="flex items-center justify-between p-5 aura-glass-light rounded-2xl border border-white/5 group/item hover:border-white/10 transition-all">
                    <div className="flex items-center gap-4">
-                     <span className="text-sm font-black text-neutral">{item.val}</span>
-                     <span className="text-[9px] font-black uppercase bg-white px-2 py-0.5 rounded border border-neutral-200 text-green-500">{item.status}</span>
+                     <div className={`w-2 h-2 rounded-full ${item.color} shadow-[0_0_10px_currentColor]`} />
+                     <span className="text-xs font-bold text-white/60 tracking-tight">{item.label}</span>
+                   </div>
+                   <div className="flex items-center gap-6">
+                     <span className="text-sm font-black text-white">{item.val}</span>
+                     <div className="flex items-center gap-1 bg-black/40 px-3 py-1 rounded-lg border border-white/5">
+                        <span className={`text-[8px] font-black uppercase tracking-widest ${item.color}`}>{item.status}</span>
+                        <ChevronRight className="w-3 h-3 text-white/20" />
+                     </div>
                    </div>
                 </div>
               ))}
+           </div>
+
+           <div className="mt-10 p-4 rounded-2xl bg-primary/5 border border-primary/10 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-primary/20 flex items-center justify-center text-primary">
+                  <ShieldCheck className="w-4 h-4" />
+                </div>
+                <p className="text-[10px] font-black text-white/60 uppercase tracking-widest">Todo el sistema operando correctamente</p>
+              </div>
+              <span className="text-[8px] font-black text-primary uppercase underline cursor-pointer">Ver Logs</span>
            </div>
         </div>
       </div>

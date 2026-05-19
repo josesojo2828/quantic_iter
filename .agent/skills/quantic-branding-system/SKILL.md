@@ -3,7 +3,7 @@
 This skill defines the visual identity and aesthetic guidelines for the Quantic Ecosystem.
 
 ## 1. Visual Philosophy: "Antigravity & Racing"
-The system aims for a high-performance, weightless, and premium look. It combines the intensity of professional mechanical workshops with the futuristic feel of spatial glassmorphism.
+The system aims for a high-performance, weightless, and premium look. It combines the intensity of professional facilitatoral mentors with the futuristic feel of spatial glassmorphism.
 
 ## 2. Color Palette (Racing Team)
 - **Primary**: `#608A25` (Racing Green). High-action items, primary branding.
@@ -28,7 +28,7 @@ The system aims for a high-performance, weightless, and premium look. It combine
 - **Body**: Regular, usage of `opacity` rather than lighter colors to maintain the "glassy" look.
 
 ## 5. UI Elements Code Snippets
-- **Gradient Text**: 
+- **Gradient Text**:
   ```css
   .text-gradient {
     background: linear-gradient(135deg, #608a25 0%, #c3cea2 100%);

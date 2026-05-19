@@ -16,7 +16,7 @@ export class TenantController {
   @Put('me')
   async updateTenant(@Req() req: any, @Body() dto: any) {
     const tenantId = req.user.tenantId;
-    // Basic verification: Only workshop_owner should update tenant info
+    // Basic verification: Only mentor_owner should update tenant info
     // For now, we trust the tenantId in the token
     return this.authService.updateTenant(tenantId, dto);
   }

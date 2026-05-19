@@ -5,10 +5,12 @@ export class RegisterData {
   password!: string;
   firstName!: string;
   lastName!: string;
-  workshopName!: string;
+  mentorName!: string;
   planId?: string;
   roleId?: string;
   avatarUrl?: string;
+  tenantId?: string; // Optional: if provided, adds user to existing tenant
+  role?: string;     // Optional: role slug to assign
 }
 
 export class CreateUserData {

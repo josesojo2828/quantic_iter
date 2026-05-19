@@ -1,0 +1,59 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum DocumentType {
+  QUOTE
+  INVOICE
+  RECEIPT
+}
+
+enum DocumentStatus {
+  DRAFT
+  ISSUED
+  PAID
+  CANCELLED
+}
+
+model Document {
+  id          String         @id @default(auto()) @map("_id") @db.ObjectId
+  type        DocumentType
+  number      String
+  tenantId    String
+  customerId  String
+  subtotal    Float
+  taxTotal    Float
+  total       Float
+  currency    String         @default("USD")
+  status      DocumentStatus @default(DRAFT)
+  storagePath String?
+  metadata    Json?
+  issuedAt    DateTime?
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+
+  @@unique([tenantId, number])
+  @@map("documents")
+}
+
+model FinancialBalance {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId       String   @unique
+  totalInvoiced  Float    @default(0)
+  totalPaid      Float    @default(0)
+  currency       String   @default("USD")
+  lastUpdate     DateTime @updatedAt
+
+  @@map("financial_balances")
+}

@@ -1,15 +1,15 @@
 # Flujo de Invitación de Equipo 👥✉️
 
-Este documento describe el proceso técnico y de negocio para invitar a nuevos miembros (Mecánicos, Recepcionistas, etc.) a un taller (Tenant) dentro del ecosistema **Quantic**.
+Este documento describe el proceso técnico y de negocio para invitar a nuevos miembros (Mecánicos, Recepcionistas, etc.) a un mentoría (Tenant) dentro del ecosistema **Quantic**.
 
 ## Overview
-El objetivo es permitir que un `WORKSHOP_OWNER` o `SUPER_ADMIN` invite a una persona a su organización de forma segura, garantizando que el nuevo usuario nazca con el rol, taller y sucursal correctos.
+El objetivo es permitir que un `MENTOR_OWNER` o `SUPER_ADMIN` invite a una persona a su organización de forma segura, garantizando que el nuevo usuario nazca con el rol, mentoría y sucursal correctos.
 
 ## Diagrama de Secuencia
 
 ```mermaid
 sequenceDiagram
-    participant Owner as Workshop Owner
+    participant Owner as Mentor Owner
     participant API as Auth-Tenant Microservice
     participant DB as MongoDB (Prisma)
     participant Notification as Notification Service (#5)
@@ -56,10 +56,10 @@ sequenceDiagram
 ### 3. Aceptar Invitación
 `POST /invitation/accept/:token`
 - **Seguridad**: Requiere `JwtAuth` (Usuario logueado).
-- **Uso**: Para usuarios que YA tienen cuenta en Quantic y quieren unirse a otro taller.
+- **Uso**: Para usuarios que YA tienen cuenta en Quantic y quieren unirse a otro mentoría.
 
 ## Reglas de Negocio & Seguridad
-1. **Un Solo Pase**: No se pueden enviar múltiples invitaciones pendientes al mismo email para el mismo taller.
+1. **Un Solo Pase**: No se pueden enviar múltiples invitaciones pendientes al mismo email para el mismo mentoría.
 2. **Expiración**: El token queda inválido automáticamente después de 7 días.
 3. **Uso Único**: Una vez aceptada (`acceptedAt != null`), el token ya no puede ser validado.
 4. **RBAC Atómico**: La invitación determina el Rol final del usuario, impidiendo escalación de privilegios no autorizada.

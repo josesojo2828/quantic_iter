@@ -31,7 +31,10 @@ export const apiClient = {
     }
 
     if (response.status === 401) {
-      if (typeof window !== 'undefined' && !window.location.pathname.includes('/login') && !path.includes('/login')) {
+      if (typeof window !== 'undefined' && 
+          !window.location.pathname.includes('/login') && 
+          !window.location.pathname.includes('/register') && 
+          !path.includes('/login')) {
         window.location.href = '/login?expired=true';
       }
       // If it's a login attempt, we don't redirect, just let the error bubble up

@@ -51,5 +51,5 @@ This skill defines the rigorous quality and architectural standards for the Quan
 - **DTOs for All Bodies**: Use class-based DTOs for all `@Body()` parameters, even for partial or dynamic updates (e.g., `UpdateFieldDto` instead of an inline type).
 
 ## 7. Audit & Logging
-- Every CRUD operation MUST trigger an audit log via `@workshop/shared` Kafka client.
+- Every CRUD operation MUST trigger an audit log via `@mentor/shared` Kafka client.
 - Always include `previousState` in `UPDATE` and `DELETE` actions for traceability.

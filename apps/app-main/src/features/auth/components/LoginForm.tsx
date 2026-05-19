@@ -1,14 +1,16 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 import { useRouter } from 'next/navigation';
-import { Mail, Lock, Eye, EyeOff, Loader2 } from 'lucide-react';
+import { Mail, Lock, Eye, EyeOff, Loader2, ArrowRight } from 'lucide-react';
 import { authService } from '../services/auth.service';
 import { useAuth } from '@/core/contexts/AuthContext';
-
+import gsap from 'gsap';
+import Link from 'next/link';
+import { useMagnetic } from '@/shared/hooks/useMagnetic';
 
 const loginSchema = z.object({
   email: z.string().email('Email inválido'),
@@ -19,6 +21,9 @@ type LoginFormValues = z.infer<typeof loginSchema>;
 
 export const LoginForm = () => {
   const router = useRouter();
+  const formRef = useRef<HTMLFormElement>(null);
+  const errorRef = useRef<HTMLDivElement>(null);
+  const magneticButtonRef = useMagnetic(0.2);
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,6 +38,28 @@ export const LoginForm = () => {
 
   const { refreshProfile } = useAuth();
 
+  useEffect(() => {
+    if (formRef.current) {
+      gsap.from(formRef.current.querySelectorAll('.form-field'), {
+        y: 20,
+        autoAlpha: 0,
+        duration: 0.8,
+        stagger: 0.1,
+        ease: 'power3.out',
+        delay: 0.4
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (error && errorRef.current) {
+      gsap.fromTo(errorRef.current,
+        { x: -10 },
+        { x: 10, duration: 0.1, repeat: 5, yoyo: true, ease: "none" }
+      );
+    }
+  }, [error]);
+
   const onSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     setError(null);
@@ -41,7 +68,6 @@ export const LoginForm = () => {
       await refreshProfile();
       router.push('/dashboard');
     } catch (err: any) {
-
       setError(err.message || 'Credenciales inválidas');
     } finally {
       setIsLoading(false);
@@ -49,96 +75,112 @@ export const LoginForm = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form
+      ref={formRef}
+      onSubmit={(e) => {
+        e.preventDefault();
+        handleSubmit(onSubmit)(e);
+      }}
+      method="POST"
+      noValidate
+      className="space-y-6"
+    >
       {error && (
-        <div className="p-3 bg-red-50 border border-red-100 text-red-600 text-sm rounded-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-1">
-          <div className="w-1 h-4 bg-red-500 rounded-full" />
+        <div ref={errorRef} className="p-4 bg-red-50/50 border border-red-100 text-red-600 text-xs font-semibold rounded-2xl flex items-center gap-3">
+          <div className="w-1.5 h-6 bg-red-500 rounded-full" />
           {error}
         </div>
       )}
 
+      {/* ... fields ... */}
       <div className="space-y-4">
-        <div>
-          <label className="block text-xs font-bold text-gray-500 uppercase tracking-tighter mb-2 ml-1">
-            Correo Electrónico
+        <div className="form-field">
+          <label className="block text-[10px] font-black text-[#6C757D] uppercase tracking-[0.15em] mb-2 ml-1">
+            Identidad Digital
           </label>
           <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Mail className="h-4 w-4 text-gray-400 group-focus-within:text-blue-600 transition-colors" />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Mail className="h-4 w-4 text-[#6C757D] group-focus-within:text-[#8A94F4] transition-colors" />
             </div>
             <input
               {...register('email')}
               type="email"
-              className="block w-full pl-10 pr-3 py-3 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-600/10 focus:border-blue-600 sm:text-sm transition-all"
-              placeholder="ejemplo@quantic.com"
+              className="block w-full pl-12 pr-4 py-3.5 border border-[#CBD5E1] rounded-2xl bg-[#F1F5F9] shadow-[inner_0_2px_4px_rgba(0,0,0,0.05)] placeholder-[#6C757D]/60 focus:outline-none focus:ring-4 focus:ring-[#8A94F4]/20 focus:border-[#8A94F4] focus:bg-white text-sm transition-all hover:border-[#94A3B8]"
+              placeholder="correo@ejemplo.com"
             />
           </div>
           {errors.email && (
-            <p className="mt-1 text-[10px] text-red-500 font-bold uppercase ml-1">{errors.email.message}</p>
+            <p className="mt-1.5 text-[10px] text-red-500 font-bold uppercase ml-2 tracking-wider">{errors.email.message}</p>
           )}
         </div>
 
-        <div>
+        <div className="form-field">
           <div className="flex items-center justify-between mb-2 ml-1">
-            <label className="block text-xs font-bold text-gray-500 uppercase tracking-tighter">
-              Contraseña
+            <label className="block text-[10px] font-black text-[#6C757D] uppercase tracking-[0.15em]">
+              Acceso Seguro
             </label>
-            <button type="button" className="text-[10px] font-bold text-emerald-600 hover:text-emerald-700 uppercase tracking-tighter">
-              ¿Olvidaste tu contraseña?
-            </button>
+            <Link href="/recover-password" virtual-link="true" className="text-[10px] font-bold text-[#8A94F4] hover:text-[#7A84E4] uppercase tracking-wider transition-colors">
+              ¿Olvidaste la clave?
+            </Link>
           </div>
           <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Lock className="h-4 w-4 text-gray-400 group-focus-within:text-emerald-600 transition-colors" />
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+              <Lock className="h-4 w-4 text-[#6C757D] group-focus-within:text-[#8A94F4] transition-colors" />
             </div>
             <input
               {...register('password')}
               type={showPassword ? 'text' : 'password'}
-              className="block w-full pl-10 pr-10 py-3 border border-gray-200 rounded-xl leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-600/10 focus:border-emerald-600 sm:text-sm transition-all"
+              className="block w-full pl-12 pr-12 py-3.5 border border-[#CBD5E1] rounded-2xl bg-[#F1F5F9] shadow-[inner_0_2px_4px_rgba(0,0,0,0.05)] placeholder-[#6C757D]/60 focus:outline-none focus:ring-4 focus:ring-[#8A94F4]/20 focus:border-[#8A94F4] focus:bg-white text-sm transition-all hover:border-[#94A3B8]"
               placeholder="••••••••"
             />
             <button
               type="button"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+              className="absolute inset-y-0 right-0 pr-4 flex items-center"
             >
               {showPassword ? (
-                <EyeOff className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                <EyeOff className="h-4 w-4 text-[#6C757D] hover:text-[#1A1C1E] transition-colors" />
               ) : (
-                <Eye className="h-4 w-4 text-gray-400 hover:text-gray-600" />
+                <Eye className="h-4 w-4 text-[#6C757D] hover:text-[#1A1C1E] transition-colors" />
               )}
             </button>
           </div>
           {errors.password && (
-            <p className="mt-1 text-[10px] text-red-500 font-bold uppercase ml-1">{errors.password.message}</p>
+            <p className="mt-1.5 text-[10px] text-red-500 font-bold uppercase ml-2 tracking-wider">{errors.password.message}</p>
           )}
         </div>
       </div>
 
-      <button
-        type="submit"
-        disabled={isLoading}
-        className="w-full flex justify-center py-3.5 px-4 border border-transparent rounded-xl shadow-sm text-sm font-bold text-white bg-emerald-600 hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-emerald-500 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed group"
-      >
-        {isLoading ? (
-          <Loader2 className="w-5 h-5 animate-spin" />
-        ) : (
-          <span className="flex items-center gap-2 font-black uppercase tracking-widest text-[10px]">
-            Entrar al Centro de Control
-          </span>
-        )}
-      </button>
+      <div className="form-field pt-2">
+        <div ref={magneticButtonRef as any}>
+          <button
+            type="submit"
+            disabled={isLoading}
+            className="mq-button-primary w-full flex items-center justify-center disabled:opacity-50 disabled:cursor-not-allowed group active:scale-[0.98]"
+          >
+            {isLoading ? (
+              <Loader2 className="w-5 h-5 animate-spin" />
+            ) : (
+              <span className="flex items-center gap-3 font-black uppercase tracking-[0.15em] text-[11px]">
+                Sincronizar Acceso
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
+              </span>
+            )}
+          </button>
+        </div>
+      </div>
 
-      <p className="text-center text-xs text-gray-500 font-medium">
-         ¿No tienes una cuenta?{' '}
-         <button 
-           type="button"
-           onClick={() => router.push('/register')}
-           className="font-bold text-blue-600 hover:text-blue-700 transition-colors"
-         >
-           Empieza ahora
-         </button>
-      </p>
+      <div className="form-field pt-4">
+        <p className="text-center text-xs text-[#6C757D] font-medium">
+          ¿Sin credenciales activas?{' '}
+          <Link
+            href="/register"
+            className="font-bold text-[#8A94F4] hover:text-[#7A84E4] transition-colors"
+          >
+            Crear cuenta
+          </Link>
+        </p>
+      </div>
     </form>
   );
 };
