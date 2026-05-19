@@ -19,6 +19,7 @@ import { apiClient } from '@/core/api/api.client';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { ObjectiveFormModal } from './components/ObjectiveFormModal';
 
 interface Objective {
   id: string;
@@ -38,6 +39,7 @@ export default function TasksPage() {
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const fetchObjectives = async () => {
     try {
@@ -97,7 +99,10 @@ export default function TasksPage() {
           </p>
         </div>
 
-        <button className="flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-[18px] text-[8px] font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-indigo-100 hover:bg-indigo-600 active:scale-95 group italic border border-white/10">
+        <button 
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center justify-center gap-2 bg-slate-900 text-white px-6 py-3 rounded-[18px] text-[8px] font-black uppercase tracking-[0.3em] transition-all shadow-2xl shadow-indigo-100 hover:bg-indigo-600 active:scale-95 group italic border border-white/10"
+        >
           <Plus className="w-4 h-4 transition-transform group-hover:rotate-90 duration-500" /> 
           Nuevo Objetivo
         </button>
@@ -256,6 +261,12 @@ export default function TasksPage() {
           ))
         )}
       </div>
+
+      <ObjectiveFormModal 
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSuccess={fetchObjectives}
+      />
     </div>
   );
 }
