@@ -20,6 +20,9 @@ import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ObjectiveFormModal } from './components/ObjectiveFormModal';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { contactsService } from '@/features/crm/services/contacts.service';
 
 interface Objective {
   id: string;
@@ -35,11 +38,40 @@ interface Objective {
 }
 
 export default function TasksPage() {
+  const router = useRouter();
   const [objectiveQueue, setObjectiveQueue] = useState<Objective[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [avatarsCache, setAvatarsCache] = useState<Record<string, { name: string, avatarUrl?: string }>>({});
+
+  useEffect(() => {
+    if (objectiveQueue.length > 0) {
+      const loadAvatars = async () => {
+        const allMenteeIds = Array.from(new Set(
+          objectiveQueue.map(obj => obj.assigneeId).filter(Boolean)
+        )).filter(id => !avatarsCache[id]);
+
+        if (allMenteeIds.length === 0) return;
+
+        try {
+          const { items } = await contactsService.getContacts({ ids: allMenteeIds });
+          const newCache = { ...avatarsCache };
+          items.forEach(contact => {
+            newCache[contact.id] = {
+              name: contact.name,
+              avatarUrl: contact.avatarUrl || undefined
+            };
+          });
+          setAvatarsCache(newCache);
+        } catch (err) {
+          console.error('Error loading task avatars:', err);
+        }
+      };
+      loadAvatars();
+    }
+  }, [objectiveQueue]);
 
   const fetchObjectives = async () => {
     try {
@@ -181,7 +213,8 @@ export default function TasksPage() {
           filteredQueue.map((objective) => (
             <div 
               key={objective.id} 
-              className="group glass-card bg-white/70 hover:bg-white border border-white rounded-[24px] p-6 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-700 flex flex-col relative overflow-hidden"
+              onClick={() => router.push(`/dashboard/tasks/${objective.id}`)}
+              className="group glass-card bg-white/70 hover:bg-white border border-white rounded-[24px] p-6 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-200 cursor-pointer transition-all duration-700 flex flex-col relative overflow-hidden"
             >
               <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity duration-1000">
                  <Target className="w-24 h-24 -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
@@ -196,20 +229,37 @@ export default function TasksPage() {
                   }`}>
                     {objective.priority}
                   </div>
-                  <button className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all">
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-slate-900 hover:bg-slate-50 rounded-xl transition-all"
+                  >
                     <MoreVertical className="w-4 h-4" />
                   </button>
                 </div>
 
-                <div className="flex items-center gap-3 mb-4 p-3 bg-slate-50/50 border border-slate-100 rounded-[18px] group-hover:bg-white transition-colors">
-                  <div className="w-8 h-8 bg-slate-900 text-white rounded-lg flex items-center justify-center font-black text-[9px] shadow-2xl shadow-slate-200 uppercase italic">
-                    {objective.menteeName?.charAt(0).toUpperCase() || 'M'}
+                <Link
+                  href={`/dashboard/clients/${objective.assigneeId}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex items-center gap-3 mb-4 p-3 bg-slate-50/50 border border-slate-100 rounded-[18px] group-hover:bg-white transition-all hover:border-indigo-200 hover:shadow-md cursor-pointer w-full text-left"
+                >
+                  <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center font-black text-[9px] shadow-2xl shadow-slate-200 uppercase italic">
+                    {avatarsCache[objective.assigneeId]?.avatarUrl ? (
+                      <img 
+                        src={avatarsCache[objective.assigneeId].avatarUrl?.startsWith('http') ? avatarsCache[objective.assigneeId].avatarUrl : `/avatars/${avatarsCache[objective.assigneeId].avatarUrl}`} 
+                        alt={objective.menteeName || 'M'}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-slate-900 text-white flex items-center justify-center">
+                        {objective.menteeName?.charAt(0).toUpperCase() || 'M'}
+                      </div>
+                    )}
                   </div>
                   <div>
                     <p className="text-[7.5px] font-black text-slate-400 uppercase tracking-[0.25em] leading-none mb-0.5 italic">ACTIVO</p>
                     <p className="text-[10.5px] font-black text-slate-900 uppercase tracking-tight italic">{objective.menteeName || 'ALUMNO QUANTIC'}</p>
                   </div>
-                </div>
+                </Link>
 
                 <h3 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mb-3 group-hover:text-indigo-600 transition-colors">
                   {objective.title}
@@ -245,7 +295,7 @@ export default function TasksPage() {
 
                 {objective.status === 'SUBMITTED' ? (
                   <button 
-                    onClick={() => handleApprove(objective.id)}
+                    onClick={(e) => { e.stopPropagation(); handleApprove(objective.id); }}
                     className="flex-1 py-3 bg-slate-900 text-white rounded-[18px] text-[8.5px] font-black uppercase tracking-[0.3em] shadow-2xl shadow-slate-200 hover:bg-indigo-600 transition-all active:scale-95 flex items-center justify-center gap-2 group/btn italic"
                   >
                     VALIDAR

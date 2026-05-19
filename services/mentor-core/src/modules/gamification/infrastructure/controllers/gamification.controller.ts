@@ -1,10 +1,11 @@
 import { Controller, Get, UseGuards, Req } from '@nestjs/common';
 import { GamificationService } from '../../application/gamification.service';
 import { LocalAuthGuard } from '../../../../common/guards/auth.guard';
+import { ScopeGuard } from '../../../../common/guards/scope.guard';
 import { PrismaService } from '../../../../infrastructure/persistence/prisma.service';
 
 @Controller('gamification')
-@UseGuards(LocalAuthGuard)
+@UseGuards(LocalAuthGuard, ScopeGuard)
 export class GamificationController {
   constructor(
     private readonly gamificationService: GamificationService,
@@ -13,7 +14,7 @@ export class GamificationController {
 
   @Get('stats')
   async getStats(@Req() req: any) {
-    const userId = req.user.sub || req.user.userId;
+    const userId = req.scope?.userId || req.user.sub || req.user.userId;
     const stats = await this.prisma.menteeProfile.findUnique({
       where: { userId }
     });

@@ -19,6 +19,7 @@ import gsap from 'gsap';
 import { apiClient } from '@/core/api/api.client';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Contact, contactsService } from '@/features/crm/services/contacts.service';
 
 interface Group {
@@ -34,6 +35,7 @@ interface Group {
 }
 
 export default function GroupsPage() {
+  const router = useRouter();
   const [groups, setGroups] = useState<Group[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -180,7 +182,8 @@ export default function GroupsPage() {
             {filteredGroups.map((group) => (
               <div 
                 key={group.id}
-                className="glass-card bg-white/70 backdrop-blur-xl rounded-[24px] border border-white p-6 shadow-soft hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-700 flex flex-col group relative overflow-hidden"
+                onClick={() => router.push(`/dashboard/groups/${group.id}`)}
+                className="glass-card bg-white/70 backdrop-blur-xl rounded-[24px] border border-white p-6 shadow-soft hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-200 cursor-pointer transition-all duration-700 flex flex-col group relative overflow-hidden"
               >
                 {/* Decoration Accent */}
                 <div className="absolute top-0 right-0 w-24 h-24 bg-indigo-500/[0.02] rounded-full -mr-12 -mt-12 group-hover:scale-150 transition-transform duration-1000" />
@@ -189,7 +192,10 @@ export default function GroupsPage() {
                   <div className="w-11 h-11 bg-white rounded-xl flex items-center justify-center text-slate-300 shadow-sm border border-slate-50 group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500">
                     <Users className="w-4.5 h-4.5" />
                   </div>
-                  <button className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-slate-900 hover:bg-white rounded-lg transition-all shadow-sm">
+                  <button 
+                    onClick={(e) => e.stopPropagation()}
+                    className="w-7 h-7 flex items-center justify-center text-slate-300 hover:text-slate-900 hover:bg-white rounded-lg transition-all shadow-sm"
+                  >
                     <MoreVertical className="w-4.5 h-4.5" />
                   </button>
                 </div>
@@ -246,12 +252,11 @@ export default function GroupsPage() {
                     </div>
                   </div>
                   
-                  <Link 
-                    href={`/dashboard/groups/${group.id}`}
+                  <div 
                     className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-indigo-600 hover:bg-white hover:shadow-lg rounded-xl transition-all duration-500"
                   >
                     <ChevronRight className="w-4.5 h-4.5" />
-                  </Link>
+                  </div>
                 </div>
               </div>
             ))}
