@@ -18,10 +18,13 @@ import {
   Check,
   Calendar,
   Camera,
-  X
+  X,
+  Flame
 } from 'lucide-react';
 import { apiClient } from '@/core/api/api.client';
 import toast from 'react-hot-toast';
+import { format } from 'date-fns';
+import { es } from 'date-fns/locale';
 import { PhaseForm, MilestoneForm } from './components/CurriculumForms';
 import { EvidenceModal } from './components/EvidenceModal';
 import { contactsService, Contact } from '@/features/crm/services/contacts.service';
@@ -109,12 +112,94 @@ export default function ProgramDetailPage() {
     }
   };
 
+  // --- HABIT TRACKER UTILITIES ---
+  const getLast14Days = () => {
+    const days = [];
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      days.push(d);
+    }
+    return days;
+  };
+
+  const isDayCompleted = (milestone: any, day: Date) => {
+    if (!milestone.completions) return false;
+    const targetString = new Date(new Date(day).setHours(0, 0, 0, 0)).toDateString();
+    return milestone.completions.some((c: any) => new Date(c.date).toDateString() === targetString);
+  };
+
+  const calculateStreak = (completions: any[]) => {
+    if (!completions || completions.length === 0) return 0;
+    
+    const sortedDates = Array.from(
+      new Set(completions.map(c => new Date(c.date).toDateString()))
+    ).map(d => new Date(d)).sort((a, b) => b.getTime() - a.getTime());
+
+    let streak = 0;
+    let expected = new Date();
+    expected.setHours(0, 0, 0, 0);
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    yesterday.setHours(0, 0, 0, 0);
+
+    const hasToday = sortedDates.some(d => d.getTime() === today.getTime());
+    const hasYesterday = sortedDates.some(d => d.getTime() === yesterday.getTime());
+
+    if (!hasToday && !hasYesterday) return 0;
+
+    if (hasToday) {
+      expected = today;
+    } else {
+      expected = yesterday;
+    }
+
+    for (let i = 0; i < sortedDates.length; i++) {
+      if (sortedDates[i].getTime() === expected.getTime()) {
+        streak++;
+        expected.setDate(expected.getDate() - 1);
+        expected.setHours(0, 0, 0, 0);
+      } else {
+        break;
+      }
+    }
+    return streak;
+  };
+
+  const handleToggleMilestoneForDate = async (milestone: any, date: Date) => {
+    if (program.isTemplate) return;
+    
+    const normalizedDate = new Date(new Date(date).setHours(0, 0, 0, 0));
+    const isCompletedOnDate = milestone.completions?.some((c: any) => 
+      new Date(c.date).toDateString() === normalizedDate.toDateString()
+    );
+
+    if (milestone.requiredEvidence !== 'NONE' && !isCompletedOnDate) {
+      setEvidenceTarget({ ...milestone, customDate: normalizedDate });
+      setIsEvidenceModalOpen(true);
+      return;
+    }
+
+    try {
+      await apiClient.post(`/mentor/programs/${params.id}/milestones/${milestone.id}/toggle`, {
+        date: normalizedDate.toISOString()
+      });
+      toast.success(isCompletedOnDate ? 'Día desmarcado' : '¡Día marcado como completado!');
+      fetchProgram();
+    } catch (error) {
+      toast.error('Error al actualizar el progreso');
+    }
+  };
+
   const handleToggleMilestone = async (milestone: any, evidence?: string) => {
     if (program.isTemplate) return;
 
+    const targetDate = milestone.customDate || new Date();
     const isCompleted = milestone.completions && milestone.completions.length > 0;
 
-    // Si requiere evidencia, no está completado y no la traemos ya
     if (milestone.requiredEvidence !== 'NONE' && !isCompleted && !evidence) {
       setEvidenceTarget(milestone);
       setIsEvidenceModalOpen(true);
@@ -123,11 +208,12 @@ export default function ProgramDetailPage() {
 
     try {
       await apiClient.post(`/mentor/programs/${params.id}/milestones/${milestone.id}/toggle`, {
-        date: new Date().toISOString(),
+        date: targetDate.toISOString(),
         evidence
       });
       fetchProgram();
       if (evidence) toast.success('¡Evidencia subida y hito marcado! +500 XP');
+      else toast.success('¡Progreso actualizado!');
     } catch (error) {
       toast.error('Error al actualizar el progreso');
     }
@@ -308,7 +394,97 @@ export default function ProgramDetailPage() {
                   {/* Milestones in this Phase */}
                   <div className="space-y-2.5 pl-6 border-l-4 border-slate-100/50 ml-4 py-2 relative z-10">
                     {phase.milestones?.map((milestone: any) => {
+                      const isHabitMode = program.type === 'HABITS' || program.type === 'ROUTINE' || milestone.frequency !== 'ONCE';
                       const isCompleted = milestone.completions && milestone.completions.length > 0;
+                      const currentStreak = calculateStreak(milestone.completions || []);
+                      const streakColor = currentStreak > 0 ? 'text-orange-500 bg-orange-50 border-orange-100' : 'text-slate-400 bg-slate-50 border-slate-100';
+
+                      if (isHabitMode) {
+                        return (
+                          <div key={milestone.id} className="glass-card bg-white/50 border border-transparent hover:border-slate-100 hover:bg-white rounded-[24px] p-5 transition-all duration-500 group/item shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 space-y-4">
+                            
+                            {/* Habit Top Info */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                              <div className="flex items-start gap-3">
+                                <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-[14px] flex items-center justify-center font-bold shadow-inner shrink-0 border border-indigo-100">
+                                  <Flame className={`w-5 h-5 ${currentStreak > 0 ? 'text-orange-500 animate-pulse' : 'text-indigo-400'}`} />
+                                </div>
+                                <div>
+                                  <h5 className="text-sm font-black text-slate-900 uppercase tracking-tight italic leading-none mb-1 group-hover/item:text-indigo-600 transition-colors">
+                                    {milestone.title}
+                                  </h5>
+                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                    <div className="px-2 py-0.5 bg-indigo-50 rounded text-[7px] font-black text-indigo-500 uppercase tracking-widest italic border border-indigo-100 shadow-sm">+{milestone.xpReward} XP</div>
+                                    <div className="px-2 py-0.5 bg-emerald-50 rounded text-[7px] font-black text-emerald-600 uppercase tracking-widest italic border border-emerald-100 shadow-sm">
+                                      {milestone.frequency}
+                                    </div>
+                                    {milestone.requiredEvidence !== 'NONE' && (
+                                      <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded text-[7px] font-black text-amber-600 uppercase tracking-widest italic border border-amber-100 shadow-sm">
+                                        <Zap className="w-2.5 h-2.5 animate-pulse" />
+                                        EVIDENCIA
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[7.5px] font-black uppercase tracking-widest italic shadow-sm shrink-0 ${streakColor}`}>
+                                  <Flame className="w-3.5 h-3.5 fill-current" />
+                                  Racha: {currentStreak}D
+                                </div>
+                                <button
+                                  onClick={() => handleDeleteMilestone(phase.id, milestone.id)}
+                                  className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-red-500 hover:bg-slate-50 rounded-xl transition-all active:scale-90"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {/* Habit Calendar Grid (Last 14 Days) */}
+                            <div className="bg-slate-50/50 border border-slate-100/50 rounded-[20px] p-4">
+                              <p className="text-[7.5px] font-black text-slate-400 uppercase tracking-[0.25em] mb-3 italic">Registro de Consistencia (Últimos 14 días)</p>
+                              
+                              <div className="grid grid-cols-7 sm:grid-cols-14 gap-2.5 justify-items-center">
+                                {getLast14Days().map((day, idx) => {
+                                  const completed = isDayCompleted(milestone, day);
+                                  const isToday = new Date().toDateString() === day.toDateString();
+                                  const dayLetter = format(day, 'EEEEEE', { locale: es }).toUpperCase();
+                                  const dayNumber = format(day, 'd');
+                                  
+                                  return (
+                                    <div key={idx} className="flex flex-col items-center gap-1.5">
+                                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-wider">{dayLetter}</span>
+                                      
+                                      <button
+                                        disabled={program.isTemplate}
+                                        onClick={() => handleToggleMilestoneForDate(milestone, day)}
+                                        title={`${format(day, "d 'de' MMMM", { locale: es })} - ${completed ? 'Completado' : 'Pendiente'}`}
+                                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                                          completed
+                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 scale-105 hover:bg-emerald-500'
+                                            : isToday
+                                              ? 'bg-white border-2 border-dashed border-indigo-500 text-indigo-600 animate-pulse hover:border-indigo-600'
+                                              : 'bg-white border border-slate-200 text-slate-300 hover:border-indigo-400 hover:text-indigo-500'
+                                        }`}
+                                      >
+                                        {completed ? (
+                                          <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                        ) : (
+                                          <span className="text-[8px] font-bold">{dayNumber}</span>
+                                        )}
+                                      </button>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+
+                          </div>
+                        );
+                      }
+
                       return (
                         <div key={milestone.id} className="flex items-center justify-between p-3 bg-white/50 hover:bg-white border border-transparent hover:border-slate-100 rounded-[16px] transition-all group/item shadow-sm hover:shadow-xl hover:shadow-indigo-500/5">
                           <div className="flex items-center gap-3">

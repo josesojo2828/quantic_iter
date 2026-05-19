@@ -181,7 +181,7 @@ export const ObjectiveFormModal: React.FC<ObjectiveFormModalProps> = ({
                 <option value="">-- Elige un Estudiante --</option>
                 {students.map((student) => (
                   <option key={student.id} value={student.id}>
-                    {student.name.toUpperCase()} ({student.email})
+                    {((student.name || student.firstName || 'Sin Nombre').toUpperCase())} ({student.email || 'Sin Email'})
                   </option>
                 ))}
               </select>
@@ -198,7 +198,7 @@ export const ObjectiveFormModal: React.FC<ObjectiveFormModalProps> = ({
                 <option value="">-- Elige un Grupo --</option>
                 {groups.map((group) => (
                   <option key={group.id} value={group.id}>
-                    {group.name.toUpperCase()}
+                    {(group.name || 'Sin Nombre').toUpperCase()}
                   </option>
                 ))}
               </select>

@@ -197,7 +197,7 @@ export default function HabitsPage() {
                 >
                   <option value="">SELECCIONAR ALUMNO...</option>
                   {students.map(s => (
-                    <option key={s.id} value={s.id}>{s.name.toUpperCase()}</option>
+                    <option key={s.id} value={s.id}>{(s.name || s.firstName || 'Sin Nombre').toUpperCase()}</option>
                   ))}
                 </select>
               </div>
@@ -214,7 +214,7 @@ export default function HabitsPage() {
                 >
                   <option value="">SELECCIONAR PLANTILLA...</option>
                   {templates.map(t => (
-                    <option key={t.id} value={t.id}>{t.name.toUpperCase()}</option>
+                    <option key={t.id} value={t.id}>{(t.name || 'Sin Nombre').toUpperCase()}</option>
                   ))}
                 </select>
               </div>
