@@ -18,6 +18,7 @@ import {
 
 import { ProgramForm } from './components/ProgramForm';
 import { AssignStudentModal } from './components/AssignStudentModal';
+import { TemplateSelectModal } from './components/TemplateSelectModal';
 import { apiClient } from '@/core/api/api.client';
 import { toast } from 'react-hot-toast';
 import { contactsService } from '@/features/crm/services/contacts.service';
@@ -36,6 +37,10 @@ export default function ProgramsPage() {
   const router = useRouter();
   const [programs, setPrograms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  
+  const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
+  const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+  const [selectedTemplate, setSelectedTemplate] = useState<{ id: string; name: string } | null>(null);
 
   const fetchPrograms = async () => {
     try {
@@ -76,7 +81,7 @@ export default function ProgramsPage() {
 
         <div className="flex items-center gap-4 w-full lg:w-auto">
           <button
-            onClick={() => router.push('/dashboard/templates')}
+            onClick={() => setIsTemplateModalOpen(true)}
             className="flex-1 lg:flex-none flex items-center justify-center gap-3 px-6 py-3 bg-slate-900 text-white rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] hover:bg-indigo-600 transition-all shadow-xl active:scale-95 border border-white/10 italic group"
           >
             <Plus className="w-4 h-4 group-hover:rotate-90 transition-transform duration-500" />
@@ -226,6 +231,29 @@ export default function ProgramsPage() {
           </div>
         ))}
       </div>
+
+      <TemplateSelectModal
+        isOpen={isTemplateModalOpen}
+        onClose={() => setIsTemplateModalOpen(false)}
+        onSelect={(template) => {
+          setSelectedTemplate(template);
+          setIsTemplateModalOpen(false);
+          setIsAssignModalOpen(true);
+        }}
+      />
+
+      {selectedTemplate && (
+        <AssignStudentModal
+          isOpen={isAssignModalOpen}
+          onClose={() => {
+            setIsAssignModalOpen(false);
+            setSelectedTemplate(null);
+            fetchPrograms();
+          }}
+          templateId={selectedTemplate.id}
+          templateName={selectedTemplate.name}
+        />
+      )}
     </div>
   );
 }
