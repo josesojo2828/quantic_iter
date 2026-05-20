@@ -44,6 +44,9 @@ export class HabitService {
     if (!habit) throw new Error('Hábito no encontrado');
 
     const checkin = await this.habitRepository.checkin(habitId, date, scope);
+    if (checkin.isNew === false) {
+      return checkin;
+    }
     
     // Award a small amount of XP for habit check-in
     await this.gamificationService.awardXp(

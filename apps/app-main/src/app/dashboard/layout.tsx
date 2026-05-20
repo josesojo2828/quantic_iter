@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Sidebar } from '@/shared/components/Sidebar';
 import { useAuth } from '@/core/contexts/AuthContext';
 import { useRouter, usePathname } from 'next/navigation';
@@ -14,6 +14,17 @@ export default function DashboardLayout({
   const router = useRouter();
   const pathname = usePathname();
 
+  // Handle redirects in useEffect to prevent rendering-time state updates in Next.js Router
+  useEffect(() => {
+    if (!loading) {
+      if (!user) {
+        router.push('/login');
+      } else if (user.role === 'mentee' && pathname !== '/dashboard') {
+        router.push('/dashboard');
+      }
+    }
+  }, [user, loading, pathname, router]);
+
   // If loading, show professional loading state
   if (loading) {
     return (
@@ -26,22 +37,15 @@ export default function DashboardLayout({
     );
   }
 
-  // Redirect to login if user is not authenticated
+  // Prevent rendering if user not authenticated
   if (!user) {
-    if (typeof window !== 'undefined') {
-      router.push('/login');
-    }
     return null;
   }
 
   // If the user is a mentee/client, we bypass the sidebar layout.
   // They will be handled by the MenteeLayout inside the main pages to allow tab/nav state sync.
   if (user.role === 'mentee') {
-    // If they try to access a sub-page that isn't the home dashboard, redirect them to /dashboard
     if (pathname !== '/dashboard') {
-      if (typeof window !== 'undefined') {
-        router.push('/dashboard');
-      }
       return null;
     }
     return <>{children}</>;

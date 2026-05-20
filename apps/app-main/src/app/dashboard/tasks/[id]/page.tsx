@@ -34,6 +34,7 @@ interface Objective {
   xpReward: number;
   dueDate?: string;
   createdAt: string;
+  programId?: string;
 }
 
 export default function ObjectiveDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -43,6 +44,20 @@ export default function ObjectiveDetailPage({ params }: { params: Promise<{ id: 
   const [loading, setLoading] = useState(true);
   const [studentAvatar, setStudentAvatar] = useState<string | undefined>(undefined);
   const [actionLoading, setActionLoading] = useState(false);
+  const [linkedProgram, setLinkedProgram] = useState<any>(null);
+  const [programLoading, setProgramLoading] = useState(false);
+
+  const fetchLinkedProgram = async (programId: string) => {
+    try {
+      setProgramLoading(true);
+      const data = await apiClient.get<any>(`/mentor/programs/${programId}`);
+      setLinkedProgram(data);
+    } catch (err) {
+      console.error('Error fetching linked program:', err);
+    } finally {
+      setProgramLoading(false);
+    }
+  };
 
   const fetchObjectiveDetails = async () => {
     try {
@@ -53,6 +68,9 @@ export default function ObjectiveDetailPage({ params }: { params: Promise<{ id: 
       if (found) {
         setObjective(found);
         loadStudentAvatar(found.assigneeId);
+        if (found.programId) {
+          fetchLinkedProgram(found.programId);
+        }
       } else {
         toast.error('No se encontró el objetivo especificado');
         router.push('/dashboard/tasks');
@@ -167,6 +185,127 @@ export default function ObjectiveDetailPage({ params }: { params: Promise<{ id: 
             <p className="text-[10px] text-slate-500 font-black uppercase tracking-[0.15em] opacity-80 leading-relaxed border-l-2 border-indigo-500 pl-4 mb-8 italic">
               {objective.description || 'SIN ESPECIFICACIONES TÉCNICAS ADICIONALES PARA ESTA MISIÓN.'}
             </p>
+
+            {/* Linked Habit or Program Widget */}
+            {objective.programId && (
+              <div className="mb-8 p-6 bg-slate-900 border border-slate-800 rounded-[24px] text-white shadow-xl relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/10 via-transparent to-transparent pointer-events-none" />
+                
+                {programLoading ? (
+                  <div className="flex items-center gap-3 py-4 justify-center">
+                    <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
+                    <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">Sincronizando hábitos y consistencia...</span>
+                  </div>
+                ) : linkedProgram ? (() => {
+                  const checkIsMilestoneCompleted = (m: any) => {
+                    if (!m.completions) return false;
+                    const freq = m.frequency || 'ONCE';
+                    if (freq === 'DAILY') {
+                      const todayStr = new Date().toDateString();
+                      return m.completions.some((c: any) => new Date(c.date).toDateString() === todayStr);
+                    }
+                    if (freq === 'WEEKLY') {
+                      const getStartOfWeek = (d: Date) => {
+                        const temp = new Date(d);
+                        const day = temp.getDay();
+                        const diff = temp.getDate() - day + (day === 0 ? -6 : 1);
+                        return new Date(temp.setDate(diff));
+                      };
+                      const currentWeekStart = getStartOfWeek(new Date());
+                      currentWeekStart.setHours(0, 0, 0, 0);
+                      return m.completions.some((c: any) => {
+                        const cWeekStart = getStartOfWeek(new Date(c.date));
+                        cWeekStart.setHours(0, 0, 0, 0);
+                        return cWeekStart.getTime() === currentWeekStart.getTime();
+                      });
+                    }
+                    return m.completions.length > 0;
+                  };
+
+                  const milestones = linkedProgram.phases?.flatMap((p: any) => p.milestones || []) || [];
+                  const totalMilestones = milestones.length;
+                  const completedMilestones = milestones.filter((m: any) => checkIsMilestoneCompleted(m)).length;
+                  const progressPercent = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
+
+                  return (
+                    <div className="relative z-10 space-y-5">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <span className="text-[7.5px] font-black text-indigo-400 uppercase tracking-[0.25em] italic">PROGRAMA VINCULADO</span>
+                          <h4 className="text-sm font-black uppercase tracking-tight italic flex items-center gap-2">
+                            <Target className="w-4 h-4 text-indigo-500 animate-pulse" />
+                            {linkedProgram.name.toUpperCase()}
+                          </h4>
+                        </div>
+                        <div className="text-right">
+                          <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block italic">CONSISTENCIA HOY</span>
+                          <span className="text-lg font-black italic text-indigo-400">{progressPercent}%</span>
+                        </div>
+                      </div>
+
+                      {/* Progress bar */}
+                      <div className="h-2 bg-slate-800 rounded-full overflow-hidden border border-slate-700/50">
+                        <div 
+                          className="h-full bg-gradient-to-r from-indigo-500 to-indigo-400 rounded-full transition-all duration-1000"
+                          style={{ width: `${progressPercent}%` }}
+                        />
+                      </div>
+
+                      {/* Habit Track items */}
+                      <div className="space-y-2">
+                        <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic">HÁBITOS & RUTINAS DE LA META</span>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {milestones.map((milestone: any, index: number) => {
+                            const isCompleted = checkIsMilestoneCompleted(milestone);
+                            const frequencyLabel = milestone.frequency === 'DAILY' ? 'DIARIO' : milestone.frequency === 'WEEKLY' ? 'SEMANAL' : 'ÚNICO';
+                            
+                            return (
+                              <div 
+                                key={index} 
+                                className={`p-3 rounded-xl border transition-all duration-300 flex items-center justify-between gap-3 ${
+                                  isCompleted 
+                                    ? 'bg-indigo-950/20 border-indigo-500/20 text-indigo-200' 
+                                    : 'bg-slate-800/30 border-slate-800 text-slate-400'
+                                }`}
+                              >
+                                <div className="space-y-0.5">
+                                  <p className="text-[9px] font-black uppercase tracking-wide italic leading-none line-clamp-1">
+                                    {milestone.name.toUpperCase()}
+                                  </p>
+                                  <span className="text-[7px] font-black uppercase tracking-widest text-slate-500 italic block">
+                                    FRECUENCIA: {frequencyLabel}
+                                  </span>
+                                </div>
+                                <div className={`w-6 h-6 rounded-lg flex items-center justify-center border shrink-0 ${
+                                  isCompleted 
+                                    ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400 shadow-md shadow-indigo-950/50' 
+                                    : 'bg-slate-900 border-slate-800 text-slate-600'
+                                }`}>
+                                  <CheckCircle2 className="w-3.5 h-3.5 fill-current" />
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Info Footer */}
+                      <div className="pt-2 border-t border-slate-800/50 flex justify-between items-center text-[7.5px] font-black uppercase tracking-wider text-slate-500 italic">
+                        <span>ESTADO: {progressPercent === 100 ? 'COMPLETADO AL 100%' : 'EN PROGRESO'}</span>
+                        <Link 
+                          href={`/dashboard/programs/${objective.programId}`}
+                          className="text-indigo-400 hover:text-indigo-300 transition-colors"
+                        >
+                          VER RUTA COMPLETA →
+                        </Link>
+                      </div>
+                    </div>
+                  );
+                })() : (
+                  <p className="text-[9px] text-slate-400 font-black uppercase tracking-widest italic text-center py-2">No se encontró información del programa vinculado.</p>
+                )}
+              </div>
+            )}
 
             {/* Performance Timeline Tracker */}
             <div className="pt-6 border-t border-slate-100/50">

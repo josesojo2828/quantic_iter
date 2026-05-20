@@ -35,6 +35,22 @@ model GroupMember {
   @@map("group_members")
 }
 
+// === OBJETIVOS / METAS ===
+model Objective {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  tenantId    String    @db.ObjectId
+  menteeId    String    @db.ObjectId   // Estudiante dueño del objetivo
+  title       String    // Ej: "Bajar 5kg de grasa corporal"
+  description String?
+  status      String    @default("ACTIVE") // ACTIVE, COMPLETED, ABANDONED
+  targetDate  DateTime? // Fecha límite propuesta para lograr el objetivo
+  programs    Program[] // Relación: Un objetivo puede agrupar múltiples programas
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@map("objectives")
+}
+
 // === PROGRAMAS ===
 model Program {
   id          String        @id @default(auto()) @map("_id") @db.ObjectId
@@ -50,6 +66,8 @@ model Program {
   isPublic    Boolean       @default(false)
   category    String?
   authorId    String?       @db.ObjectId
+  objectiveId String?       @db.ObjectId
+  objective   Objective?    @relation(fields: [objectiveId], references: [id])
   phases      Phase[]
   enrollments Enrollment[]
   milestones  Milestone[]

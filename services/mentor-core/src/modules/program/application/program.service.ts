@@ -54,8 +54,8 @@ export class ProgramService {
     return this.programRepository.findEnrollmentsByMentee(menteeId, scope);
   }
 
-  async assign(id: string, menteeId: string, scope: QueryScope) {
-    return this.programRepository.clone(id, scope, menteeId);
+  async assign(id: string, menteeId: string, scope: QueryScope, options?: { objectiveId?: string; newObjective?: any }) {
+    return this.programRepository.clone(id, scope, menteeId, options);
   }
 
   async cloneProgram(id: string, scope: QueryScope) {
@@ -68,6 +68,14 @@ export class ProgramService {
       throw new Error('Program not found or not assigned to a mentee');
     }
     return this.programRepository.toggleMilestone(milestoneId, program.menteeId, date);
+  }
+
+  async togglePhase(programId: string, phaseId: string, scope: QueryScope, date?: Date) {
+    const program = await this.programRepository.findOne(programId, scope);
+    if (!program || !program.menteeId) {
+      throw new Error('Program not found or not assigned to a mentee');
+    }
+    return this.programRepository.togglePhaseCheckpoint(programId, phaseId, program.menteeId, date);
   }
 
   async getMarketplace() {

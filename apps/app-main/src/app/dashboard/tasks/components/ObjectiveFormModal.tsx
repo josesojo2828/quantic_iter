@@ -31,6 +31,8 @@ export const ObjectiveFormModal: React.FC<ObjectiveFormModalProps> = ({
   const [priority, setPriority] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('MEDIUM');
   const [xpReward, setXpReward] = useState(500);
   const [dueDate, setDueDate] = useState('');
+  const [activePrograms, setActivePrograms] = useState<any[]>([]);
+  const [selectedProgramId, setSelectedProgramId] = useState('');
 
   const fetchAssignees = async () => {
     try {
@@ -49,6 +51,31 @@ export const ObjectiveFormModal: React.FC<ObjectiveFormModalProps> = ({
     }
   };
 
+  const fetchActivePrograms = async (studentId: string) => {
+    if (!studentId) {
+      setActivePrograms([]);
+      return;
+    }
+    try {
+      const response = await apiClient.get<any[]>('/mentor/programs');
+      const filtered = (response || []).filter(
+        (p: any) => p.menteeId === studentId && !p.isTemplate
+      );
+      setActivePrograms(filtered);
+    } catch (error) {
+      console.error('Error fetching programs for student:', error);
+    }
+  };
+
+  useEffect(() => {
+    if (assigneeId) {
+      fetchActivePrograms(assigneeId);
+    } else {
+      setActivePrograms([]);
+    }
+    setSelectedProgramId('');
+  }, [assigneeId]);
+
   useEffect(() => {
     if (isOpen) {
       fetchAssignees();
@@ -61,6 +88,8 @@ export const ObjectiveFormModal: React.FC<ObjectiveFormModalProps> = ({
       setPriority('MEDIUM');
       setXpReward(500);
       setDueDate('');
+      setSelectedProgramId('');
+      setActivePrograms([]);
     }
   }, [isOpen]);
 
@@ -92,6 +121,7 @@ export const ObjectiveFormModal: React.FC<ObjectiveFormModalProps> = ({
         priority,
         xpReward: Number(xpReward),
         dueDate: dueDate ? new Date(dueDate).toISOString() : undefined,
+        programId: assignType === 'mentee' && selectedProgramId ? selectedProgramId : undefined,
       };
 
       if (assignType === 'mentee') {
@@ -202,6 +232,32 @@ export const ObjectiveFormModal: React.FC<ObjectiveFormModalProps> = ({
                   </option>
                 ))}
               </select>
+            </div>
+          )}
+
+          {/* Vincular a Programa / Hábito */}
+          {assignType === 'mentee' && assigneeId && activePrograms.length > 0 && (
+            <div className="space-y-2 animate-in fade-in slide-in-from-top-2 duration-300">
+              <label htmlFor="program-select" className="text-[9px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-indigo-600 animate-pulse" />
+                Vincular a Programa o Hábito Activo
+              </label>
+              <select
+                id="program-select"
+                value={selectedProgramId}
+                onChange={(e) => setSelectedProgramId(e.target.value)}
+                className="w-full px-5 py-4 bg-slate-50 border border-slate-200 rounded-[18px] text-sm font-semibold focus:ring-4 focus:ring-indigo-600/5 focus:border-indigo-600 outline-none transition-all uppercase tracking-wide"
+              >
+                <option value="">-- Sin vinculación a hábitos/programas --</option>
+                {activePrograms.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name.toUpperCase()} ({p.type === 'HABITS' || p.type === 'ROUTINE' ? 'HÁBITOS' : 'CURRÍCULUM'})
+                  </option>
+                ))}
+              </select>
+              <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wide mt-1 pl-1">
+                Al vincularlo, el objetivo se marcará automáticamente como completado cuando el alumno alcance el 100% de consistencia del programa.
+              </p>
             </div>
           )}
 

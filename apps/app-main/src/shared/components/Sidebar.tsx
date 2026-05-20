@@ -102,7 +102,7 @@ export const Sidebar = () => {
     groupedModules['ACADEMIA'].push({ key: 'groups', label: 'Grupos', icon: 'Users', path: '/dashboard/groups', module: 'mentor' });
   }
   if (groupedModules['ACADEMIA'] && !groupedModules['ACADEMIA'].find(m => m.key === 'tasks')) {
-    groupedModules['ACADEMIA'].push({ key: 'tasks', label: 'Tareas y Objetivos', icon: 'ClipboardList', path: '/dashboard/tasks', module: 'mentor' });
+    groupedModules['ACADEMIA'].push({ key: 'tasks', label: 'Tareas', icon: 'ClipboardList', path: '/dashboard/tasks', module: 'mentor' });
   }
   if (groupedModules['ACADEMIA'] && !groupedModules['ACADEMIA'].find(m => m.key === 'habits')) {
     groupedModules['ACADEMIA'].push({ key: 'habits', label: 'Hábitos', icon: 'TrendingUp', path: '/dashboard/habits', module: 'mentor' });

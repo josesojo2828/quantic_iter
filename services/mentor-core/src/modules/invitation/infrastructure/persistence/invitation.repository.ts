@@ -39,7 +39,7 @@ export class InvitationRepository extends BaseRepository<Invitation> {
 
   async findAll(scope: QueryScope): Promise<Invitation[]> {
     return this.prisma.invitation.findMany({
-      where: this.applyScope({}, scope),
+      where: this.applyScope({}, scope, { menteeField: null }),
       orderBy: { createdAt: 'desc' },
     }) as unknown as Invitation[];
   }

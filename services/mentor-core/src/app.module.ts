@@ -14,6 +14,7 @@ import { ProgressModule } from './modules/progress/progress.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
 import { BusinessTierModule } from './modules/business-tier/business-tier.module';
 import { ResourceModule } from './modules/resource/resource.module';
+import { ObjectiveModule } from './modules/objective/objective.module';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
 
 @Module({
@@ -33,6 +34,7 @@ import { AuthMiddleware } from './common/middleware/auth.middleware';
     SubscriptionModule,
     BusinessTierModule,
     ResourceModule,
+    ObjectiveModule,
   ],
 })
 export class AppModule implements NestModule {

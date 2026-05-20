@@ -26,7 +26,8 @@ import {
   Layers,
   ChevronDown,
   ChevronUp,
-  Info
+  Info,
+  Target
 } from 'lucide-react';
 import { format, isSameDay } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -84,6 +85,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
   const [sessions, setSessions] = useState<any[]>([]);
   const [resources, setResources] = useState<any[]>([]);
   const [programs, setPrograms] = useState<any[]>([]);
+  const [objectives, setObjectives] = useState<any[]>([]);
   const [groups, setGroups] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [tenantCoach, setTenantCoach] = useState<any | null>(null);
@@ -127,6 +129,9 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
   // Helper stats for currently selected coach
   const activeCoachStats = selectedCoach ? getCoachStats(selectedCoach.id) : { xp: 0, level: 1, currentStreak: 0 };
 
+  // Real CRM Contact ID resolved from programs or fallback to authenticated user ID
+  const crmMenteeId = programs.find(p => p.menteeId)?.menteeId || user?.id || '';
+
   // Fetch all necessary data based on menteeId
   useEffect(() => {
     if (!user?.id) return;
@@ -154,6 +159,10 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
         const userPrograms = await apiClient.get<any[]>('/mentor/programs')
           .catch(() => []);
 
+        // Fetch Objectives linked to programs
+        const userObjectives = await apiClient.get<any[]>(`/mentor/objectives`)
+          .catch(() => []);
+
         // Fetch Groups
         const userGroups = await apiClient.get<any[]>('/mentor/groups')
           .catch(() => []);
@@ -169,6 +178,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
         setSessions(userSessions);
         setResources(sharedResources);
         setPrograms(userPrograms);
+        setObjectives(userObjectives);
         setGroups(userGroups);
       } catch (error) {
         console.error('Error fetching mentee data:', error);
@@ -180,30 +190,148 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
     fetchData();
   }, [user?.id]);
 
-  const handleToggleMilestone = async (programId: string, milestoneId: string) => {
-    setTogglingMilestoneId(milestoneId);
-    try {
-      await apiClient.post(`/mentor/programs/${programId}/milestones/${milestoneId}/toggle`, { date: new Date().toISOString() });
+  const checkMilestoneCompleted = (milestone: any, menteeId: string) => {
+    if (!milestone?.completions) return false;
+    const freq = milestone.frequency || 'ONCE';
+    
+    if (freq === 'DAILY') {
+      const localTodayDateString = new Date().toLocaleDateString('en-CA'); // "YYYY-MM-DD" local
+      return milestone.completions.some((c: any) => {
+        if (c.menteeId !== menteeId) return false;
+        const utcDateStr = new Date(c.date).toISOString().split('T')[0]; // "YYYY-MM-DD" UTC
+        return utcDateStr === localTodayDateString;
+      });
+    }
+    
+    if (freq === 'WEEKLY') {
+      const getStartOfWeekUTC = (d: Date) => {
+        const temp = new Date(d);
+        const day = temp.getUTCDay();
+        const diff = temp.getUTCDate() - day + (day === 0 ? -6 : 1);
+        const weekStart = new Date(temp.setUTCDate(diff));
+        weekStart.setUTCHours(0, 0, 0, 0);
+        return weekStart;
+      };
       
-      // Reload programs to get updated completions
+      const localTodayDateString = new Date().toLocaleDateString('en-CA');
+      const localTodayAsUTCDate = new Date(`${localTodayDateString}T00:00:00.000Z`);
+      const currentWeekStart = getStartOfWeekUTC(localTodayAsUTCDate);
+      
+      return milestone.completions.some((c: any) => {
+        if (c.menteeId !== menteeId) return false;
+        const cWeekStart = getStartOfWeekUTC(new Date(c.date));
+        return cWeekStart.getTime() === currentWeekStart.getTime();
+      });
+    }
+    
+    return milestone.completions.some((c: any) => c.menteeId === menteeId);
+  };
+
+  const handleToggleMilestone = async (programId: string, milestoneId: string) => {
+    if (togglingMilestoneId) return;
+    setTogglingMilestoneId(milestoneId);
+
+    const localTodayStr = new Date().toLocaleDateString('en-CA');
+    const apiDateStr = `${localTodayStr}T12:00:00.000Z`;
+
+    // Guardar el estado anterior para reversión limpia en caso de error
+    const oldPrograms = [...programs];
+
+    // Actualización Optimista: marcamos o desmarcamos el hito en local de inmediato (1ms)
+    setPrograms(prev => prev.map(p => {
+      if (p.id !== programId) return p;
+      return {
+        ...p,
+        phases: p.phases?.map((ph: any) => {
+          const hasMilestone = ph.milestones?.some((m: any) => m.id === milestoneId);
+          if (!hasMilestone) return ph;
+          return {
+            ...ph,
+            milestones: ph.milestones?.map((m: any) => {
+              if (m.id !== milestoneId) return m;
+
+              const wasCompleted = checkMilestoneCompleted(m, crmMenteeId);
+              let newCompletions = m.completions || [];
+
+              if (wasCompleted) {
+                // Desmarcar optimistamente
+                if (m.frequency === 'DAILY') {
+                  newCompletions = newCompletions.filter((c: any) => {
+                    if (c.menteeId !== crmMenteeId) return true;
+                    const utcDateStr = new Date(c.date).toISOString().split('T')[0];
+                    return utcDateStr !== localTodayStr;
+                  });
+                } else if (m.frequency === 'WEEKLY') {
+                  const getStartOfWeekUTC = (d: Date) => {
+                    const temp = new Date(d);
+                    const day = temp.getUTCDay();
+                    const diff = temp.getUTCDate() - day + (day === 0 ? -6 : 1);
+                    const weekStart = new Date(temp.setUTCDate(diff));
+                    weekStart.setUTCHours(0, 0, 0, 0);
+                    return weekStart;
+                  };
+                  const currentWeekStart = getStartOfWeekUTC(new Date(`${localTodayStr}T00:00:00.000Z`));
+                  newCompletions = newCompletions.filter((c: any) => {
+                    if (c.menteeId !== crmMenteeId) return true;
+                    const cWeekStart = getStartOfWeekUTC(new Date(c.date));
+                    return cWeekStart.getTime() !== currentWeekStart.getTime();
+                  });
+                } else {
+                  newCompletions = newCompletions.filter((c: any) => c.menteeId !== crmMenteeId);
+                }
+              } else {
+                // Marcar optimistamente
+                newCompletions = [...newCompletions, { menteeId: crmMenteeId, date: apiDateStr }];
+              }
+
+              return {
+                ...m,
+                completions: newCompletions
+              };
+            })
+          };
+        })
+      };
+    }));
+
+    try {
+      await apiClient.post(`/mentor/programs/${programId}/milestones/${milestoneId}/toggle`, { date: apiDateStr });
+      
+      // Cargar la lista fresca y oficial desde la base de datos
       const userPrograms = await apiClient.get<any[]>('/mentor/programs').catch(() => []);
       setPrograms(userPrograms);
       
-      // Find if it was completed or uncompleted to award XP
-      const program = programs.find(p => p.id === programId);
-      const phase = program?.phases?.find((ph: any) => ph.milestones?.some((m: any) => m.id === milestoneId));
-      const milestone = phase?.milestones?.find((m: any) => m.id === milestoneId);
-      const wasCompleted = milestone?.completions?.some((c: any) => c.menteeId === user?.id);
-      
-      if (!wasCompleted && selectedCoach) {
-        // Gain 30 XP on completing a milestone
+      // Buscar si estaba completado en el estado viejo (para la lógica de XP)
+      const oldProgram = oldPrograms.find(p => p.id === programId);
+      const oldPhase = oldProgram?.phases?.find((ph: any) => ph.milestones?.some((m: any) => m.id === milestoneId));
+      const oldMilestone = oldPhase?.milestones?.find((m: any) => m.id === milestoneId);
+      const wasCompleted = checkMilestoneCompleted(oldMilestone, crmMenteeId);
+
+      // Buscar el estado nuevo oficial retornado por el servidor
+      const updatedProgram = userPrograms.find(p => p.id === programId);
+      const updatedPhase = updatedProgram?.phases?.find((ph: any) => ph.milestones?.some((m: any) => m.id === milestoneId));
+      const updatedMilestone = updatedPhase?.milestones?.find((m: any) => m.id === milestoneId);
+      const isNowCompleted = checkMilestoneCompleted(updatedMilestone, crmMenteeId);
+
+      if (wasCompleted !== isNowCompleted && selectedCoach) {
+        const xpAmount = oldMilestone?.xpReward || 30;
+        const xpChange = isNowCompleted ? xpAmount : -xpAmount;
+
         setCoachStats(prev => {
           const current = prev[selectedCoach.id] || { xp: 0, level: 1, currentStreak: 0 };
-          const nextXp = current.xp + 30;
+          const nextXp = Math.max(0, current.xp + xpChange);
           let nextLevel = current.level;
-          while (nextXp >= getNextLevelXp(nextLevel)) {
-            nextLevel++;
+
+          if (xpChange > 0) {
+            while (nextXp >= getNextLevelXp(nextLevel)) {
+              nextLevel++;
+            }
+          } else {
+            while (nextLevel > 1 && nextXp < getNextLevelXp(nextLevel - 1)) {
+              nextLevel--;
+            }
           }
+
           const updated = {
             ...prev,
             [selectedCoach.id]: {
@@ -218,8 +346,31 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
       }
     } catch (error) {
       console.error('Error toggling milestone:', error);
+      // En caso de error, revertimos optimistamente al estado original
+      setPrograms(oldPrograms);
     } finally {
       setTogglingMilestoneId(null);
+    }
+  };
+
+  // Toggle para fases sin hitos: el backend auto-crea el milestone y lo togglea
+  const [togglingPhaseId, setTogglingPhaseId] = useState<string | null>(null);
+  const handleTogglePhase = async (programId: string, phaseId: string) => {
+    if (togglingPhaseId) return;
+    setTogglingPhaseId(phaseId);
+
+    const localTodayStr = new Date().toLocaleDateString('en-CA');
+    const apiDateStr = `${localTodayStr}T12:00:00.000Z`;
+
+    try {
+      await apiClient.post(`/mentor/programs/${programId}/phases/${phaseId}/toggle`, { date: apiDateStr });
+      // Refrescar programas desde la base de datos
+      const userPrograms = await apiClient.get<any[]>('/mentor/programs').catch(() => []);
+      setPrograms(userPrograms);
+    } catch (error) {
+      console.error('Error toggling phase:', error);
+    } finally {
+      setTogglingPhaseId(null);
     }
   };
 
@@ -801,143 +952,140 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
               )}
             </div>
 
-            {/* Tasks & Sessions Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-              {/* Tasks List */}
-              <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft lg:col-span-7 flex flex-col justify-between">
-                <div className="space-y-6 w-full">
-                  <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1.5 h-4 bg-[#7B91EB] rounded-full" />
-                      <h3 className="text-xs font-black text-[#2C3A50] uppercase tracking-widest italic">
-                        Tareas Asignadas
-                      </h3>
-                    </div>
-                    <span className="text-[8px] font-extrabold text-[#7B91EB] bg-[#7B91EB]/10 px-2.5 py-1 rounded-xl uppercase tracking-wider border border-[#7B91EB]/20">
-                      +50 EXP c/u
-                    </span>
-                  </div>
-
-                  {filteredTasks.length === 0 ? (
-                    <div className="text-center py-10">
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">
-                        Sin tareas pendientes de revisión.
-                      </p>
-                      <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-1">
-                        Disfrutá tu día al máximo o repasá tu camino.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {filteredTasks.map((task) => {
-                        const isSubmitted = task.status === 'SUBMITTED';
-                        const isApproved = task.status === 'APPROVED';
-
-                        return (
-                          <div
-                            key={task.id}
-                            className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-4 bg-slate-50 border border-slate-100 rounded-[24px]"
-                          >
-                            <div className="space-y-1">
-                              <span className="text-[11px] font-black text-[#2C3A50] uppercase tracking-tight italic block">
-                                {task.title}
-                              </span>
-                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">
-                                {task.description || 'Entrega requerida por el coach'}
-                              </span>
-                              <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                                <span className={`text-[6.5px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider ${
-                                  task.priority === 'HIGH' || task.priority === 'URGENT'
-                                    ? 'bg-rose-50 text-rose-500 border border-rose-100'
-                                    : task.priority === 'MEDIUM'
-                                    ? 'bg-amber-50 text-amber-500 border border-amber-100'
-                                    : 'bg-slate-50 text-slate-400 border border-slate-100'
-                                }`}>
-                                  {task.priority || 'MEDIUM'}
-                                </span>
-                                {task.dueDate && (
-                                  <span className="text-[7px] font-extrabold text-slate-400 uppercase tracking-wider">
-                                    VENCE: {format(new Date(task.dueDate), 'dd LLL', { locale: es })}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-
-                            {isApproved ? (
-                              <div className="bg-[#E5FAF0] text-[#2CD79A] border border-[#2CD79A]/20 px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-1 shrink-0">
-                                <CheckCircle size={10} />
-                                APROBADO
-                              </div>
-                            ) : isSubmitted ? (
-                              <div className="bg-amber-50 text-amber-500 border border-amber-200 px-3 py-1.5 rounded-xl text-[8px] font-black uppercase tracking-widest flex items-center gap-1 shrink-0 animate-pulse">
-                                <Clock size={10} />
-                                EN REVISIÓN
-                              </div>
-                            ) : (
-                              <button
-                                onClick={() => setSubmittingTaskId(task.id)}
-                                className="px-4 py-2 bg-[#7B91EB] hover:bg-[#6D83E0] text-white rounded-xl font-black text-[8px] uppercase tracking-widest shadow-sm transition-all italic shrink-0"
-                              >
-                                ENTREGAR
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Sessions List */}
-              <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft lg:col-span-5 flex flex-col justify-between">
-                <div className="space-y-6 w-full">
-                  <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
-                    <div className="w-1.5 h-4 bg-[#7B91EB] rounded-full" />
+            {/* Mis Objetivos (vinculados a programas) */}
+            {objectives.length > 0 && (
+              <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft">
+                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-4 bg-amber-400 rounded-full" />
                     <h3 className="text-xs font-black text-[#2C3A50] uppercase tracking-widest italic">
-                      Próxima Sesión 1:1
+                      Mis Objetivos
                     </h3>
                   </div>
+                  <span className="text-[8px] font-extrabold text-amber-500 bg-amber-50 px-2.5 py-1 rounded-xl uppercase tracking-wider border border-amber-100">
+                    {objectives.length} {objectives.length === 1 ? 'meta' : 'metas'}
+                  </span>
+                </div>
 
-                  {filteredSessions.length === 0 ? (
-                    <div className="text-center py-10 flex flex-col items-center justify-center flex-1">
-                      <Calendar className="w-12 h-12 text-slate-200 mb-3" />
-                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic leading-none">
-                        Sin sesiones agendadas.
-                      </p>
-                      <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-1.5">
-                        Coordiná con tu coach la próxima fecha.
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 flex-1">
-                      {filteredSessions.slice(0, 3).map((session) => (
-                        <div
-                          key={session.id}
-                          className="bg-slate-50 p-4 rounded-[20px] border border-slate-100 shadow-sm flex items-center justify-between gap-4"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 rounded-xl bg-white text-[#7B91EB] flex items-center justify-center shrink-0 border border-slate-100">
-                              <Calendar size={18} className="text-[#7B91EB]" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {objectives.map((objective: any) => {
+                    // Calcular progreso del objetivo basándonos en los programas asociados
+                    const linkedPrograms = programs.filter((p: any) => p.objectiveId === objective.id);
+                    const totalMilestones = linkedPrograms.reduce((acc: number, p: any) =>
+                      acc + (p.phases?.reduce((a2: number, ph: any) => a2 + (ph.milestones?.length || 0), 0) || 0), 0);
+                    const completedMilestones = linkedPrograms.reduce((acc: number, p: any) =>
+                      acc + (p.phases?.reduce((a2: number, ph: any) =>
+                        a2 + (ph.milestones?.filter((m: any) => checkMilestoneCompleted(m, crmMenteeId)).length || 0), 0) || 0), 0);
+                    const objProgress = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
+
+                    return (
+                      <div
+                        key={objective.id}
+                        className="p-5 rounded-[24px] border border-[#EAF0F6] bg-gradient-to-br from-slate-50/50 to-white hover:shadow-md transition-all duration-300 group"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center border border-amber-100 group-hover:scale-110 transition-transform">
+                              <Target size={16} />
                             </div>
-                            <div className="space-y-0.5">
-                              <span className="text-[10px] font-black text-[#2C3A50] uppercase tracking-tight italic block">
-                                Sesión Estratégica
-                              </span>
-                              <span className="text-[8px] font-extrabold text-[#7B91EB] uppercase tracking-widest block">
-                                {session.date ? format(new Date(session.date), 'dd MMMM - HH:mm', { locale: es }) : 'POR DEFINIR'}
-                              </span>
+                            <div>
+                              <h4 className="text-[11px] font-black text-[#2C3A50] uppercase tracking-tight italic leading-tight">
+                                {objective.title}
+                              </h4>
+                              {objective.targetDate && (
+                                <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest">
+                                  Meta: {new Date(objective.targetDate).toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' })}
+                                </span>
+                              )}
                             </div>
                           </div>
+                          <span className={`text-[7.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider ${
+                            objProgress === 100
+                              ? 'bg-[#E5FAF0] text-[#2CD79A] border border-[#D1FAE5]'
+                              : 'bg-amber-50 text-amber-500 border border-amber-100'
+                          }`}>
+                            {objProgress}%
+                          </span>
+                        </div>
 
-                          <div className="px-2.5 py-1 bg-white text-[7px] font-black text-[#2CD79A] rounded-lg uppercase tracking-wider border border-slate-100">
-                            {session.status || 'CONFIRMADA'}
+                        {objective.description && (
+                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-3 line-clamp-2">
+                            {objective.description}
+                          </p>
+                        )}
+
+                        {/* Progress Bar */}
+                        <div className="w-full h-1.5 bg-[#F0F3F7] rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-700 ${
+                              objProgress === 100 ? 'bg-[#2CD79A]' : 'bg-amber-400'
+                            }`}
+                            style={{ width: `${objProgress}%` }}
+                          />
+                        </div>
+
+                        {/* Linked programs summary */}
+                        <div className="flex items-center gap-1.5 mt-2.5">
+                          <Layers size={10} className="text-slate-300" />
+                          <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">
+                            {linkedPrograms.length} {linkedPrograms.length === 1 ? 'programa asociado' : 'programas asociados'} · {completedMilestones}/{totalMilestones} hitos
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Próxima Sesión 1:1 */}
+            <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft">
+              <div className="space-y-6 w-full">
+                <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
+                  <div className="w-1.5 h-4 bg-[#7B91EB] rounded-full" />
+                  <h3 className="text-xs font-black text-[#2C3A50] uppercase tracking-widest italic">
+                    Próxima Sesión 1:1
+                  </h3>
+                </div>
+
+                {filteredSessions.length === 0 ? (
+                  <div className="text-center py-10 flex flex-col items-center justify-center flex-1">
+                    <Calendar className="w-12 h-12 text-slate-200 mb-3" />
+                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic leading-none">
+                      Sin sesiones agendadas.
+                    </p>
+                    <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-1.5">
+                      Coordiná con tu coach la próxima fecha.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {filteredSessions.slice(0, 3).map((session) => (
+                      <div
+                        key={session.id}
+                        className="bg-slate-50 p-4 rounded-[20px] border border-slate-100 shadow-sm flex items-center justify-between gap-4"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl bg-white text-[#7B91EB] flex items-center justify-center shrink-0 border border-slate-100">
+                            <Calendar size={18} className="text-[#7B91EB]" />
+                          </div>
+                          <div className="space-y-0.5">
+                            <span className="text-[10px] font-black text-[#2C3A50] uppercase tracking-tight italic block">
+                              Sesión Estratégica
+                            </span>
+                            <span className="text-[8px] font-extrabold text-[#7B91EB] uppercase tracking-widest block">
+                              {session.date ? format(new Date(session.date), 'dd MMMM - HH:mm', { locale: es }) : 'POR DEFINIR'}
+                            </span>
                           </div>
                         </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+
+                        <div className="px-2.5 py-1 bg-white text-[7px] font-black text-[#2CD79A] rounded-lg uppercase tracking-wider border border-slate-100">
+                          {session.status || 'CONFIRMADA'}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
@@ -972,7 +1120,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                   // Calculate total progress
                   const totalMilestones = program.phases?.reduce((acc: number, p: any) => acc + (p.milestones?.length || 0), 0) || 0;
                   const completedMilestones = program.phases?.reduce((acc: number, p: any) => 
-                    acc + (p.milestones?.filter((m: any) => m.completions?.some((c: any) => c.menteeId === user?.id)).length || 0), 0) || 0;
+                    acc + (p.milestones?.filter((m: any) => checkMilestoneCompleted(m, crmMenteeId)).length || 0), 0) || 0;
                   const programProgress = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
 
                   return (
@@ -1010,7 +1158,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                         {program.phases?.map((phase: any, pIdx: number) => {
                           const isOpen = expandedPhases[phase.id] !== false; // Default expanded!
                           const phaseTotal = phase.milestones?.length || 0;
-                          const phaseCompleted = phase.milestones?.filter((m: any) => m.completions?.some((c: any) => c.menteeId === user?.id)).length || 0;
+                          const phaseCompleted = phase.milestones?.filter((m: any) => checkMilestoneCompleted(m, crmMenteeId)).length || 0;
                           const phaseProgress = phaseTotal > 0 ? Math.round((phaseCompleted / phaseTotal) * 100) : 0;
 
                           return (
@@ -1046,13 +1194,33 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                               {isOpen && (
                                 <div className="p-4 border-t border-[#EAF0F6] bg-white space-y-3">
                                   {phase.milestones?.length === 0 ? (
-                                    <p className="text-[9.5px] font-bold text-slate-400 uppercase tracking-widest italic text-center py-2">
-                                      No hay hitos en esta fase aún.
-                                    </p>
+                                    <div className="grid grid-cols-1 gap-3">
+                                      <button
+                                        disabled={togglingPhaseId === phase.id}
+                                        onClick={() => handleTogglePhase(program.id, phase.id)}
+                                        className="flex items-center justify-between p-3.5 rounded-[18px] border transition-all duration-300 text-left relative overflow-hidden group bg-white hover:bg-slate-50 border-[#EAF0F6] shadow-sm"
+                                      >
+                                        <div className="space-y-0.5 max-w-[80%]">
+                                          <span className="text-[10px] font-black uppercase tracking-tight italic block text-[#2C3A50]">
+                                            {phase.name}
+                                          </span>
+                                          <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest block leading-snug">
+                                            {phase.description || 'Marca como completada'}
+                                          </span>
+                                        </div>
+                                        <div className="w-7 h-7 rounded-lg flex items-center justify-center bg-[#F0F3FF] text-[#7B91EB] group-hover:bg-[#7B91EB] group-hover:text-white transition-all duration-300 shrink-0">
+                                          {togglingPhaseId === phase.id ? (
+                                            <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                          ) : (
+                                            <Check size={12} />
+                                          )}
+                                        </div>
+                                      </button>
+                                    </div>
                                   ) : (
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                       {phase.milestones.map((milestone: any) => {
-                                        const isCompleted = milestone.completions?.some((c: any) => c.menteeId === user?.id);
+                                        const isCompleted = checkMilestoneCompleted(milestone, crmMenteeId);
                                         const isToggling = togglingMilestoneId === milestone.id;
 
                                         return (
@@ -1227,7 +1395,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                     
                     // Derivar hitos completados en esta fecha
                     const dayMilestones = filteredPrograms.flatMap(p => p.phases || []).flatMap(ph => ph.milestones || []).filter(m => 
-                      m.completions?.some((c: any) => c.date && isSameDay(new Date(c.date), selectedDate) && c.menteeId === user?.id)
+                      m.completions?.some((c: any) => c.date && isSameDay(new Date(c.date), selectedDate) && c.menteeId === crmMenteeId)
                     );
 
                     // Derivar checkins de hábitos en esta fecha

@@ -113,6 +113,44 @@ export default function ProgramDetailPage() {
   };
 
   // --- HABIT TRACKER UTILITIES ---
+  const isMilestoneLockedForDate = (milestone: any, date: Date) => {
+    if (!milestone.completions) return false;
+    const frequency = milestone.frequency;
+    const localTargetString = date.toLocaleDateString('en-CA');
+    
+    if (frequency === 'DAILY') {
+      return milestone.completions.some((c: any) => {
+        const utcDateStr = new Date(c.date).toISOString().split('T')[0];
+        return utcDateStr === localTargetString;
+      });
+    }
+    
+    if (frequency === 'WEEKLY') {
+      const getStartOfWeekUTC = (d: Date) => {
+        const temp = new Date(d);
+        const day = temp.getUTCDay();
+        const diff = temp.getUTCDate() - day + (day === 0 ? -6 : 1);
+        const weekStart = new Date(temp.setUTCDate(diff));
+        weekStart.setUTCHours(0, 0, 0, 0);
+        return weekStart;
+      };
+      
+      const localTargetAsUTCDate = new Date(`${localTargetString}T00:00:00.000Z`);
+      const targetWeekStart = getStartOfWeekUTC(localTargetAsUTCDate);
+      
+      return milestone.completions.some((c: any) => {
+        const cWeekStart = getStartOfWeekUTC(new Date(c.date));
+        return cWeekStart.getTime() === targetWeekStart.getTime();
+      });
+    }
+
+    if (frequency === 'ONCE') {
+      return milestone.completions.length > 0;
+    }
+    
+    return false;
+  };
+
   const getLast14Days = () => {
     const days = [];
     for (let i = 13; i >= 0; i--) {
@@ -125,44 +163,43 @@ export default function ProgramDetailPage() {
 
   const isDayCompleted = (milestone: any, day: Date) => {
     if (!milestone.completions) return false;
-    const targetString = new Date(new Date(day).setHours(0, 0, 0, 0)).toDateString();
-    return milestone.completions.some((c: any) => new Date(c.date).toDateString() === targetString);
+    const localTargetString = day.toLocaleDateString('en-CA');
+    return milestone.completions.some((c: any) => {
+      const utcDateStr = new Date(c.date).toISOString().split('T')[0];
+      return utcDateStr === localTargetString;
+    });
   };
 
   const calculateStreak = (completions: any[]) => {
     if (!completions || completions.length === 0) return 0;
     
     const sortedDates = Array.from(
-      new Set(completions.map(c => new Date(c.date).toDateString()))
-    ).map(d => new Date(d)).sort((a, b) => b.getTime() - a.getTime());
+      new Set(completions.map(c => new Date(c.date).toISOString().split('T')[0]))
+    ).map(dStr => new Date(`${dStr}T00:00:00.000Z`)).sort((a, b) => b.getTime() - a.getTime());
 
     let streak = 0;
-    let expected = new Date();
-    expected.setHours(0, 0, 0, 0);
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date();
-    yesterday.setDate(yesterday.getDate() - 1);
-    yesterday.setHours(0, 0, 0, 0);
+    
+    const localTodayStr = new Date().toLocaleDateString('en-CA');
+    const today = new Date(`${localTodayStr}T00:00:00.000Z`);
+    
+    const localYesterday = new Date();
+    localYesterday.setDate(localYesterday.getDate() - 1);
+    const localYesterdayStr = localYesterday.toLocaleDateString('en-CA');
+    const yesterday = new Date(`${localYesterdayStr}T00:00:00.000Z`);
 
     const hasToday = sortedDates.some(d => d.getTime() === today.getTime());
     const hasYesterday = sortedDates.some(d => d.getTime() === yesterday.getTime());
 
     if (!hasToday && !hasYesterday) return 0;
 
-    if (hasToday) {
-      expected = today;
-    } else {
-      expected = yesterday;
-    }
+    let expected = hasToday ? today : yesterday;
 
     for (let i = 0; i < sortedDates.length; i++) {
       if (sortedDates[i].getTime() === expected.getTime()) {
         streak++;
-        expected.setDate(expected.getDate() - 1);
-        expected.setHours(0, 0, 0, 0);
-      } else {
+        expected.setUTCDate(expected.getUTCDate() - 1);
+        expected.setUTCHours(0, 0, 0, 0);
+      } else if (sortedDates[i].getTime() < expected.getTime()) {
         break;
       }
     }
@@ -172,20 +209,23 @@ export default function ProgramDetailPage() {
   const handleToggleMilestoneForDate = async (milestone: any, date: Date) => {
     if (program.isTemplate) return;
     
-    const normalizedDate = new Date(new Date(date).setHours(0, 0, 0, 0));
-    const isCompletedOnDate = milestone.completions?.some((c: any) => 
-      new Date(c.date).toDateString() === normalizedDate.toDateString()
-    );
+    const localTargetString = date.toLocaleDateString('en-CA');
+    const apiDateStr = `${localTargetString}T12:00:00.000Z`;
+    
+    const isCompletedOnDate = milestone.completions?.some((c: any) => {
+      const utcDateStr = new Date(c.date).toISOString().split('T')[0];
+      return utcDateStr === localTargetString;
+    });
 
     if (milestone.requiredEvidence !== 'NONE' && !isCompletedOnDate) {
-      setEvidenceTarget({ ...milestone, customDate: normalizedDate });
+      setEvidenceTarget({ ...milestone, customDate: new Date(apiDateStr) });
       setIsEvidenceModalOpen(true);
       return;
     }
 
     try {
       await apiClient.post(`/mentor/programs/${params.id}/milestones/${milestone.id}/toggle`, {
-        date: normalizedDate.toISOString()
+        date: apiDateStr
       });
       toast.success(isCompletedOnDate ? 'Día desmarcado' : '¡Día marcado como completado!');
       fetchProgram();
@@ -198,7 +238,13 @@ export default function ProgramDetailPage() {
     if (program.isTemplate) return;
 
     const targetDate = milestone.customDate || new Date();
-    const isCompleted = milestone.completions && milestone.completions.length > 0;
+    const localTargetString = targetDate.toLocaleDateString('en-CA');
+    const apiDateStr = `${localTargetString}T12:00:00.000Z`;
+    
+    const isCompleted = milestone.completions && milestone.completions.some((c: any) => {
+      const utcDateStr = new Date(c.date).toISOString().split('T')[0];
+      return utcDateStr === localTargetString;
+    });
 
     if (milestone.requiredEvidence !== 'NONE' && !isCompleted && !evidence) {
       setEvidenceTarget(milestone);
@@ -208,7 +254,7 @@ export default function ProgramDetailPage() {
 
     try {
       await apiClient.post(`/mentor/programs/${params.id}/milestones/${milestone.id}/toggle`, {
-        date: targetDate.toISOString(),
+        date: apiDateStr,
         evidence
       });
       fetchProgram();
@@ -346,78 +392,343 @@ export default function ProgramDetailPage() {
               Añadir Fase
             </button>
           </div>
-
-          {/* Phases List */}
-          {(!program.phases || program.phases.length === 0) ? (
-            <div className="glass-card bg-white/50 border-2 border-dashed border-slate-200 p-10 rounded-[24px] text-center space-y-4">
-              <div className="w-14 h-14 bg-white rounded-[16px] flex items-center justify-center mx-auto shadow-inner group-hover:scale-110 transition-transform duration-700 border border-slate-50">
-                <Layers className="w-6 h-6 text-slate-200" />
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic leading-none">Arquitectura en Blanco</h3>
-                <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.25em] leading-relaxed italic opacity-60">Empezá diseñando la primera fase de transformación táctica.</p>
-              </div>
-              <button
-                onClick={() => setIsPhaseModalOpen(true)}
-                className="px-6 py-3 bg-slate-900 text-white rounded-[16px] font-black text-[8px] uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-2xl shadow-slate-200 active:scale-95 italic"
-              >
-                Configurar Fase Alpha
-              </button>
-            </div>
-          ) : (
+             {/* Habits / Routines Unified Layout */}
+          {(program.type === 'HABITS' || program.type === 'ROUTINE') ? (
             <div className="space-y-6">
-              {program.phases.map((phase: any, index: number) => (
-                <div key={phase.id} className="phase-module glass-card bg-white/70 backdrop-blur-xl border border-white p-5 rounded-[20px] shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-700 overflow-hidden relative">
-                  {/* Phase Header */}
-                  <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative z-10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-slate-900 text-white rounded-[10px] flex items-center justify-center font-black text-sm italic shadow-2xl shadow-slate-200 group-hover:bg-indigo-600 transition-all duration-500">
-                        {String(index + 1).padStart(2, '0')}
-                      </div>
-                      <div>
-                        <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mb-1 group-hover:text-indigo-600 transition-colors">{phase.name}</h4>
-                        <p className="text-slate-400 text-[8px] font-black uppercase tracking-[0.25em] italic opacity-60">
-                          Módulos Tácticos: {phase.milestones?.length || 0} • {phase.description || 'SIN ESPECIFICACIONES'}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => handleDeletePhase(phase.id)}
-                        className="w-8 h-8 flex items-center justify-center bg-white border border-slate-100 text-slate-300 hover:text-red-500 hover:shadow-xl rounded-xl transition-all active:scale-90"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+              <div className="flex items-center justify-between px-1">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter italic leading-none flex items-center gap-1.5">
+                    <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
+                    PANEL DE CONSISTENCIA DE HÁBITOS
+                  </h3>
+                  <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.25em] italic opacity-60">
+                    Registrá y gestioná las rutinas diarias y semanales del estudiante.
+                  </p>
+                </div>
+                {program.phases && program.phases.length > 0 && (
+                  <button
+                    onClick={() => {
+                      setSelectedPhaseId(program.phases[0].id);
+                      setIsMilestoneModalOpen(true);
+                    }}
+                    className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 transition-colors font-bold text-[9px] uppercase tracking-widest group"
+                  >
+                    <Plus className="w-3.5 h-3.5 p-0.5 bg-indigo-100 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all" />
+                    Añadir Hábito / Rutina
+                  </button>
+                )}
+              </div>
 
-                  {/* Milestones in this Phase */}
-                  <div className="space-y-2.5 pl-6 border-l-4 border-slate-100/50 ml-4 py-2 relative z-10">
-                    {phase.milestones?.map((milestone: any) => {
-                      const isHabitMode = program.type === 'HABITS' || program.type === 'ROUTINE' || milestone.frequency !== 'ONCE';
-                      const isCompleted = milestone.completions && milestone.completions.length > 0;
+              {/* Grid of habits */}
+              {(() => {
+                const allMilestones = program.phases?.flatMap((p: any) => p.milestones?.map((m: any) => ({ ...m, phaseId: p.id })) || []) || [];
+                
+                if (allMilestones.length === 0) {
+                  return (
+                    <div className="glass-card bg-white/50 border-2 border-dashed border-slate-200 p-10 rounded-[24px] text-center space-y-4">
+                      <Flame className="w-10 h-10 text-slate-300 mx-auto animate-pulse" />
+                      <div className="space-y-1">
+                        <h3 className="text-base font-black text-slate-900 uppercase tracking-tighter italic leading-none">Sin hábitos programados</h3>
+                        <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.2em] italic">Crea una fase inicial para poder incorporar hábitos.</p>
+                      </div>
+                      {(!program.phases || program.phases.length === 0) ? (
+                        <button
+                          onClick={() => handleAddPhase({ name: 'HÁBITOS PRINCIPALES', description: 'Rutas de consistencia' })}
+                          className="px-6 py-3 bg-slate-900 text-white rounded-[16px] font-black text-[8px] uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-lg active:scale-95 italic"
+                        >
+                          Inicializar Categoría de Hábitos
+                        </button>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setSelectedPhaseId(program.phases[0].id);
+                            setIsMilestoneModalOpen(true);
+                          }}
+                          className="px-6 py-3 bg-slate-900 text-white rounded-[16px] font-black text-[8px] uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-lg active:scale-95 italic"
+                        >
+                          Crear Primer Hábito
+                        </button>
+                      )}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {allMilestones.map((milestone: any) => {
+                      const isCompletedToday = isMilestoneLockedForDate(milestone, new Date());
                       const currentStreak = calculateStreak(milestone.completions || []);
                       const streakColor = currentStreak > 0 ? 'text-orange-500 bg-orange-50 border-orange-100' : 'text-slate-400 bg-slate-50 border-slate-100';
+                      
+                      return (
+                        <div key={milestone.id} className="glass-card bg-white border border-white hover:border-slate-100/50 rounded-[28px] p-6 shadow-soft hover:shadow-2xl transition-all duration-500 space-y-6 relative overflow-hidden">
+                          {/* Streak fire background effect */}
+                          {currentStreak > 0 && (
+                            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/[0.02] to-transparent rounded-bl-full pointer-events-none" />
+                          )}
 
-                      if (isHabitMode) {
-                        return (
-                          <div key={milestone.id} className="glass-card bg-white/50 border border-transparent hover:border-slate-100 hover:bg-white rounded-[24px] p-5 transition-all duration-500 group/item shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 space-y-4">
-                            
-                            {/* Habit Top Info */}
-                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                              <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-[14px] flex items-center justify-center font-bold shadow-inner shrink-0 border border-indigo-100">
-                                  <Flame className={`w-5 h-5 ${currentStreak > 0 ? 'text-orange-500 animate-pulse' : 'text-indigo-400'}`} />
+                          <div className="flex justify-between items-start gap-4">
+                            <div className="space-y-1">
+                              <h4 className="text-base font-black text-slate-900 uppercase tracking-tight italic leading-tight">
+                                {milestone.title}
+                              </h4>
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                <div className="px-2 py-0.5 bg-indigo-50 rounded text-[7px] font-black text-indigo-500 uppercase tracking-widest italic border border-indigo-100 shadow-sm">+{milestone.xpReward} XP</div>
+                                <div className="px-2 py-0.5 bg-emerald-50 rounded text-[7px] font-black text-emerald-600 uppercase tracking-widest italic border border-emerald-100 shadow-sm">
+                                  {milestone.frequency === 'DAILY' ? 'DIARIO' : milestone.frequency === 'WEEKLY' ? 'SEMANAL' : 'ÚNICO'}
                                 </div>
-                                <div>
-                                  <h5 className="text-sm font-black text-slate-900 uppercase tracking-tight italic leading-none mb-1 group-hover/item:text-indigo-600 transition-colors">
-                                    {milestone.title}
-                                  </h5>
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <div className="px-2 py-0.5 bg-indigo-50 rounded text-[7px] font-black text-indigo-500 uppercase tracking-widest italic border border-indigo-100 shadow-sm">+{milestone.xpReward} XP</div>
-                                    <div className="px-2 py-0.5 bg-emerald-50 rounded text-[7px] font-black text-emerald-600 uppercase tracking-widest italic border border-emerald-100 shadow-sm">
-                                      {milestone.frequency}
+                                {milestone.requiredEvidence !== 'NONE' && (
+                                  <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded text-[7px] font-black text-amber-600 uppercase tracking-widest italic border border-amber-100 shadow-sm">
+                                    <Zap className="w-2.5 h-2.5 animate-pulse" />
+                                    EVIDENCIA
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5">
+                              <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[7.5px] font-black uppercase tracking-widest italic shadow-sm shrink-0 ${streakColor}`}>
+                                <Flame className={`w-3.5 h-3.5 fill-current ${currentStreak > 0 ? 'animate-pulse' : ''}`} />
+                                RACHA: {currentStreak}D
+                              </div>
+                              <button
+                                onClick={() => handleDeleteMilestone(milestone.phaseId, milestone.id)}
+                                className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-slate-50 rounded-xl transition-all active:scale-90 border border-transparent hover:border-slate-100"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Quick Check-in Button */}
+                          <div className="pt-2">
+                            {isCompletedToday ? (
+                              <div className="w-full py-4 bg-emerald-50 text-emerald-600 border border-emerald-200/60 rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-2 shadow-sm italic">
+                                <Check className="w-4 h-4 stroke-[3] animate-bounce" />
+                                Hábito Registrado (Límite Alcanzado)
+                              </div>
+                            ) : (
+                              <button
+                                disabled={program.isTemplate}
+                                onClick={() => handleToggleMilestone(milestone)}
+                                className="w-full py-4 bg-slate-900 hover:bg-indigo-600 text-white rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 group italic border border-white/5"
+                              >
+                                <Check className="w-4 h-4 group-hover:scale-125 transition-transform" />
+                                Registrar Check-in Hoy
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Consistency Grid */}
+                          <div className="bg-slate-50/60 border border-slate-100 rounded-[20px] p-4 space-y-3">
+                            <span className="text-[7.5px] font-black text-slate-400 uppercase tracking-[0.25em] block italic">Registro de Consistencia (Últimos 14 días)</span>
+                            <div className="grid grid-cols-7 sm:grid-cols-14 gap-2 justify-items-center">
+                              {getLast14Days().map((day, idx) => {
+                                const completed = isDayCompleted(milestone, day);
+                                const isToday = new Date().toDateString() === day.toDateString();
+                                const dayLetter = format(day, 'EEEEEE', { locale: es }).toUpperCase();
+                                const dayNumber = format(day, 'd');
+                                
+                                return (
+                                  <div key={idx} className="flex flex-col items-center gap-1">
+                                    <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider">{dayLetter}</span>
+                                    <button
+                                      disabled={program.isTemplate}
+                                      onClick={() => handleToggleMilestoneForDate(milestone, day)}
+                                      title={`${format(day, "d 'de' MMMM", { locale: es })} - ${completed ? 'Completado' : 'Pendiente'}`}
+                                      className={`w-6 h-6 rounded-[8px] flex items-center justify-center transition-all ${
+                                        completed
+                                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 hover:bg-emerald-500'
+                                          : isToday
+                                            ? 'bg-white border-2 border-dashed border-indigo-500 text-indigo-600 animate-pulse hover:border-indigo-600'
+                                            : 'bg-white border border-slate-200 text-slate-300 hover:border-indigo-400 hover:text-indigo-500'
+                                      }`}
+                                    >
+                                      {completed ? (
+                                        <Check className="w-3 h-3 stroke-[3]" />
+                                      ) : (
+                                        <span className="text-[7px] font-bold">{dayNumber}</span>
+                                      )}
+                                    </button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })()}
+            </div>
+          ) : (
+            <>
+              {/* Phases List */}
+              {(!program.phases || program.phases.length === 0) ? (
+                <div className="glass-card bg-white/50 border-2 border-dashed border-slate-200 p-10 rounded-[24px] text-center space-y-4">
+                  <div className="w-14 h-14 bg-white rounded-[16px] flex items-center justify-center mx-auto shadow-inner group-hover:scale-110 transition-transform duration-700 border border-slate-50">
+                    <Layers className="w-6 h-6 text-slate-200" />
+                  </div>
+                  <div className="space-y-1">
+                    <h3 className="text-lg font-black text-slate-900 uppercase tracking-tighter italic leading-none">Arquitectura en Blanco</h3>
+                    <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.25em] leading-relaxed italic opacity-60">Empezá diseñando la primera fase de transformación táctica.</p>
+                  </div>
+                  <button
+                    onClick={() => setIsPhaseModalOpen(true)}
+                    className="px-6 py-3 bg-slate-900 text-white rounded-[16px] font-black text-[8px] uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-2xl shadow-slate-200 active:scale-95 italic"
+                  >
+                    Configurar Fase Alpha
+                  </button>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {program.phases.map((phase: any, index: number) => (
+                    <div key={phase.id} className="phase-module glass-card bg-white/70 backdrop-blur-xl border border-white p-5 rounded-[20px] shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-700 overflow-hidden relative">
+                      {/* Phase Header */}
+                      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 relative z-10">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-slate-900 text-white rounded-[10px] flex items-center justify-center font-black text-sm italic shadow-2xl shadow-slate-200 group-hover:bg-indigo-600 transition-all duration-500">
+                            {String(index + 1).padStart(2, '0')}
+                          </div>
+                          <div>
+                            <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mb-1 group-hover:text-indigo-600 transition-colors">{phase.name}</h4>
+                            <p className="text-slate-400 text-[8px] font-black uppercase tracking-[0.25em] italic opacity-60">
+                              Módulos Tácticos: {phase.milestones?.length || 0} • {phase.description || 'SIN ESPECIFICACIONES'}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleDeletePhase(phase.id)}
+                            className="w-8 h-8 flex items-center justify-center bg-white border border-slate-100 text-slate-300 hover:text-red-500 hover:shadow-xl rounded-xl transition-all active:scale-90"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Milestones in this Phase */}
+                      <div className="space-y-2.5 pl-6 border-l-4 border-slate-100/50 ml-4 py-2 relative z-10">
+                        {phase.milestones?.map((milestone: any) => {
+                          const isHabitMode = program.type === 'HABITS' || program.type === 'ROUTINE' || milestone.frequency !== 'ONCE';
+                          const isCompleted = milestone.completions && milestone.completions.length > 0;
+                          const currentStreak = calculateStreak(milestone.completions || []);
+                          const streakColor = currentStreak > 0 ? 'text-orange-500 bg-orange-50 border-orange-100' : 'text-slate-400 bg-slate-50 border-slate-100';
+
+                          if (isHabitMode) {
+                            return (
+                              <div key={milestone.id} className="glass-card bg-white/50 border border-transparent hover:border-slate-100 hover:bg-white rounded-[24px] p-5 transition-all duration-500 group/item shadow-sm hover:shadow-xl hover:shadow-indigo-500/5 space-y-4">
+                                
+                                {/* Habit Top Info */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                  <div className="flex items-start gap-3">
+                                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-[14px] flex items-center justify-center font-bold shadow-inner shrink-0 border border-indigo-100">
+                                      <Flame className={`w-5 h-5 ${currentStreak > 0 ? 'text-orange-500 animate-pulse' : 'text-indigo-400'}`} />
                                     </div>
+                                    <div>
+                                      <h5 className="text-sm font-black text-slate-900 uppercase tracking-tight italic leading-none mb-1 group-hover/item:text-indigo-600 transition-colors">
+                                        {milestone.title}
+                                      </h5>
+                                      <div className="flex items-center gap-1.5 flex-wrap">
+                                        <div className="px-2 py-0.5 bg-indigo-50 rounded text-[7px] font-black text-indigo-500 uppercase tracking-widest italic border border-indigo-100 shadow-sm">+{milestone.xpReward} XP</div>
+                                        <div className="px-2 py-0.5 bg-emerald-50 rounded text-[7px] font-black text-emerald-600 uppercase tracking-widest italic border border-emerald-100 shadow-sm">
+                                          {milestone.frequency}
+                                        </div>
+                                        {milestone.requiredEvidence !== 'NONE' && (
+                                          <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded text-[7px] font-black text-amber-600 uppercase tracking-widest italic border border-amber-100 shadow-sm">
+                                            <Zap className="w-2.5 h-2.5 animate-pulse" />
+                                            EVIDENCIA
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[7.5px] font-black uppercase tracking-widest italic shadow-sm shrink-0 ${streakColor}`}>
+                                      <Flame className="w-3.5 h-3.5 fill-current" />
+                                      Racha: {currentStreak}D
+                                    </div>
+                                    <button
+                                      onClick={() => handleDeleteMilestone(phase.id, milestone.id)}
+                                      className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-red-500 hover:bg-slate-50 rounded-xl transition-all active:scale-90"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Habit Calendar Grid (Last 14 Days) */}
+                                <div className="bg-slate-50/50 border border-slate-100/50 rounded-[20px] p-4">
+                                  <p className="text-[7.5px] font-black text-slate-400 uppercase tracking-[0.25em] mb-3 italic">Registro de Consistencia (Últimos 14 días)</p>
+                                  
+                                  <div className="grid grid-cols-7 sm:grid-cols-14 gap-2.5 justify-items-center">
+                                    {getLast14Days().map((day, idx) => {
+                                      const completed = isDayCompleted(milestone, day);
+                                      const isToday = new Date().toDateString() === day.toDateString();
+                                      const dayLetter = format(day, 'EEEEEE', { locale: es }).toUpperCase();
+                                      const dayNumber = format(day, 'd');
+                                      
+                                      return (
+                                        <div key={idx} className="flex flex-col items-center gap-1.5">
+                                          <span className="text-[7px] font-black text-slate-400 uppercase tracking-wider">{dayLetter}</span>
+                                          
+                                          <button
+                                            disabled={program.isTemplate}
+                                            onClick={() => handleToggleMilestoneForDate(milestone, day)}
+                                            title={`${format(day, "d 'de' MMMM", { locale: es })} - ${completed ? 'Completado' : 'Pendiente'}`}
+                                            className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
+                                              completed
+                                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 scale-105 hover:bg-emerald-500'
+                                                : isToday
+                                                  ? 'bg-white border-2 border-dashed border-indigo-500 text-indigo-600 animate-pulse hover:border-indigo-600'
+                                                  : 'bg-white border border-slate-200 text-slate-300 hover:border-indigo-400 hover:text-indigo-500'
+                                            }`}
+                                          >
+                                            {completed ? (
+                                              <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                            ) : (
+                                              <span className="text-[8px] font-bold">{dayNumber}</span>
+                                            )}
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                              </div>
+                            );
+                          }
+
+                          return (
+                            <div key={milestone.id} className="flex items-center justify-between p-3 bg-white/50 hover:bg-white border border-transparent hover:border-slate-100 rounded-[16px] transition-all group/item shadow-sm hover:shadow-xl hover:shadow-indigo-500/5">
+                              <div className="flex items-center gap-3">
+                                <button
+                                  disabled={program.isTemplate}
+                                  onClick={() => handleToggleMilestone(milestone)}
+                                  className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-all shadow-inner border-2 ${isCompleted
+                                      ? 'bg-emerald-600 border-emerald-400 text-white shadow-xl shadow-emerald-200 scale-110'
+                                      : 'bg-white border-slate-100 text-slate-300 hover:border-indigo-500 hover:text-indigo-600'
+                                    }`}
+                                >
+                                  {isCompleted ? <Check className="w-4 h-4" /> : (
+                                    milestone.requiredEvidence !== 'NONE' ? <Camera className="w-4 h-4" /> : <FileText className="w-4 h-4" />
+                                  )}
+                                </button>
+                                <div>
+                                  <div className={`text-xs font-black uppercase tracking-tight transition-all italic ${isCompleted ? 'text-slate-300 line-through' : 'text-slate-800'}`}>
+                                    {milestone.title}
+                                  </div>
+                                  <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                                    <div className="px-2 py-0.5 bg-indigo-50 rounded text-[7px] font-black text-indigo-500 uppercase tracking-widest italic border border-indigo-100 shadow-sm">+{milestone.xpReward} XP</div>
+                                    {milestone.frequency !== 'ONCE' && (
+                                      <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 rounded text-[7px] font-black text-emerald-600 uppercase tracking-widest italic border border-emerald-100 shadow-sm">
+                                        <Clock className="w-2.5 h-2.5" />
+                                        {milestone.frequency}
+                                      </div>
+                                    )}
                                     {milestone.requiredEvidence !== 'NONE' && (
                                       <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded text-[7px] font-black text-amber-600 uppercase tracking-widest italic border border-amber-100 shadow-sm">
                                         <Zap className="w-2.5 h-2.5 animate-pulse" />
@@ -427,126 +738,34 @@ export default function ProgramDetailPage() {
                                   </div>
                                 </div>
                               </div>
-
-                              <div className="flex items-center gap-2">
-                                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[7.5px] font-black uppercase tracking-widest italic shadow-sm shrink-0 ${streakColor}`}>
-                                  <Flame className="w-3.5 h-3.5 fill-current" />
-                                  Racha: {currentStreak}D
-                                </div>
-                                <button
-                                  onClick={() => handleDeleteMilestone(phase.id, milestone.id)}
-                                  className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-red-500 hover:bg-slate-50 rounded-xl transition-all active:scale-90"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
-                              </div>
+                              <button
+                                onClick={() => handleDeleteMilestone(phase.id, milestone.id)}
+                                className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-red-500 transition-all active:scale-90"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
                             </div>
+                          );
+                        })}
 
-                            {/* Habit Calendar Grid (Last 14 Days) */}
-                            <div className="bg-slate-50/50 border border-slate-100/50 rounded-[20px] p-4">
-                              <p className="text-[7.5px] font-black text-slate-400 uppercase tracking-[0.25em] mb-3 italic">Registro de Consistencia (Últimos 14 días)</p>
-                              
-                              <div className="grid grid-cols-7 sm:grid-cols-14 gap-2.5 justify-items-center">
-                                {getLast14Days().map((day, idx) => {
-                                  const completed = isDayCompleted(milestone, day);
-                                  const isToday = new Date().toDateString() === day.toDateString();
-                                  const dayLetter = format(day, 'EEEEEE', { locale: es }).toUpperCase();
-                                  const dayNumber = format(day, 'd');
-                                  
-                                  return (
-                                    <div key={idx} className="flex flex-col items-center gap-1.5">
-                                      <span className="text-[7px] font-black text-slate-400 uppercase tracking-wider">{dayLetter}</span>
-                                      
-                                      <button
-                                        disabled={program.isTemplate}
-                                        onClick={() => handleToggleMilestoneForDate(milestone, day)}
-                                        title={`${format(day, "d 'de' MMMM", { locale: es })} - ${completed ? 'Completado' : 'Pendiente'}`}
-                                        className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all ${
-                                          completed
-                                            ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 scale-105 hover:bg-emerald-500'
-                                            : isToday
-                                              ? 'bg-white border-2 border-dashed border-indigo-500 text-indigo-600 animate-pulse hover:border-indigo-600'
-                                              : 'bg-white border border-slate-200 text-slate-300 hover:border-indigo-400 hover:text-indigo-500'
-                                        }`}
-                                      >
-                                        {completed ? (
-                                          <Check className="w-3.5 h-3.5 stroke-[3]" />
-                                        ) : (
-                                          <span className="text-[8px] font-bold">{dayNumber}</span>
-                                        )}
-                                      </button>
-                                    </div>
-                                  );
-                                })}
-                              </div>
-                            </div>
-
+                        <button
+                          onClick={() => {
+                            setSelectedPhaseId(phase.id);
+                            setIsMilestoneModalOpen(true);
+                          }}
+                          className="flex items-center gap-3 text-slate-400 hover:text-indigo-600 transition-all font-black text-[8.5px] uppercase tracking-[0.25em] mt-4 group/add italic"
+                        >
+                          <div className="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center group-hover/add:bg-indigo-600 group-hover/add:text-white transition-all shadow-sm">
+                            <Plus className="w-4 h-4" />
                           </div>
-                        );
-                      }
-
-                      return (
-                        <div key={milestone.id} className="flex items-center justify-between p-3 bg-white/50 hover:bg-white border border-transparent hover:border-slate-100 rounded-[16px] transition-all group/item shadow-sm hover:shadow-xl hover:shadow-indigo-500/5">
-                          <div className="flex items-center gap-3">
-                            <button
-                              disabled={program.isTemplate}
-                              onClick={() => handleToggleMilestone(milestone)}
-                              className={`w-8 h-8 rounded-[8px] flex items-center justify-center transition-all shadow-inner border-2 ${isCompleted
-                                  ? 'bg-emerald-600 border-emerald-400 text-white shadow-xl shadow-emerald-200 scale-110'
-                                  : 'bg-white border-slate-100 text-slate-300 hover:border-indigo-500 hover:text-indigo-600'
-                                }`}
-                            >
-                              {isCompleted ? <Check className="w-4 h-4" /> : (
-                                milestone.requiredEvidence !== 'NONE' ? <Camera className="w-4 h-4" /> : <FileText className="w-4 h-4" />
-                              )}
-                            </button>
-                            <div>
-                              <div className={`text-xs font-black uppercase tracking-tight transition-all italic ${isCompleted ? 'text-slate-300 line-through' : 'text-slate-800'}`}>
-                                {milestone.title}
-                              </div>
-                              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                                <div className="px-2 py-0.5 bg-indigo-50 rounded text-[7px] font-black text-indigo-500 uppercase tracking-widest italic border border-indigo-100 shadow-sm">+{milestone.xpReward} XP</div>
-                                {milestone.frequency !== 'ONCE' && (
-                                  <div className="flex items-center gap-1 px-2 py-0.5 bg-emerald-50 rounded text-[7px] font-black text-emerald-600 uppercase tracking-widest italic border border-emerald-100 shadow-sm">
-                                    <Clock className="w-2.5 h-2.5" />
-                                    {milestone.frequency}
-                                  </div>
-                                )}
-                                {milestone.requiredEvidence !== 'NONE' && (
-                                  <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded text-[7px] font-black text-amber-600 uppercase tracking-widest italic border border-amber-100 shadow-sm">
-                                    <Zap className="w-2.5 h-2.5 animate-pulse" />
-                                    EVIDENCIA
-                                  </div>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleDeleteMilestone(phase.id, milestone.id)}
-                            className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-red-500 transition-all active:scale-90"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      );
-                    })}
-
-                    <button
-                      onClick={() => {
-                        setSelectedPhaseId(phase.id);
-                        setIsMilestoneModalOpen(true);
-                      }}
-                      className="flex items-center gap-3 text-slate-400 hover:text-indigo-600 transition-all font-black text-[8.5px] uppercase tracking-[0.25em] mt-4 group/add italic"
-                    >
-                      <div className="w-8 h-8 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center group-hover/add:bg-indigo-600 group-hover/add:text-white transition-all shadow-sm">
-                        <Plus className="w-4 h-4" />
+                          Expandir Protocolo de {phase.name}
+                        </button>
                       </div>
-                      Expandir Protocolo de {phase.name}
-                    </button>
-                  </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+               )}
+            </>
           )}
         </div>
 

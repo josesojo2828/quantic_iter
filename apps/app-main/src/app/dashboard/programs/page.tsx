@@ -23,15 +23,7 @@ import { apiClient } from '@/core/api/api.client';
 import { toast } from 'react-hot-toast';
 import { contactsService } from '@/features/crm/services/contacts.service';
 
-const MenteeName = ({ id }: { id: string }) => {
-  const [name, setName] = useState<string>('...');
-  useEffect(() => {
-    contactsService.getContactById(id)
-      .then(c => setName(c.name))
-      .catch(() => setName('N/A'));
-  }, [id]);
-  return <>{name}</>;
-};
+import Link from 'next/link';
 
 export default function ProgramsPage() {
   const router = useRouter();
@@ -41,6 +33,7 @@ export default function ProgramsPage() {
   const [isTemplateModalOpen, setIsTemplateModalOpen] = useState(false);
   const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<{ id: string; name: string } | null>(null);
+  const [avatarsCache, setAvatarsCache] = useState<Record<string, { name: string, avatarUrl?: string }>>({});
 
   const fetchPrograms = async () => {
     try {
@@ -58,9 +51,37 @@ export default function ProgramsPage() {
     }
   };
 
+  const loadAvatars = async () => {
+    const allMenteeIds = Array.from(new Set(
+      programs.map(p => p.menteeId).filter(Boolean)
+    )).filter(id => !avatarsCache[id]);
+
+    if (allMenteeIds.length === 0) return;
+
+    try {
+      const { items } = await contactsService.getContacts({ ids: allMenteeIds });
+      const newCache = { ...avatarsCache };
+      items.forEach(contact => {
+        newCache[contact.id] = {
+          name: contact.name,
+          avatarUrl: contact.avatarUrl || undefined
+        };
+      });
+      setAvatarsCache(newCache);
+    } catch (err) {
+      console.error('Error loading avatars:', err);
+    }
+  };
+
   useEffect(() => {
     fetchPrograms();
   }, []);
+
+  useEffect(() => {
+    if (programs.length > 0) {
+      loadAvatars();
+    }
+  }, [programs]);
 
   return (
     <div className="w-full p-4 lg:p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
@@ -162,10 +183,26 @@ export default function ProgramsPage() {
                   <BookOpen className="w-5 h-5" />
                 </div>
                 <div className="flex flex-col items-end gap-2">
-                  <div className="px-3 py-1.5 bg-white border border-slate-100 text-slate-900 rounded-full text-[8px] font-black uppercase tracking-widest shadow-sm flex items-center gap-1.5 italic">
-                    <div className="w-1 h-1 bg-indigo-500 rounded-full animate-pulse" />
-                    <MenteeName id={program.menteeId} />
-                  </div>
+                  <Link
+                    href={`/dashboard/clients/${program.menteeId}`}
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-100 hover:border-indigo-200 rounded-full text-[8px] font-black text-slate-900 hover:text-indigo-600 uppercase tracking-widest shadow-sm transition-all italic cursor-pointer group/mentee animate-in fade-in duration-300"
+                  >
+                    <div className="w-4 h-4 rounded-full overflow-hidden flex items-center justify-center font-black text-[7px] shadow-sm uppercase italic shrink-0">
+                      {avatarsCache[program.menteeId]?.avatarUrl ? (
+                        <img 
+                          src={avatarsCache[program.menteeId].avatarUrl.startsWith('http') ? avatarsCache[program.menteeId].avatarUrl : `/avatars/${avatarsCache[program.menteeId].avatarUrl}`} 
+                          alt={avatarsCache[program.menteeId]?.name || 'M'}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-slate-900 text-white flex items-center justify-center text-[7px] font-black">
+                          {avatarsCache[program.menteeId]?.name?.charAt(0).toUpperCase() || 'M'}
+                        </div>
+                      )}
+                    </div>
+                    <span>{avatarsCache[program.menteeId]?.name || 'ALUMNO QUANTIC'}</span>
+                  </Link>
                   <div className={`px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] italic border ${
                     program.status === 'PUBLISHED' 
                       ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 

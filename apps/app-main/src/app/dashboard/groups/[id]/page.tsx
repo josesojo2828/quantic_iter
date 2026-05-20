@@ -280,7 +280,11 @@ export default function GroupDetailPage() {
             <tbody className="divide-y divide-slate-100/50">
               {membersInfo.length > 0 ? (
                 membersInfo.map((member) => (
-                  <tr key={member.id} className="tactical-member-row hover:bg-white transition-all group/row cursor-pointer">
+                  <tr 
+                    key={member.id} 
+                    onClick={() => router.push(`/dashboard/clients/${member.id}`)}
+                    className="tactical-member-row hover:bg-slate-50/50 hover:shadow-[inset_4px_0_0_#6366f1] transition-all group/row cursor-pointer"
+                  >
                     <td className="px-10 py-6">
                       <div className="flex items-center gap-5">
                         <div className="w-14 h-14 rounded-2xl bg-white border border-slate-100 flex items-center justify-center overflow-hidden shadow-sm group-hover/row:scale-110 group-hover/row:shadow-xl transition-all duration-500">

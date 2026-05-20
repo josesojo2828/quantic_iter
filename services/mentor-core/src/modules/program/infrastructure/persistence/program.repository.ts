@@ -216,36 +216,95 @@ export class ProgramRepository extends BaseRepository<Program> {
     });
   }
 
-  async toggleMilestone(milestoneId: string, menteeId: string, date?: Date) {
-    // Normalizar fecha a 00:00:00 para registros diarios si existe
-    const normalizedDate = new Date(new Date(date || new Date()).setHours(0, 0, 0, 0));
-
-    const existing = await this.prisma.milestoneCompletion.findUnique({
-      where: {
-        milestoneId_menteeId_date: { 
-          milestoneId, 
-          menteeId, 
-          date: normalizedDate 
-        }
-      }
+  async togglePhaseCheckpoint(programId: string, phaseId: string, menteeId: string, date?: Date) {
+    // Buscar si ya existe un milestone para esta fase
+    let milestone = await this.prisma.milestone.findFirst({
+      where: { phaseId, programId },
     });
 
-    if (existing) {
-      return this.prisma.milestoneCompletion.delete({
-        where: { id: existing.id }
+    // Si no existe, auto-creamos uno usando los datos de la fase
+    if (!milestone) {
+      const phase = await this.prisma.phase.findUnique({ where: { id: phaseId } });
+      const program = await this.prisma.program.findUnique({ where: { id: programId } });
+      if (!phase || !program) throw new Error('Fase o programa no encontrado');
+
+      milestone = await this.prisma.milestone.create({
+        data: {
+          title: phase.name || 'Completar fase',
+          description: phase.description || null,
+          order: 0,
+          xpReward: 500,
+          frequency: 'ONCE',
+          daysOfWeek: [],
+          requiredEvidence: 'NONE',
+          isHabit: false,
+          programId,
+          phaseId,
+          tenantId: program.tenantId,
+        }
       });
+    }
+
+    // Delegamos al toggle existente
+    return this.toggleMilestone(milestone.id, menteeId, date);
+  }
+
+  async toggleMilestone(milestoneId: string, menteeId: string, date?: Date) {
+    const milestone = await this.prisma.milestone.findUnique({
+      where: { id: milestoneId },
+    });
+    if (!milestone) {
+      throw new Error('Hito no encontrado');
+    }
+
+    const frequency = milestone.frequency || 'ONCE';
+    let targetDate = new Date(new Date(date || new Date()).setHours(0, 0, 0, 0));
+
+    if (frequency === 'WEEKLY') {
+      const startOfWeek = new Date(targetDate);
+      const day = startOfWeek.getDay();
+      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+      startOfWeek.setDate(diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+      targetDate = startOfWeek;
+    }
+
+    if (frequency === 'ONCE') {
+      const existing = await this.prisma.milestoneCompletion.findFirst({
+        where: { milestoneId, menteeId },
+      });
+      if (existing) {
+        return this.prisma.milestoneCompletion.delete({
+          where: { id: existing.id }
+        });
+      }
+    } else {
+      const existing = await this.prisma.milestoneCompletion.findUnique({
+        where: {
+          milestoneId_menteeId_date: { 
+            milestoneId, 
+            menteeId, 
+            date: targetDate 
+          }
+        }
+      });
+      if (existing) {
+        return this.prisma.milestoneCompletion.delete({
+          where: { id: existing.id }
+        });
+      }
     }
 
     return this.prisma.milestoneCompletion.create({
       data: {
         milestoneId,
         menteeId,
-        date: normalizedDate,
+        date: targetDate,
       }
     });
   }
 
-  async clone(id: string, scope: QueryScope, menteeId?: string): Promise<Program> {
+  async clone(id: string, scope: QueryScope, menteeId?: string, options?: { objectiveId?: string; newObjective?: any }): Promise<Program> {
     const original = await this.prisma.program.findFirst({
       where: {
         id,
@@ -266,6 +325,23 @@ export class ProgramRepository extends BaseRepository<Program> {
     const { id: _, createdAt: __, updatedAt: ___, phases, enrollments, ...data } = original as any;
 
     return this.prisma.$transaction(async (tx) => {
+      let resolvedObjectiveId = options?.objectiveId || null;
+
+      // Si viene un objetivo nuevo para ser creado al vuelo
+      if (options?.newObjective && options.newObjective.title) {
+        const objective = await tx.objective.create({
+          data: {
+            title: options.newObjective.title,
+            description: options.newObjective.description || null,
+            targetDate: options.newObjective.targetDate ? new Date(options.newObjective.targetDate) : null,
+            status: 'ACTIVE',
+            menteeId: menteeId || scope.userId,
+            tenantId: scope.tenantId!,
+          }
+        });
+        resolvedObjectiveId = objective.id;
+      }
+
       // 1. Crear el programa base
       const newProgram = await tx.program.create({
         data: {
@@ -277,6 +353,7 @@ export class ProgramRepository extends BaseRepository<Program> {
           status: menteeId ? 'ACTIVE' : 'DRAFT', // Si se le asigna a un estudiante, se activa de una
           menteeId: menteeId || null,
           tenantId: scope.tenantId!,
+          objectiveId: resolvedObjectiveId,
         }
       });
 
@@ -292,7 +369,7 @@ export class ProgramRepository extends BaseRepository<Program> {
             }
           });
 
-          if (milestones && Array.isArray(milestones)) {
+          if (milestones && Array.isArray(milestones) && milestones.length > 0) {
             for (const milestone of milestones) {
               const { id: ___, programId: ____, phaseId: _____, createdAt: ______, updatedAt: _______, completions, ...mData } = milestone;
               
@@ -305,6 +382,23 @@ export class ProgramRepository extends BaseRepository<Program> {
                 }
               });
             }
+          } else {
+            // Si la fase no tiene hitos, auto-generamos uno usando el nombre de la fase
+            await tx.milestone.create({
+              data: {
+                title: phase.name || 'Completar fase',
+                description: phase.description || null,
+                order: 0,
+                xpReward: 500,
+                frequency: 'ONCE',
+                daysOfWeek: [],
+                requiredEvidence: 'NONE',
+                isHabit: false,
+                programId: newProgram.id,
+                phaseId: newPhase.id,
+                tenantId: scope.tenantId!,
+              }
+            });
           }
         }
       }

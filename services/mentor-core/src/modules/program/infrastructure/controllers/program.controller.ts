@@ -33,8 +33,15 @@ export class ProgramController {
   }
 
   @Post(':id/assign')
-  async assign(@Param('id') id: string, @Body('menteeId') menteeId: string, @Req() req: any) {
-    return this.programService.assign(id, menteeId, req.scope);
+  async assign(
+    @Param('id') id: string,
+    @Body() body: { menteeId: string; objectiveId?: string; newObjective?: any },
+    @Req() req: any
+  ) {
+    return this.programService.assign(id, body.menteeId, req.scope, {
+      objectiveId: body.objectiveId,
+      newObjective: body.newObjective,
+    });
   }
 
   @Post(':id/clone')
@@ -91,5 +98,16 @@ export class ProgramController {
   ) {
     const toggleDate = date ? new Date(date) : undefined;
     return this.programService.toggleMilestone(id, milestoneId, req.scope, toggleDate);
+  }
+
+  @Post(':id/phases/:phaseId/toggle')
+  async togglePhase(
+    @Param('id') id: string,
+    @Param('phaseId') phaseId: string,
+    @Body('date') date: string,
+    @Req() req: any
+  ) {
+    const toggleDate = date ? new Date(date) : undefined;
+    return this.programService.togglePhase(id, phaseId, req.scope, toggleDate);
   }
 }

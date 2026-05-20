@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   Plus, 
   Search, 
@@ -395,12 +396,31 @@ export default function HabitsPage() {
                    <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none mb-3 group-hover:text-indigo-600 transition-colors">
                      {item.name}
                    </h4>
-                   {item.mentee && (
-                     <div className="flex items-center gap-2 mb-4 px-3 py-1.5 bg-slate-50 border border-slate-100 rounded-full w-fit">
-                       <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-                       <span className="text-[8px] font-black text-slate-900 uppercase tracking-[0.2em] italic">{item.mentee.name}</span>
-                     </div>
-                   )}
+                   {item.mentee && (() => {
+                      const student = students.find(s => s.id === item.menteeId);
+                      return (
+                        <Link
+                          href={`/dashboard/clients/${item.menteeId}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className="flex items-center gap-2 mb-4 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-100 hover:border-indigo-200 rounded-full w-fit text-[8px] font-black text-slate-900 hover:text-indigo-600 uppercase tracking-widest shadow-sm transition-all italic cursor-pointer group/mentee animate-in fade-in duration-300"
+                        >
+                          <div className="w-4 h-4 rounded-full overflow-hidden flex items-center justify-center font-black text-[7px] shadow-sm uppercase italic shrink-0">
+                            {student?.avatarUrl ? (
+                              <img 
+                                src={student.avatarUrl.startsWith('http') ? student.avatarUrl : `/avatars/${student.avatarUrl}`} 
+                                alt={student.name || 'M'}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-slate-900 text-white flex items-center justify-center text-[7px] font-black">
+                                {(student?.name || item.mentee.name)?.charAt(0).toUpperCase() || 'M'}
+                              </div>
+                            )}
+                          </div>
+                          <span>{student?.name || item.mentee.name}</span>
+                        </Link>
+                      );
+                    })()}
                    <p className="text-[9px] text-slate-400 font-black uppercase tracking-[0.2em] line-clamp-2 leading-relaxed opacity-60 h-8 italic">
                      {item.description || 'SIN ESPECIFICACIONES TÉCNICAS DEL HÁBITO.'}
                    </p>

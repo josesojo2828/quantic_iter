@@ -43,23 +43,45 @@ export class HabitRepository extends BaseRepository<Habit> {
     });
   }
 
-  async checkin(habitId: string, date: Date, scope: QueryScope): Promise<HabitCheckin> {
+  async checkin(habitId: string, date: Date, scope: QueryScope): Promise<HabitCheckin & { isNew?: boolean }> {
     // Normalizar fecha a las 00:00 UTC para evitar duplicados en el mismo día
     const normalizedDate = new Date(date);
     normalizedDate.setUTCHours(0, 0, 0, 0);
 
-    return this.prisma.habitCheckin.upsert({
+    const existing = await this.prisma.habitCheckin.findUnique({
       where: {
         habitId_date: {
           habitId,
           date: normalizedDate,
         },
       },
-      update: {},
-      create: {
-        habitId,
-        date: normalizedDate,
-      },
     });
+
+    if (existing) {
+      return { ...existing, isNew: false };
+    }
+
+    try {
+      const created = await this.prisma.habitCheckin.create({
+        data: {
+          habitId,
+          date: normalizedDate,
+        },
+      });
+      return { ...created, isNew: true };
+    } catch (e) {
+      const existingAfterRace = await this.prisma.habitCheckin.findUnique({
+        where: {
+          habitId_date: {
+            habitId,
+            date: normalizedDate,
+          },
+        },
+      });
+      if (!existingAfterRace) {
+        throw e;
+      }
+      return { ...existingAfterRace, isNew: false };
+    }
   }
 }

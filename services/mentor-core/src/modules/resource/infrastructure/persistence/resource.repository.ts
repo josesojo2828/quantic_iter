@@ -29,7 +29,7 @@ export class ResourceRepository extends BaseRepository<Resource> {
 
   async findAll(scope: QueryScope): Promise<Resource[]> {
     return this.prisma.resource.findMany({
-      where: this.applyScope({}, scope),
+      where: this.applyScope({}, scope, { menteeField: null }),
       orderBy: { createdAt: 'desc' },
     }) as unknown as Resource[];
   }
@@ -49,7 +49,7 @@ export class ResourceRepository extends BaseRepository<Resource> {
 
   async findById(id: string, scope: QueryScope): Promise<Resource | null> {
     return this.prisma.resource.findFirst({
-      where: this.applyScope({ id }, scope),
+      where: this.applyScope({ id }, scope, { menteeField: null }),
     }) as unknown as Resource;
   }
 

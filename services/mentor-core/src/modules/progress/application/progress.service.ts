@@ -37,6 +37,75 @@ export class ProgressService {
     // XP Reward (Milestones give a lot of XP)
     await this.gamificationService.awardXp(menteeId, scope.tenantId, 500, 'MILESTONE_COMPLETED', 'Hito de programa completado');
 
+    // Auto-complete linked Objective (Task) if 100% of milestones are checked at least once
+    try {
+      const milestoneWithProgram = await this.prisma.milestone.findUnique({
+        where: { id: milestoneId },
+        include: {
+          phase: {
+            select: { programId: true }
+          }
+        }
+      });
+
+      if (milestoneWithProgram?.phase?.programId) {
+        const programId = milestoneWithProgram.phase.programId;
+
+        // Get all milestones for this program
+        const allMilestones = await this.prisma.milestone.findMany({
+          where: {
+            phase: { programId }
+          }
+        });
+
+        const milestoneIds = allMilestones.map(m => m.id);
+
+        if (milestoneIds.length > 0) {
+          // Count unique completions for this mentee on this program's milestones
+          const uniqueCompletionsCount = await this.prisma.milestoneCompletion.groupBy({
+            by: ['milestoneId'],
+            where: {
+              milestoneId: { in: milestoneIds },
+              menteeId
+            }
+          });
+
+          const totalMilestones = milestoneIds.length;
+          const completedMilestones = uniqueCompletionsCount.length;
+
+          if (completedMilestones === totalMilestones) {
+            // Find linked tasks not yet submitted or approved
+            const linkedTasks = await this.prisma.task.findMany({
+              where: {
+                programId,
+                assigneeId: menteeId,
+                status: { notIn: ['DONE', 'APPROVED', 'SUBMITTED'] }
+              }
+            });
+
+            for (const task of linkedTasks) {
+              await this.prisma.task.update({
+                where: { id: task.id },
+                data: { status: 'SUBMITTED', completedAt: new Date() }
+              });
+
+              // Log activity for target completed
+              await this.logActivity({
+                tenantId: scope.tenantId,
+                menteeId,
+                type: 'OBJECTIVE_SUBMITTED',
+                title: '¡Objetivo Alcanzado!',
+                description: `El programa de hábitos vinculados a "${task.title}" ha sido completado con éxito.`,
+                metadata: { taskId: task.id, programId }
+              });
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error('Error in automated objective completion logic:', err);
+    }
+
     return completion;
   }
 

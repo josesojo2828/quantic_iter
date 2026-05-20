@@ -31,13 +31,57 @@ export class ProgressRepository extends BaseRepository<any> {
   }
 
   async completeMilestone(milestoneId: string, menteeId: string, date?: Date): Promise<MilestoneCompletion> {
-    const normalizedDate = new Date(new Date(date || new Date()).setHours(0, 0, 0, 0));
+    const milestone = await this.prisma.milestone.findUnique({
+      where: { id: milestoneId },
+    });
+    if (!milestone) {
+      throw new Error('Hito no encontrado');
+    }
+
+    const frequency = milestone.frequency || 'ONCE';
+    let targetDate = new Date(new Date(date || new Date()).setHours(0, 0, 0, 0));
+
+    if (frequency === 'ONCE') {
+      const existing = await this.prisma.milestoneCompletion.findFirst({
+        where: { milestoneId, menteeId },
+      });
+      if (existing) {
+        throw new Error('Este hito de frecuencia ÚNICA ya ha sido completado.');
+      }
+    } else if (frequency === 'WEEKLY') {
+      // Normalizar al lunes de la semana actual
+      const startOfWeek = new Date(targetDate);
+      const day = startOfWeek.getDay();
+      const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
+      startOfWeek.setDate(diff);
+      startOfWeek.setHours(0, 0, 0, 0);
+      targetDate = startOfWeek;
+
+      const existing = await this.prisma.milestoneCompletion.findUnique({
+        where: {
+          milestoneId_menteeId_date: { milestoneId, menteeId, date: targetDate },
+        },
+      });
+      if (existing) {
+        throw new Error('Este hito semanal ya ha sido completado por esta semana.');
+      }
+    } else if (frequency === 'DAILY') {
+      const existing = await this.prisma.milestoneCompletion.findUnique({
+        where: {
+          milestoneId_menteeId_date: { milestoneId, menteeId, date: targetDate },
+        },
+      });
+      if (existing) {
+        throw new Error('Este hito diario ya ha sido completado por hoy.');
+      }
+    }
+
     return this.prisma.milestoneCompletion.upsert({
       where: {
-        milestoneId_menteeId_date: { milestoneId, menteeId, date: normalizedDate },
+        milestoneId_menteeId_date: { milestoneId, menteeId, date: targetDate },
       },
       update: {},
-      create: { milestoneId, menteeId, date: normalizedDate },
+      create: { milestoneId, menteeId, date: targetDate },
     }) as unknown as MilestoneCompletion;
   }
 
