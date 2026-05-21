@@ -263,4 +263,57 @@ export class SubscriptionService {
   async getTenantHistory(tenantId: string) {
     return this.subscriptionRepository.findHistoryByTenantId(tenantId);
   }
+
+  async updateSubscriptionByAdmin(
+    tenantId: string,
+    adminUserId: string,
+    data: {
+      planId?: string;
+      expiresAt?: Date;
+      status?: string;
+      customConfig?: any;
+    },
+  ) {
+    const sub = await this.subscriptionRepository.findByTenantId(tenantId);
+    if (!sub) {
+      throw new NotFoundException('Suscripción no encontrada para este tenant');
+    }
+
+    const updated = await this.subscriptionRepository.updateSubscription(sub.id, {
+      planId: data.planId,
+      expiresAt: data.expiresAt,
+      status: data.status,
+      customConfig: data.customConfig,
+    });
+
+    const plan = data.planId
+      ? await this.subscriptionRepository.findPlanById(data.planId)
+      : sub.plan;
+
+    // Log to history
+    await this.subscriptionRepository.createHistoryEntry({
+      tenantId,
+      planId: plan?.id || sub.plan.id,
+      action: 'MANUAL_OVERRIDE',
+      price: plan?.price || sub.plan.price,
+      config: data.customConfig || updated.customConfig || sub.plan.config,
+      startDate: new Date(),
+      endDate: data.expiresAt || sub.expiresAt,
+    });
+
+    // Emit audit log
+    this.emitAudit({
+      userId: adminUserId,
+      tenantId,
+      action: AuditAction.UPDATE_FULL,
+      module: 'subscription',
+      payload: {
+        reason: 'ADMIN_MANUAL_OVERRIDE',
+        updatedFields: data,
+      },
+      previousState: sub,
+    });
+
+    return updated;
+  }
 }

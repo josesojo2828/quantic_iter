@@ -104,4 +104,22 @@ export class AdminController {
     const adminUserId = req.user.sub;
     return this.adminService.impersonateTenant(tenantId, adminUserId);
   }
+
+  @Put('tenants/:tenantId/subscription')
+  async updateSubscription(
+    @Param('tenantId') tenantId: string,
+    @Body() data: {
+      planId?: string;
+      expiresAt?: string;
+      status?: string;
+      customConfig?: any;
+    },
+    @GetUser() adminUser: AuthUser,
+  ) {
+    const expiresAtDate = data.expiresAt ? new Date(data.expiresAt) : undefined;
+    return this.subscriptionService.updateSubscriptionByAdmin(tenantId, adminUser.userId, {
+      ...data,
+      expiresAt: expiresAtDate,
+    });
+  }
 }

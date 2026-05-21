@@ -32,6 +32,7 @@ export interface ISubscriptionRepository {
       nextPlanId: string | null;
       expiresAt: Date;
       status: string;
+      customConfig: any;
     }>,
   ): Promise<Subscription>;
 

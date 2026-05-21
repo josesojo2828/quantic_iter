@@ -136,6 +136,7 @@ export class PrismaSubscriptionRepository implements ISubscriptionRepository {
       nextPlanId: string | null;
       expiresAt: Date;
       status: string;
+      customConfig: any;
     }>,
   ): Promise<Subscription> {
     const s = await this.prisma.subscription.update({
@@ -143,6 +144,7 @@ export class PrismaSubscriptionRepository implements ISubscriptionRepository {
       data: {
         ...data,
         status: data.status ? (data.status as any) : undefined,
+        customConfig: data.customConfig !== undefined ? data.customConfig : undefined,
       },
       include: { 
         plan: true,

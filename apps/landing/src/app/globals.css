@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #6366F1;
+  --color-primary-light: #818CF8;
+  --color-secondary: #94A3B8;
+  --color-accent: #C084FC;
+  --color-neutral-dark: #0F172A;
+  
+  --radius-xl: 16px;
+  --radius-2xl: 24px;
+  --radius-3xl: 32px;
+}
+
+:root {
+  --mq-bg: linear-gradient(135deg, #F8F9FD 0%, #F1F4FF 100%);
+  --mq-surface: rgba(255, 255, 255, 0.8);
+  --mq-text-main: #1E293B;
+  --mq-text-soft: #64748B;
+  --mq-border-subtle: rgba(255, 255, 255, 0.5);
+  --mq-primary: #6366F1;
+  --mq-glass-blur: blur(12px);
+}
+
+body {
+  background: var(--mq-bg);
+  background-attachment: fixed;
+  color: var(--mq-text-main);
+  font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.02em;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Elegant Aura card styling */
+.aura-card {
+  position: relative;
+  background: rgba(255, 255, 255, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.03);
+  backdrop-filter: var(--mq-glass-blur);
+  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.aura-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 30px 60px -12px rgba(99, 102, 241, 0.12);
+  border-color: rgba(99, 102, 241, 0.2);
+}
+
+/* Floating animation */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-8px); }
+}
+
+.animate-float {
+  animation: float 6s ease-in-out infinite;
+}

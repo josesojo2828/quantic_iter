@@ -130,6 +130,32 @@ services:
           memory: 512M
     command: npm run dev
 
+  landing:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./apps/landing
+    container_name: mentor_landing
+    ports:
+      - "3003:3003"
+    volumes:
+      - ./apps/landing:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - PORT=3003
+      - NEXT_PUBLIC_APP_URL=http://localhost:3001
+    networks:
+      - mentor_network
+    deploy:
+      resources:
+        limits:
+          memory: 1024M
+        reservations:
+          memory: 256M
+    command: npm run dev
+
   audit-service:
     build:
       context: .

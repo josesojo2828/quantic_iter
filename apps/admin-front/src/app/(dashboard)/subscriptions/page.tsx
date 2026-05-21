@@ -11,8 +11,10 @@ import {
   Filter,
   CheckCircle2,
   XCircle,
-  Clock
+  Clock,
+  Edit2
 } from 'lucide-react';
+import { SubscriptionEditModal } from './components/SubscriptionEditModal';
 
 export default function SubscriptionsPage() {
   const [subscriptions, setSubscriptions] = useState<any[]>([]);
@@ -22,6 +24,8 @@ export default function SubscriptionsPage() {
   const [selectedTenantHistory, setSelectedTenantHistory] = useState<any[]>([]);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  const [selectedSubscription, setSelectedSubscription] = useState<any | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -208,10 +212,21 @@ export default function SubscriptionsPage() {
                     <td className="px-6 py-4 text-right">
                       <span className="text-sm font-bold text-neutral">${s.plan?.price}</span>
                     </td>
-                    <td className="px-6 py-4 text-right">
+                    <td className="px-6 py-4 text-right flex items-center justify-end gap-1">
+                      <button 
+                        onClick={() => {
+                          setSelectedSubscription(s);
+                          setIsEditModalOpen(true);
+                        }}
+                        className="p-2 hover:bg-neutral-100 rounded-lg transition-all text-neutral/40 hover:text-neutral group-hover:scale-110"
+                        title="Editar Suscripción"
+                      >
+                        <Edit2 className="w-4 h-4" />
+                      </button>
                       <button 
                         onClick={() => handleFetchHistory(s.tenantId)}
                         className="p-2 hover:bg-neutral-100 rounded-lg transition-all text-neutral/40 hover:text-neutral group-hover:scale-110"
+                        title="Ver Historial"
                       >
                         <ArrowUpRight className="w-4 h-4" />
                       </button>
@@ -292,6 +307,16 @@ export default function SubscriptionsPage() {
           </div>
         </div>
       )}
+      {/* Edit Modal */}
+      <SubscriptionEditModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setSelectedSubscription(null);
+        }}
+        subscription={selectedSubscription}
+        onSuccess={() => loadData(search)}
+      />
     </div>
   );
 }

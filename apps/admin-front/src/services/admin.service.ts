@@ -129,6 +129,11 @@ export const adminService = {
     return response.data;
   },
 
+  updateTenantSubscription: async (tenantId: string, data: any) => {
+    const response = await apiClient.put<any>(`/admin/tenants/${tenantId}/subscription`, data);
+    return response.data;
+  },
+
   getAuditLogs: async (params: { tenantId?: string; userId?: string; module?: string; skip?: number; take?: number } = {}) => {
     const query = new URLSearchParams();
     if (params.tenantId) query.append('tenantId', params.tenantId);
