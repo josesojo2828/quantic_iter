@@ -1,0 +1,238 @@
+version: '3.8'
+
+services:
+  nginx-gateway:
+    image: nginx:latest
+    container_name: mentor_gateway
+    ports:
+      - "80:80"
+    volumes:
+      # Mount the Nginx config template to automatically interpolate environment variables
+      - ./infra/nginx/nginx.conf.template:/etc/nginx/templates/nginx.conf.template:ro
+    environment:
+      - DOMAIN_NAME=${DOMAIN_NAME}
+      - ADMIN_DOMAIN_NAME=${ADMIN_DOMAIN_NAME}
+      - LANDING_DOMAIN_NAME=${LANDING_DOMAIN_NAME}
+    networks:
+      - mentor_network
+    depends_on:
+      - auth-tenant
+
+  auth-tenant:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/auth-tenant
+    container_name: mentor_auth
+    environment:
+      - DATABASE_URL=${DATABASE_AUTH_URL}
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - JWT_SECRET=${JWT_SECRET}
+      - PORT=3000
+      - NODE_ENV=production
+    networks:
+      - mentor_network
+    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+
+  mentor-core:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/mentor-core
+    container_name: mentor_core
+    environment:
+      - DATABASE_URL=${DATABASE_CORE_URL}
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - PORT=3004
+      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=production
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+
+  app-main:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./apps/app-main
+    container_name: mentor_app_main
+    ports:
+      - "3001:3001"
+    environment:
+      - PORT=3001
+      - NEXT_PUBLIC_API_URL=/api
+      - NODE_ENV=production
+    networks:
+      - mentor_network
+    command: sh -c "npm run build && npm run start"
+
+  admin-front:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./apps/admin-front
+    container_name: mentor_admin_front
+    ports:
+      - "3002:3002"
+    environment:
+      - PORT=3002
+      - NEXT_PUBLIC_API_URL=/api
+      - NODE_ENV=production
+    networks:
+      - mentor_network
+    command: sh -c "npm run build && npm run start"
+
+  landing:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./apps/landing
+    container_name: mentor_landing
+    ports:
+      - "3003:3003"
+    environment:
+      - PORT=3003
+      - NEXT_PUBLIC_APP_URL=http://${DOMAIN_NAME}
+      - NODE_ENV=production
+    networks:
+      - mentor_network
+    command: sh -c "npm run build && npm run start"
+
+  audit-service:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/audit-service
+    container_name: mentor_audit
+    environment:
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - PORT=3005
+      - MONGO_AUDIT_URI=${MONGO_AUDIT_URI}
+      - NODE_ENV=production
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+    command: sh -c "npm run build && npm run start:prod"
+
+  subscription-worker:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/subscription-worker
+    container_name: mentor_subscription_worker
+    environment:
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - DATABASE_URL=${DATABASE_AUTH_URL}
+      - NODE_ENV=production
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+
+  crm-engagement:
+    container_name: mentor_crm
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/crm-engagement
+    environment:
+      - DATABASE_URL=${DATABASE_CRM_URL}
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - CRM_PORT=3003
+      - JWT_SECRET=${JWT_SECRET}
+      - NODE_ENV=production
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+      
+  notifications:
+    container_name: mentor_notifications
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/notifications
+    environment:
+      - DATABASE_URL=${DATABASE_AUTH_URL}
+      - KAFKA_BROKERS=${KAFKA_BROKERS}
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      - SMTP_FROM=${SMTP_FROM}
+      - NODE_ENV=production
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+
+  finance:
+    container_name: mentor_finance
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/finance
+    environment:
+      - PORT=3004
+      - DATABASE_URL=${DATABASE_FINANCE_URL}
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_PORT=${MINIO_PORT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      - MINIO_BUCKET=${MINIO_BUCKET}
+      - MINIO_USE_SSL=${MINIO_USE_SSL}
+      - NODE_ENV=production
+    depends_on:
+      - auth-tenant
+    networks:
+      - mentor_network
+    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+
+  finance-docs:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/finance-docs
+    container_name: mentor_finance_docs
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    networks:
+      - mentor_network
+    command: sh -c "npm run build && npm run start:prod"
+
+  realtime-gw:
+    build:
+      context: .
+      dockerfile: ./infra/docker/Dockerfile
+      args:
+        SERVICE_PATH: ./services/realtime-gw
+    container_name: mentor_realtime_gw
+    environment:
+      - PORT=3000
+      - NODE_ENV=production
+    networks:
+      - mentor_network
+    command: sh -c "npm run build && npm run start:prod"
+
+networks:
+  mentor_network:
+    external: true
+    name: mentor_network
