@@ -4,6 +4,7 @@ services:
   nginx-gateway:
     image: nginx:latest
     container_name: mentor_gateway
+    restart: always
     ports:
       - "8080:80"
     volumes:
@@ -13,6 +14,7 @@ services:
       - DOMAIN_NAME=${DOMAIN_NAME}
       - ADMIN_DOMAIN_NAME=${ADMIN_DOMAIN_NAME}
       - LANDING_DOMAIN_NAME=${LANDING_DOMAIN_NAME}
+      - NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx
     networks:
       - mentor_network
     depends_on:
@@ -25,6 +27,7 @@ services:
       args:
         SERVICE_PATH: ./services/auth-tenant
     container_name: mentor_auth
+    restart: always
     environment:
       - DATABASE_URL=${DATABASE_AUTH_URL}
       - KAFKA_BROKERS=${KAFKA_BROKERS}
@@ -42,6 +45,7 @@ services:
       args:
         SERVICE_PATH: ./services/mentor-core
     container_name: mentor_core
+    restart: always
     environment:
       - DATABASE_URL=${DATABASE_CORE_URL}
       - KAFKA_BROKERS=${KAFKA_BROKERS}
@@ -61,6 +65,7 @@ services:
       args:
         SERVICE_PATH: ./apps/app-main
     container_name: mentor_app_main
+    restart: always
     ports:
       - "3001:3001"
     environment:
@@ -78,6 +83,7 @@ services:
       args:
         SERVICE_PATH: ./apps/admin-front
     container_name: mentor_admin_front
+    restart: always
     ports:
       - "3002:3002"
     environment:
@@ -95,6 +101,7 @@ services:
       args:
         SERVICE_PATH: ./apps/landing
     container_name: mentor_landing
+    restart: always
     ports:
       - "3003:3003"
     environment:
@@ -112,6 +119,7 @@ services:
       args:
         SERVICE_PATH: ./services/audit-service
     container_name: mentor_audit
+    restart: always
     environment:
       - KAFKA_BROKERS=${KAFKA_BROKERS}
       - PORT=3005
@@ -130,6 +138,7 @@ services:
       args:
         SERVICE_PATH: ./services/subscription-worker
     container_name: mentor_subscription_worker
+    restart: always
     environment:
       - KAFKA_BROKERS=${KAFKA_BROKERS}
       - DATABASE_URL=${DATABASE_AUTH_URL}
@@ -147,6 +156,7 @@ services:
       dockerfile: ./infra/docker/Dockerfile
       args:
         SERVICE_PATH: ./services/crm-engagement
+    restart: always
     environment:
       - DATABASE_URL=${DATABASE_CRM_URL}
       - KAFKA_BROKERS=${KAFKA_BROKERS}
@@ -166,6 +176,7 @@ services:
       dockerfile: ./infra/docker/Dockerfile
       args:
         SERVICE_PATH: ./services/notifications
+    restart: always
     environment:
       - DATABASE_URL=${DATABASE_AUTH_URL}
       - KAFKA_BROKERS=${KAFKA_BROKERS}
@@ -188,6 +199,7 @@ services:
       dockerfile: ./infra/docker/Dockerfile
       args:
         SERVICE_PATH: ./services/finance
+    restart: always
     environment:
       - PORT=3004
       - DATABASE_URL=${DATABASE_FINANCE_URL}
@@ -211,6 +223,7 @@ services:
       args:
         SERVICE_PATH: ./services/finance-docs
     container_name: mentor_finance_docs
+    restart: always
     environment:
       - PORT=3000
       - NODE_ENV=production
@@ -225,6 +238,7 @@ services:
       args:
         SERVICE_PATH: ./services/realtime-gw
     container_name: mentor_realtime_gw
+    restart: always
     environment:
       - PORT=3000
       - NODE_ENV=production
