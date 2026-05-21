@@ -3,19 +3,12 @@
 import React, { useState, useEffect } from 'react';
 import {
   Plus,
-  Search,
-  Bell,
-  ChevronRight,
-  Zap,
   Users,
   Trophy,
   Star,
-  Activity,
   ArrowUpRight,
-  Layers,
-  Target,
   Flame,
-  Layout
+  Layout,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { apiClient } from '@/core/api/api.client';
@@ -37,7 +30,7 @@ const ASSETS_3D = {
 
 export default function DashboardPage() {
   const { user } = useAuth();
-  
+
   // Track selected coach for the student portal (cached in localStorage)
   const [selectedCoach, setSelectedCoach] = useState<{ id: string; name: string; specialty: string; avatarUrl?: string } | null>(() => {
     if (typeof window !== 'undefined') {
@@ -63,13 +56,13 @@ export default function DashboardPage() {
   // Switch layouts dynamically based on role
   if (user?.role === 'mentee') {
     return (
-      <MenteeLayout 
-        activeTab={activeTab} 
+      <MenteeLayout
+        activeTab={activeTab}
         setActiveTab={setActiveTab}
         selectedCoach={selectedCoach}
       >
-        <MenteeDashboard 
-          activeTab={activeTab} 
+        <MenteeDashboard
+          activeTab={activeTab}
           setActiveTab={setActiveTab}
           selectedCoach={selectedCoach}
           setSelectedCoach={(coach) => {

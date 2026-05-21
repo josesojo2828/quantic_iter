@@ -262,16 +262,3 @@ export default function WorkersPage() {
     </div>
   );
 }
-        </div>
-      </div>
-
-      <InviteWorkerModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSuccess={loadWorkers} 
-        workerToEdit={selectedWorker}
-      />
-      <Toaster position="bottom-right" />
-    </div>
-  );
-}
