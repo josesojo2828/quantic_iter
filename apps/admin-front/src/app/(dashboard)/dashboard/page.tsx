@@ -9,7 +9,8 @@ import {
   TrendingUp, 
   ShieldCheck,
   ChevronRight,
-  Plus
+  Plus,
+  Settings
 } from "lucide-react";
 import gsap from "gsap";
 

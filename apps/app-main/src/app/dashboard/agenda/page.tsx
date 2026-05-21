@@ -105,8 +105,8 @@ export default function AgendaPage() {
               const now = new Date();
               startAt.setHours(now.getHours() + 1, 0, 0, 0);
               setSelectedEventForModal({
-                startAt: startAt.toISOString(),
-                endAt: addHours(startAt, 1).toISOString(),
+                start: startAt.toISOString(),
+                end: addHours(startAt, 1).toISOString(),
                 title: '',
                 description: '',
               });
@@ -136,7 +136,7 @@ export default function AgendaPage() {
               <TimeGrid
                 events={events}
                 date={selectedDate}
-                onTimeClick={(time) => setSelectedEventForModal({ startAt: time.toISOString() })}
+                onTimeClick={(time) => setSelectedEventForModal({ start: time.toISOString() })}
                 onEventClick={(event) => setSelectedEventForModal(event)}
               />
               {loading && (
