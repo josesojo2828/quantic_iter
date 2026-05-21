@@ -16,7 +16,8 @@ import {
   Search,
   Loader2,
   LayoutGrid,
-  List
+  List,
+  X
 } from 'lucide-react';
 import { Sidebar } from '@/shared/components/Sidebar';
 import { branchesService, Branch } from '@/features/auth/services/branches.service';
@@ -172,7 +173,7 @@ export default function BranchManagementPage() {
         <>
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredBranches.map((branch) => (
+              {filteredBranches.map((branch: Branch) => (
                 <div 
                   key={branch.id} 
                   className="glass-card bg-white/70 backdrop-blur-xl p-8 rounded-[32px] border border-white shadow-soft hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden flex flex-col"
@@ -247,7 +248,7 @@ export default function BranchManagementPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100/50">
-                  {filteredBranches.map((branch) => (
+                  {filteredBranches.map((branch: Branch) => (
                     <tr key={branch.id} className="hover:bg-blue-50/30 transition-all duration-300 group/row">
                       <td className="px-10 py-8">
                         <div className="flex items-center gap-4">

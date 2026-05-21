@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Query, Param } from '@nestjs/common';
 import { ReviewsService } from '../../application/reviews.service';
 
 @Controller('reviews')
@@ -21,5 +21,10 @@ export class ReviewsController {
   @Get('recent')
   async getRecent(@Query('tenantId') tenantId: string) {
     return this.reviewsService.getRecentReviews(tenantId);
+  }
+
+  @Get('contact/:contactId')
+  async getContactReviews(@Param('contactId') contactId: string) {
+    return this.reviewsService.getContactReviews(contactId);
   }
 }

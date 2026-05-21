@@ -7,9 +7,11 @@ export interface Worker {
   lastName: string;
   role: {
     slug: string;
+    name?: string;
     permissions: { action: string }[];
   } | string;
   branchId?: string | null;
+  avatarUrl?: string;
   createdAt: string;
 }
 

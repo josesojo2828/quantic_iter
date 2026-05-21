@@ -3,14 +3,14 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { workersService, Worker } from '@/features/auth/services/workers.service';
 import { branchesService, Branch } from '@/features/auth/services/branches.service';
-import { 
-  Users, 
-  UserPlus, 
-  Mail, 
-  Shield, 
-  MapPin, 
-  Trash2, 
-  Edit2, 
+import {
+  Users,
+  UserPlus,
+  Mail,
+  Shield,
+  MapPin,
+  Trash2,
+  Edit2,
   Loader2,
   X,
   LayoutGrid,
@@ -34,7 +34,7 @@ export default function StaffPage() {
   const [inviteLoading, setInviteLoading] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'table'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
-  
+
   const [form, setForm] = useState({
     email: '',
     firstName: '',
@@ -76,14 +76,14 @@ export default function StaffPage() {
     setLoading(true);
     try {
       const [workersData, branchesData] = await Promise.all([
-        workersService.getWorkers({ 
-          excludeRole: 'client', 
-          excludeUserId: user.id 
+        workersService.getWorkers({
+          excludeRole: 'client',
+          excludeUserId: user.id
         }),
         branchesService.getBranches()
       ]);
       setWorkers(workersData.items);
-      const branchesList = branchesData.items || [];
+      const branchesList = branchesData || [];
       setBranches(branchesList);
     } catch (error) {
       toast.error('Error al cargar datos del equipo');
@@ -148,7 +148,7 @@ export default function StaffPage() {
     }
   };
 
-  const filteredWorkers = workers.filter(w => 
+  const filteredWorkers = workers.filter(w =>
     `${w.firstName} ${w.lastName}`.toLowerCase().includes(searchTerm.toLowerCase()) ||
     w.email.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -156,7 +156,7 @@ export default function StaffPage() {
   return (
     <div className="w-full p-6 lg:p-10 space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-700">
       <Toaster />
-      
+
       {/* Header */}
       <header ref={headerRef} className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-8">
         <div>
@@ -174,13 +174,13 @@ export default function StaffPage() {
 
         <div className="flex items-center gap-4 w-full xl:w-auto">
           <div className="flex items-center bg-white/50 backdrop-blur-md p-1.5 rounded-2xl border border-white shadow-sm">
-            <button 
+            <button
               onClick={() => setViewMode('grid')}
               className={`p-2.5 rounded-xl transition-all ${viewMode === 'grid' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
             >
               <LayoutGrid className="w-4 h-4" />
             </button>
-            <button 
+            <button
               onClick={() => setViewMode('table')}
               className={`p-2.5 rounded-xl transition-all ${viewMode === 'table' ? 'bg-white text-emerald-600 shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
             >
@@ -188,11 +188,11 @@ export default function StaffPage() {
             </button>
           </div>
 
-          <button 
+          <button
             onClick={() => handleOpenModal()}
             className="flex-1 xl:flex-none flex items-center justify-center gap-3 bg-slate-900 text-white px-8 py-4 rounded-2xl text-xs font-black uppercase tracking-widest transition-all shadow-xl shadow-slate-200 hover:scale-105 active:scale-95 group"
           >
-            <UserPlus className="w-4 h-4 transition-transform group-hover:rotate-12" /> 
+            <UserPlus className="w-4 h-4 transition-transform group-hover:rotate-12" />
             Invitar Talento
           </button>
         </div>
@@ -202,11 +202,11 @@ export default function StaffPage() {
       <div className="glass-card bg-white/50 backdrop-blur-md rounded-3xl p-4 border border-white shadow-soft flex items-center justify-between overflow-hidden">
         <div className="relative group w-full max-w-md">
           <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4 group-focus-within:text-emerald-500 transition-colors" />
-          <input 
-            type="text" 
+          <input
+            type="text"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            placeholder="Buscar por nombre, apellido o email..." 
+            placeholder="Buscar por nombre, apellido o email..."
             className="w-full bg-white/50 border border-transparent rounded-[20px] pl-14 pr-6 py-4 text-[11px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-emerald-600/20 focus:ring-4 focus:ring-emerald-600/5 transition-all text-slate-900 placeholder:text-slate-300"
           />
         </div>
@@ -222,18 +222,18 @@ export default function StaffPage() {
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {filteredWorkers.map((worker) => (
-                <div 
-                  key={worker.id} 
+                <div
+                  key={worker.id}
                   className="glass-card bg-white/70 backdrop-blur-xl p-8 rounded-[32px] border border-white shadow-soft hover:shadow-xl hover:shadow-slate-200/50 transition-all group relative overflow-hidden flex flex-col items-center text-center"
                 >
                   <div className="absolute top-0 right-0 p-5 flex gap-2 translate-x-4 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all z-10 duration-500">
-                    <button 
+                    <button
                       onClick={() => handleOpenModal(worker)}
                       className="p-2.5 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-indigo-600 transition-colors shadow-sm"
                     >
                       <Edit2 className="w-4 h-4" />
                     </button>
-                    <button 
+                    <button
                       onClick={() => handleDelete(worker.id, `${worker.firstName} ${worker.lastName}`)}
                       className="p-2.5 bg-white border border-slate-100 rounded-xl text-slate-400 hover:text-red-500 transition-colors shadow-sm"
                     >
@@ -244,9 +244,9 @@ export default function StaffPage() {
                   <div className="relative mb-6">
                     <div className="w-24 h-24 rounded-[32px] overflow-hidden bg-slate-50 border border-slate-100 shadow-inner group-hover:scale-105 transition-transform duration-700">
                       {worker.avatarUrl ? (
-                        <img 
-                          src={worker.avatarUrl.startsWith('/') ? worker.avatarUrl : `/avatars/${worker.avatarUrl}`} 
-                          alt={worker.firstName} 
+                        <img
+                          src={worker.avatarUrl.startsWith('/') ? worker.avatarUrl : `/avatars/${worker.avatarUrl}`}
+                          alt={worker.firstName}
                           className="w-full h-full object-cover"
                         />
                       ) : (
@@ -269,12 +269,11 @@ export default function StaffPage() {
                   </p>
 
                   <div className="flex flex-wrap justify-center gap-2 mb-8">
-                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm ${
-                      (typeof worker.role === 'string' ? worker.role : worker.role?.slug) === 'support'
-                      ? 'bg-blue-50 text-blue-600 border-blue-100'
-                      : 'bg-emerald-50 text-emerald-600 border-emerald-100'
-                    }`}>
-                      {typeof worker.role === 'string' ? worker.role : (worker.role?.name || 'Mecánico')}
+                    <span className={`px-4 py-1.5 rounded-full text-[9px] font-black uppercase tracking-widest border shadow-sm ${(typeof worker.role === 'string' ? worker.role : worker.role?.slug) === 'support'
+                        ? 'bg-blue-50 text-blue-600 border-blue-100'
+                        : 'bg-emerald-50 text-emerald-600 border-emerald-100'
+                      }`}>
+                      {typeof worker.role === 'string' ? worker.role : (worker.role?.name || '---')}
                     </span>
                     {worker.branchId && (
                       <span className="px-4 py-1.5 rounded-full bg-slate-50 text-slate-500 border border-slate-100 text-[9px] font-black uppercase tracking-widest shadow-sm">
@@ -283,7 +282,7 @@ export default function StaffPage() {
                     )}
                   </div>
 
-                  <button 
+                  <button
                     className="w-full py-4 bg-slate-50 border border-slate-100 text-[10px] font-black text-slate-400 hover:text-emerald-600 hover:border-emerald-100 hover:bg-emerald-50 rounded-2xl uppercase tracking-[0.2em] transition-all flex items-center justify-center gap-3"
                     onClick={() => setSelectedProfile(worker)}
                   >
@@ -325,7 +324,7 @@ export default function StaffPage() {
                         </div>
                       </td>
                       <td className="px-10 py-8 text-xs font-black text-slate-600 uppercase tracking-widest italic">
-                        {typeof worker.role === 'string' ? worker.role : (worker.role?.name || 'Mecánico')}
+                        {typeof worker.role === 'string' ? worker.role : (worker.role?.name || '---')}
                       </td>
                       <td className="px-10 py-8 text-[11px] font-black text-slate-500 uppercase tracking-widest">
                         {branches.find(b => b.id === worker.branchId)?.name || 'Todas'}
@@ -388,22 +387,22 @@ export default function StaffPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Nombre</label>
-                  <input 
+                  <input
                     type="text"
                     required
                     value={form.firstName}
-                    onChange={e => setForm({...form, firstName: e.target.value})}
+                    onChange={e => setForm({ ...form, firstName: e.target.value })}
                     placeholder="Ej: Carlos"
                     className="w-full bg-slate-50/50 border border-transparent rounded-[20px] px-6 py-4 text-[11px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-emerald-600/20 focus:ring-4 focus:ring-emerald-600/5 transition-all text-slate-900"
                   />
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Apellido</label>
-                  <input 
+                  <input
                     type="text"
                     required
                     value={form.lastName}
-                    onChange={e => setForm({...form, lastName: e.target.value})}
+                    onChange={e => setForm({ ...form, lastName: e.target.value })}
                     placeholder="Ej: Gomez"
                     className="w-full bg-slate-50/50 border border-transparent rounded-[20px] px-6 py-4 text-[11px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-emerald-600/20 focus:ring-4 focus:ring-emerald-600/5 transition-all text-slate-900"
                   />
@@ -414,12 +413,12 @@ export default function StaffPage() {
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Email Profesional</label>
                 <div className="relative group">
                   <Mail className="absolute left-6 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-300 group-focus-within:text-emerald-500 transition-colors" />
-                  <input 
+                  <input
                     type="email"
                     required
                     disabled={isEditing}
                     value={form.email}
-                    onChange={e => setForm({...form, email: e.target.value})}
+                    onChange={e => setForm({ ...form, email: e.target.value })}
                     placeholder="ejemplo@mentoría.com"
                     className="w-full bg-slate-50/50 border border-transparent rounded-[20px] pl-14 pr-6 py-4 text-[11px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-emerald-600/20 focus:ring-4 focus:ring-emerald-600/5 transition-all text-slate-900 disabled:opacity-50"
                   />
@@ -429,20 +428,20 @@ export default function StaffPage() {
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Rol Táctico</label>
-                  <select 
+                  <select
                     value={form.roleSlug}
-                    onChange={e => setForm({...form, roleSlug: e.target.value as any})}
+                    onChange={e => setForm({ ...form, roleSlug: e.target.value as any })}
                     className="w-full bg-slate-50/50 border border-transparent rounded-[20px] px-6 py-4 text-[11px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-emerald-600/20 transition-all text-slate-900 appearance-none"
                   >
-                    <option value="facilitator">🛠️ Mecánico Aura</option>
+                    <option value="facilitator">🛠️ --- Aura</option>
                     <option value="support">📞 Soporte Crítico</option>
                   </select>
                 </div>
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Sede Operativa</label>
-                  <select 
+                  <select
                     value={form.branchId}
-                    onChange={e => setForm({...form, branchId: e.target.value})}
+                    onChange={e => setForm({ ...form, branchId: e.target.value })}
                     className="w-full bg-slate-50/50 border border-transparent rounded-[20px] px-6 py-4 text-[11px] font-black uppercase tracking-widest outline-none focus:bg-white focus:border-emerald-600/20 transition-all text-slate-900 appearance-none"
                   >
                     <option value="">🌎 Todas las Sedes</option>
@@ -454,14 +453,14 @@ export default function StaffPage() {
               </div>
 
               <div className="pt-6 flex items-center gap-6">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="flex-1 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest hover:text-slate-900 transition-colors italic"
                 >
                   Abortar
                 </button>
-                <button 
+                <button
                   type="submit"
                   disabled={inviteLoading}
                   className="flex-[2] py-5 px-10 bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-2xl text-[10px] font-black uppercase tracking-widest hover:scale-[1.02] transition-all shadow-xl shadow-indigo-100 disabled:opacity-50 flex items-center justify-center gap-3"
@@ -494,7 +493,7 @@ export default function StaffPage() {
               </div>
               <button onClick={() => setSelectedProfile(null)} className="w-12 h-12 flex items-center justify-center text-slate-300 hover:text-slate-900 bg-white border border-slate-100 rounded-2xl shadow-sm transition-all hover:scale-110"><X className="w-5 h-5" /></button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto p-10 space-y-10">
               {/* Performance Metrics */}
               <div className="grid grid-cols-2 gap-6">
@@ -509,24 +508,24 @@ export default function StaffPage() {
               </div>
 
               <div className="space-y-6">
-                 <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-3">
-                   <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
-                   Ficha de Inteligencia
-                 </h3>
-                 <div className="space-y-4">
-                   <div className="flex items-center gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
-                     <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
-                       <Mail className="w-5 h-5" />
-                     </div>
-                     <span className="text-xs font-black text-slate-600 uppercase tracking-tight">{selectedProfile.email}</span>
-                   </div>
-                   <div className="flex items-center gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
-                     <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
-                       <MapPin className="w-5 h-5" />
-                     </div>
-                     <span className="text-xs font-black text-slate-600 uppercase tracking-tight">{branches.find(b => b.id === selectedProfile.branchId)?.name || 'Sede Global'}</span>
-                   </div>
-                 </div>
+                <h3 className="text-[11px] font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-3">
+                  <div className="w-1.5 h-4 bg-emerald-500 rounded-full" />
+                  Ficha de Inteligencia
+                </h3>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                    <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center text-indigo-500">
+                      <Mail className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-black text-slate-600 uppercase tracking-tight">{selectedProfile.email}</span>
+                  </div>
+                  <div className="flex items-center gap-4 p-5 rounded-2xl bg-white border border-slate-100 shadow-sm">
+                    <div className="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center text-emerald-500">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <span className="text-xs font-black text-slate-600 uppercase tracking-tight">{branches.find(b => b.id === selectedProfile.branchId)?.name || 'Sede Global'}</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

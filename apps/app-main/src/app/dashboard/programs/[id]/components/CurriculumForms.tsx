@@ -15,19 +15,19 @@ const phaseSchema = z.object({
   startTime: z.string().optional(),
   endTime: z.string().optional(),
   estimatedWeeks: z.number().optional(),
-  color: z.string().default('#6366F1'),
-  order: z.number().default(0),
+  color: z.string(),
+  order: z.number(),
 });
 
 const milestoneSchema = z.object({
   title: z.string().min(3, 'Título demasiado corto'),
   description: z.string().optional(),
-  xpReward: z.number().min(0).default(500),
+  xpReward: z.number().min(0),
   dueDate: z.string().optional(),
-  order: z.number().default(0),
-  frequency: z.enum(['ONCE', 'DAILY', 'WEEKLY']).default('ONCE'),
-  requiredEvidence: z.enum(['NONE', 'IMAGE', 'TEXT', 'LINK']).default('NONE'),
-  isHabit: z.boolean().default(false),
+  order: z.number(),
+  frequency: z.enum(['ONCE', 'DAILY', 'WEEKLY']),
+  requiredEvidence: z.enum(['NONE', 'IMAGE', 'TEXT', 'LINK']),
+  isHabit: z.boolean(),
   daysOfWeek: z.array(z.number()).optional(),
 });
 
@@ -191,6 +191,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
       order: 0, 
       frequency: 'ONCE', 
       requiredEvidence: 'NONE',
+      isHabit: false,
       daysOfWeek: [] 
     }
   });

@@ -34,6 +34,10 @@ export class ReviewsService {
     return this.reviewsRepository.findForTenant(tenantId);
   }
 
+  async getContactReviews(contactId: string) {
+    return this.reviewsRepository.findForContact(contactId);
+  }
+
   private async emitAudit(tenantId: string, userId: string, action: AuditAction, module: string, payload: any) {
     try {
       await this.eventBus.emit('audit-log', {

@@ -120,7 +120,7 @@ export default function PricingPage() {
             return (
               <div
                 key={plan.id}
-                ref={el => cardsRef.current[index] = el}
+                ref={el => { cardsRef.current[index] = el; }}
                 className={`group glass-card relative flex flex-col rounded-[40px] border transition-all duration-700 hover:-translate-y-2 ${
                   isEnterprise 
                     ? 'bg-slate-900 border-slate-800 shadow-2xl shadow-slate-900/40 text-white' 

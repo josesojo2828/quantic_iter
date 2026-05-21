@@ -16,7 +16,7 @@ interface AuthContextType {
   user: AdminUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
-  login: (email: string, password: string) => Promise<void>;
+  login: (email: string, password: string) => Promise<boolean>;
   logout: () => void;
   error: string | null;
 }
@@ -49,7 +49,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     checkAuth();
   }, [checkAuth]);
 
-  const login = async (email: string, password: string) => {
+  const login = async (email: string, password: string): Promise<boolean> => {
     setError(null);
     setIsLoading(true);
     try {
@@ -70,13 +70,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (adminUser.role !== 'super_admin') {
         setError('Acceso denegado. Solo administradores pueden ingresar.');
         setUser(null);
-        return;
+        return false;
       }
 
       setUser(adminUser);
+      return true;
     } catch (err: any) {
       setError(err.message || 'Credenciales inválidas');
       setUser(null);
+      return false;
     } finally {
       setIsLoading(false);
     }

@@ -11,9 +11,9 @@ const programSchema = z.object({
   name: z.string().min(3, 'El nombre es muy corto'),
   description: z.string().min(10, 'La descripción debe ser más detallada'),
   duration: z.string().optional(),
-  isTemplate: z.boolean().default(false),
-  type: z.enum(['CURRICULUM', 'HABITS', 'ROUTINE']).default('CURRICULUM'),
-  isPublic: z.boolean().default(false),
+  isTemplate: z.boolean(),
+  type: z.enum(['CURRICULUM', 'HABITS', 'ROUTINE']),
+  isPublic: z.boolean(),
   category: z.string().optional(),
 });
 

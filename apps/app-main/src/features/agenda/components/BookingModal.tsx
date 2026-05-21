@@ -122,7 +122,7 @@ export const BookingModal = ({ initialData, tenantId, onClose, onSuccess }: Even
 
     setSaving(true);
     try {
-      const payload = {
+      const payload: Partial<AgendaEvent> = {
         tenantId,
         title,
         description,

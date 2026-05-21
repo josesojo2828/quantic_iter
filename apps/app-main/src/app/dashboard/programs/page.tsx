@@ -168,85 +168,88 @@ export default function ProgramsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {programs.map((program) => (
-            <div
-              key={program.id}
-              className="glass-card bg-white/70 backdrop-blur-xl border border-white p-6 rounded-[24px] shadow-soft hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-700 group relative overflow-hidden"
-            >
-              <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity duration-1000">
-                 <BookOpen className="w-24 h-24 -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
-              </div>
-
-              {/* Status Header */}
-              <div className="flex justify-between items-start mb-6 relative z-10">
-                <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl shadow-slate-200 group-hover:bg-indigo-600 transition-all duration-500">
-                  <BookOpen className="w-5 h-5" />
-                </div>
-                <div className="flex flex-col items-end gap-2">
-                  <Link
-                    href={`/dashboard/clients/${program.menteeId}`}
-                    onClick={(e) => e.stopPropagation()}
-                    className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-100 hover:border-indigo-200 rounded-full text-[8px] font-black text-slate-900 hover:text-indigo-600 uppercase tracking-widest shadow-sm transition-all italic cursor-pointer group/mentee animate-in fade-in duration-300"
-                  >
-                    <div className="w-4 h-4 rounded-full overflow-hidden flex items-center justify-center font-black text-[7px] shadow-sm uppercase italic shrink-0">
-                      {avatarsCache[program.menteeId]?.avatarUrl ? (
-                        <img 
-                          src={avatarsCache[program.menteeId].avatarUrl.startsWith('http') ? avatarsCache[program.menteeId].avatarUrl : `/avatars/${avatarsCache[program.menteeId].avatarUrl}`} 
-                          alt={avatarsCache[program.menteeId]?.name || 'M'}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-slate-900 text-white flex items-center justify-center text-[7px] font-black">
-                          {avatarsCache[program.menteeId]?.name?.charAt(0).toUpperCase() || 'M'}
-                        </div>
-                      )}
-                    </div>
-                    <span>{avatarsCache[program.menteeId]?.name || 'ALUMNO QUANTIC'}</span>
-                  </Link>
-                  <div className={`px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] italic border ${
-                    program.status === 'PUBLISHED' 
-                      ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
-                      : 'bg-amber-50 text-amber-600 border-amber-100'
-                    }`}>
-                    {program.status === 'PUBLISHED' ? 'OPERATIVO' : 'EN ESPERA'}
-                  </div>
-                </div>
-              </div>
-
-              <div className="space-y-2 mb-6 relative z-10">
-                <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none line-clamp-2 group-hover:text-indigo-600 transition-colors">{program.name}</h4>
-                <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] line-clamp-2 leading-relaxed opacity-60 h-8 italic">
-                  {program.description || 'SIN ESPECIFICACIONES TÉCNICAS ADICIONALES.'}
-                </p>
-              </div>
-
-              {/* Tactical Metrics */}
-              <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-100/50 mb-6 relative z-10 bg-slate-50/30 -mx-6 px-6">
-                <div className="flex flex-col gap-1">
-                  <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.25em] italic">Duración Est.</span>
-                  <div className="flex items-center gap-2">
-                    <Clock className="w-3.5 h-3.5 text-indigo-500" />
-                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-tight italic">{program.duration || 'DINÁMICA'}</span>
-                  </div>
-                </div>
-                <div className="flex flex-col gap-1">
-                  <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.25em] italic">Despliegue</span>
-                  <div className="flex items-center gap-2">
-                    <Layers className="w-3.5 h-3.5 text-indigo-500" />
-                    <span className="text-[9px] font-black text-slate-600 uppercase tracking-tight italic">{program.phases?.length || 0} BLOQUES</span>
-                  </div>
-                </div>
-              </div>
-
-              <button
-                onClick={() => router.push(`/dashboard/programs/${program.id}`)}
-                className="w-full py-3 bg-white border border-slate-200 text-slate-900 rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 shadow-soft italic group/btn"
+          {programs.map((program) => {
+            const mentee = avatarsCache[program.menteeId];
+            return (
+              <div
+                key={program.id}
+                className="glass-card bg-white/70 backdrop-blur-xl border border-white p-6 rounded-[24px] shadow-soft hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-700 group relative overflow-hidden"
               >
-                Supervisar Activo
-                <ChevronRight className="w-3.5 h-3.5 inline-block ml-1.5 group-hover/btn:translate-x-1.5 transition-transform" />
-              </button>
-            </div>
-          ))}
+                <div className="absolute top-0 right-0 p-8 opacity-[0.02] group-hover:opacity-10 transition-opacity duration-1000">
+                   <BookOpen className="w-24 h-24 -rotate-12 group-hover:rotate-0 transition-transform duration-1000" />
+                </div>
+
+                {/* Status Header */}
+                <div className="flex justify-between items-start mb-6 relative z-10">
+                  <div className="w-10 h-10 bg-slate-900 rounded-xl flex items-center justify-center text-white shadow-xl shadow-slate-200 group-hover:bg-indigo-600 transition-all duration-500">
+                    <BookOpen className="w-5 h-5" />
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <Link
+                      href={`/dashboard/clients/${program.menteeId}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className="flex items-center gap-2 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-100 hover:border-indigo-200 rounded-full text-[8px] font-black text-slate-900 hover:text-indigo-600 uppercase tracking-widest shadow-sm transition-all italic cursor-pointer group/mentee animate-in fade-in duration-300"
+                    >
+                      <div className="w-4 h-4 rounded-full overflow-hidden flex items-center justify-center font-black text-[7px] shadow-sm uppercase italic shrink-0">
+                        {mentee?.avatarUrl ? (
+                          <img 
+                            src={mentee.avatarUrl.startsWith('http') ? mentee.avatarUrl : `/avatars/${mentee.avatarUrl}`} 
+                            alt={mentee?.name || 'M'}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-slate-900 text-white flex items-center justify-center text-[7px] font-black">
+                            {mentee?.name?.charAt(0).toUpperCase() || 'M'}
+                          </div>
+                        )}
+                      </div>
+                      <span>{mentee?.name || 'ALUMNO QUANTIC'}</span>
+                    </Link>
+                    <div className={`px-2.5 py-1 rounded-full text-[7px] font-black uppercase tracking-[0.2em] italic border ${
+                      program.status === 'PUBLISHED' 
+                        ? 'bg-emerald-50 text-emerald-600 border-emerald-100' 
+                        : 'bg-amber-50 text-amber-600 border-amber-100'
+                      }`}>
+                      {program.status === 'PUBLISHED' ? 'OPERATIVO' : 'EN ESPERA'}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-2 mb-6 relative z-10">
+                  <h4 className="text-xl font-black text-slate-900 uppercase tracking-tighter italic leading-none line-clamp-2 group-hover:text-indigo-600 transition-colors">{program.name}</h4>
+                  <p className="text-slate-400 text-[9px] font-black uppercase tracking-[0.2em] line-clamp-2 leading-relaxed opacity-60 h-8 italic">
+                    {program.description || 'SIN ESPECIFICACIONES TÉCNICAS ADICIONALES.'}
+                  </p>
+                </div>
+
+                {/* Tactical Metrics */}
+                <div className="grid grid-cols-2 gap-4 py-4 border-y border-slate-100/50 mb-6 relative z-10 bg-slate-50/30 -mx-6 px-6">
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.25em] italic">Duración Est.</span>
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                      <span className="text-[9px] font-black text-slate-600 uppercase tracking-tight italic">{program.duration || 'DINÁMICA'}</span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.25em] italic">Despliegue</span>
+                    <div className="flex items-center gap-2">
+                      <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                      <span className="text-[9px] font-black text-slate-600 uppercase tracking-tight italic">{program.phases?.length || 0} BLOQUES</span>
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => router.push(`/dashboard/programs/${program.id}`)}
+                  className="w-full py-3 bg-white border border-slate-200 text-slate-900 rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 shadow-soft italic group/btn"
+                >
+                  Supervisar Activo
+                  <ChevronRight className="w-3.5 h-3.5 inline-block ml-1.5 group-hover/btn:translate-x-1.5 transition-transform" />
+                </button>
+              </div>
+            );
+          })}
         </div>
       )}
 

@@ -68,13 +68,15 @@ export const SubscriptionCard: React.FC<SubscriptionCardProps> = ({ subscription
   };
 
   const handleMouseLeave = () => {
+    if (!cardRef.current) return;
+
     gsap.to(cardRef.current, {
       rotateX: 0,
       rotateY: 0,
       duration: 0.8,
       ease: "elastic.out(1, 0.5)"
     });
-    gsap.to(cardRef.current?.querySelectorAll('.parallax-el'), {
+    gsap.to(cardRef.current.querySelectorAll('.parallax-el'), {
       x: 0,
       y: 0,
       duration: 0.8,

@@ -86,7 +86,7 @@ export const TimeGrid: React.FC<TimeGridProps> = ({ events, date, onTimeClick, o
           const top = getPosition(event.start);
           const height = Math.max(getDurationHeight(event.start, event.end), 40); // Min height for visibility
 
-          const typeStyles = {
+          const typeStyles: Record<string, string> = {
             CUSTOMER: 'from-cyan-500/40 to-blue-600/40 border-cyan-500/30 text-cyan-200 shadow-[0_4px_20px_rgba(6,182,212,0.15)]',
             INVENTORY: 'from-amber-500/40 to-orange-600/40 border-amber-500/30 text-amber-200 shadow-[0_4px_20px_rgba(245,158,11,0.15)]',
             INTERNAL: 'from-purple-500/40 to-pink-600/40 border-purple-500/30 text-purple-200 shadow-[0_4px_20px_rgba(168,85,247,0.15)]'
@@ -95,7 +95,7 @@ export const TimeGrid: React.FC<TimeGridProps> = ({ events, date, onTimeClick, o
           return (
             <div
               key={event.id}
-              className={`event-card absolute inset-x-0 mx-2 p-3 rounded-2xl border bg-gradient-to-br backdrop-blur-2xl cursor-pointer hover:scale-[1.01] transition-all z-10 group overflow-hidden ${typeStyles[event.type] || typeStyles.CUSTOMER}`}
+              className={`event-card absolute inset-x-0 mx-2 p-3 rounded-2xl border bg-gradient-to-br backdrop-blur-2xl cursor-pointer hover:scale-[1.01] transition-all z-10 group overflow-hidden ${typeStyles[event.type || 'CUSTOMER']}`}
               style={{ top: `${top}px`, height: `${height}px` }}
               onClick={(e) => {
                 e.stopPropagation();

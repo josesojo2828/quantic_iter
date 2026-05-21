@@ -15,6 +15,7 @@ export interface AgendaEvent {
   resourceId?: string;
   metadata?: any;
   contact?: any;
+  contacts?: any[];
 }
 
 export const agendaService = {

@@ -33,7 +33,7 @@ export default function WorkersPage() {
   const [page, setPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedWorker, setSelectedWorker] = useState<Worker | null>(null);
-  const tableRef = useRef<HTMLDivElement>(null);
+  const tableRef = useRef<HTMLTableSectionElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
 
   const canUpdate = currentUser?.permissions.includes('staff:update');

@@ -4,6 +4,7 @@ export interface Plan {
   id: string;
   name: string;
   slug: string;
+  description?: string;
   price: number;
   billingCycle: string;
   config: {

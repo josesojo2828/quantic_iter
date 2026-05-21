@@ -68,7 +68,7 @@ export default function StudentProfilePage() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const studentId = Array.isArray(id) ? id[0] : id;
+      const studentId = (Array.isArray(id) ? id[0] : id) as string;
       const [contactData, interData, revData] = await Promise.all([
         contactsService.getContactById(studentId),
         crmService.getInteractions(studentId),
