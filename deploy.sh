@@ -75,6 +75,16 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# 7. Ejecutar Datos Semilla (Seeds)
+echo -e "\n${YELLOW}4️⃣  Inicializando Datos Semilla (Prisma Seeds)...${NC}"
+sleep 3
+docker exec mentor_auth npx prisma db seed
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Roles, permisos y planes de suscripción inicializados correctamente.${NC}"
+else
+    echo -e "${YELLOW}⚠️ Advertencia: No se pudo ejecutar el seed automáticamente. Podés correrlo manualmente más tarde.${NC}"
+fi
+
 echo -e "\n${GREEN}======================================================${NC}"
 echo -e "${GREEN}   🎉 ¡DESPLIEGUE FINALIZADO EXITOSAMENTE! ${NC}"
 echo -e "${CYAN}======================================================${NC}"
