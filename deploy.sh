@@ -49,7 +49,7 @@ echo -e "${GREEN}✓ Infraestructura levantada correctamente.${NC}"
 echo -e "\n${YELLOW}⏳ Esperando que MongoDB esté disponible e inicialice su Replica Set...${NC}"
 sleep 5
 for i in {1..10}; do
-    if docker exec mentor_mongo mongosh --quiet --eval "rs.status().ok" >/dev/null 2>&1; then
+    if docker exec mentor_mongo mongo --quiet --eval "rs.status().ok" >/dev/null 2>&1; then
         echo -e "${GREEN}✓ Replica Set de MongoDB inicializado y listo.${NC}"
         break
     else

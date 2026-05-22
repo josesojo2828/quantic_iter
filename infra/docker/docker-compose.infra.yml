@@ -1,7 +1,7 @@
 
 services:
   mentor_mongo:
-    image: mongo:latest
+    image: mongo:4.4
     container_name: mentor_mongo
     ports:
       - "27017:27017"
@@ -15,7 +15,7 @@ services:
         limits:
           memory: 1G
     healthcheck:
-      test: echo "try { rs.status() } catch (err) { rs.initiate() }" | mongosh --quiet
+      test: echo "try { rs.status() } catch (err) { rs.initiate() }" | mongo --quiet
       interval: 5s
       timeout: 5s
       retries: 5

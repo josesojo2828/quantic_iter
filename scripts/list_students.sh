@@ -8,8 +8,8 @@ EMAIL=${1:-"josesojo2828@gmail.com"}
 echo "🔍 Buscando estudiantes para: $EMAIL..."
 
 # Paso 1: Obtener el Tenant ID desde auth_db
-# Usamos docker exec porque mongosh está dentro del contenedor mentor_mongo
-TENANT_ID=$(docker exec mentor_mongo mongosh --quiet --eval "
+# Usamos docker exec porque mongo está dentro del contenedor mentor_mongo
+TENANT_ID=$(docker exec mentor_mongo mongo --quiet --eval "
   db = db.getSiblingDB('auth_db');
   user = db.users.findOne({email: '$EMAIL'});
   if (user) {
@@ -31,7 +31,7 @@ echo "--------------------------------------------------------"
 
 # Paso 2: Listar los contactos en crm_db que coincidan con ese tenant_id
 # Probamos buscando tanto como String (mapeo de Prisma) como por ObjectId
-docker exec mentor_mongo mongosh --quiet --eval "
+docker exec mentor_mongo mongo --quiet --eval "
   db = db.getSiblingDB('crm_db');
   
   // Intento 1: Como String (Prisma default @map)
