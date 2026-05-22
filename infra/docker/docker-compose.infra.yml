@@ -95,8 +95,8 @@ services:
 
 networks:
   mentor_network:
+    external: true
     name: mentor_network
-    driver: bridge
 
 volumes:
   mongo_data:

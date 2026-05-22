@@ -22,8 +22,8 @@ if [ ! -f ".env" ]; then
     exit 1
 fi
 
-# 2. Cargar variables del .env para validación básica
-export $(grep -v '^#' .env | xargs)
+# 2. Cargar variables del .env para validación básica (comentado para evitar errores de parseo con caracteres especiales, Compose las lee automáticamente)
+# export $(grep -v '^#' .env | xargs)
 
 # 3. Crear red externa de Docker si no existe
 echo -e "\n${YELLOW}1️⃣  Verificando red de Docker 'mentor_network'...${NC}"
