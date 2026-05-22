@@ -22,6 +22,9 @@ COPY ${SERVICE_PATH} .
 # Generate Prisma client if schema exists
 RUN if [ -f "./prisma/schema.prisma" ]; then npx prisma generate; fi
 
+# Build the service/application
+RUN npm run build
+
 EXPOSE 3000
 
 CMD ["npm", "run", "start:dev"]

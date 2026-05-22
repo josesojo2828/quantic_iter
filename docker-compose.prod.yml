@@ -36,7 +36,7 @@ services:
       - NODE_ENV=production
     networks:
       - mentor_network
-    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+    command: npm run start:prod
 
   mentor-core:
     build:
@@ -56,7 +56,7 @@ services:
       - auth-tenant
     networks:
       - mentor_network
-    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+    command: npm run start:prod
 
   app-main:
     build:
@@ -74,7 +74,7 @@ services:
       - NODE_ENV=production
     networks:
       - mentor_network
-    command: sh -c "npm run build && npm run start"
+    command: npm run start
 
   admin-front:
     build:
@@ -92,7 +92,7 @@ services:
       - NODE_ENV=production
     networks:
       - mentor_network
-    command: sh -c "npm run build && npm run start"
+    command: npm run start
 
   landing:
     build:
@@ -110,7 +110,7 @@ services:
       - NODE_ENV=production
     networks:
       - mentor_network
-    command: sh -c "npm run build && npm run start"
+    command: npm run start
 
   audit-service:
     build:
@@ -129,7 +129,7 @@ services:
       - auth-tenant
     networks:
       - mentor_network
-    command: sh -c "npm run build && npm run start:prod"
+    command: npm run start:prod
 
   subscription-worker:
     build:
@@ -147,7 +147,7 @@ services:
       - auth-tenant
     networks:
       - mentor_network
-    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+    command: npm run start:prod
 
   crm-engagement:
     container_name: mentor_crm
@@ -167,7 +167,7 @@ services:
       - auth-tenant
     networks:
       - mentor_network
-    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+    command: npm run start:prod
       
   notifications:
     container_name: mentor_notifications
@@ -190,7 +190,7 @@ services:
       - auth-tenant
     networks:
       - mentor_network
-    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+    command: npm run start:prod
 
   finance:
     container_name: mentor_finance
@@ -214,7 +214,7 @@ services:
       - auth-tenant
     networks:
       - mentor_network
-    command: sh -c "./node_modules/.bin/prisma generate && npm run build && npm run start:prod"
+    command: npm run start:prod
 
   finance-docs:
     build:
@@ -229,7 +229,7 @@ services:
       - NODE_ENV=production
     networks:
       - mentor_network
-    command: sh -c "npm run build && npm run start:prod"
+    command: npm run start:prod
 
   realtime-gw:
     build:
@@ -244,7 +244,7 @@ services:
       - NODE_ENV=production
     networks:
       - mentor_network
-    command: sh -c "npm run build && npm run start:prod"
+    command: npm run start:prod
 
 networks:
   mentor_network:
