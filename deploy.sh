@@ -45,19 +45,24 @@ if [ $? -ne 0 ]; then
 fi
 echo -e "${GREEN}✓ Infraestructura levantada correctamente.${NC}"
 
-# 5. Esperar a que MongoDB esté listo y su Replica Set iniciado
-echo -e "\n${YELLOW}⏳ Esperando que MongoDB esté disponible e inicialice su Replica Set...${NC}"
-sleep 5
-for i in {1..10}; do
-    if docker exec mentor_mongo mongo --quiet --eval "rs.status().ok" >/dev/null 2>&1; then
-        echo -e "${GREEN}✓ Replica Set de MongoDB inicializado y listo.${NC}"
+# 5. Esperar a que MongoDB esté listo e inicializar activamente su Replica Set
+echo -e "\n${YELLOW}⏳ Esperando que MongoDB esté disponible e inicializando su Replica Set...${NC}"
+sleep 3
+for i in {1..15}; do
+    # Intentamos iniciar el replica set de forma activa (si ya está iniciado, Mongo lo ignora de forma segura)
+    docker exec mentor_mongo mongo --quiet --eval "rs.initiate()" >/dev/null 2>&1
+    
+    # Comprobamos el estado del Replica Set
+    STATUS_OK=$(docker exec mentor_mongo mongo --quiet --eval "rs.status().ok" 2>/dev/null | tr -d '[:space:]')
+    if [ "$STATUS_OK" = "1" ]; then
+        echo -e "${GREEN}✓ Replica Set de MongoDB ('rs0') inicializado y listo.${NC}"
         break
     else
-        echo -e "${YELLOW}Aún esperando Replica Set... ($i/10)${NC}"
+        echo -e "${YELLOW}Aún esperando Replica Set... ($i/15)${NC}"
         sleep 3
     fi
-    if [ $i -eq 10 ]; then
-        echo -e "${RED}⚠️ Advertencia: MongoDB tarda en responder. Procediendo de todas formas...${NC}"
+    if [ $i -eq 15 ]; then
+        echo -e "${RED}⚠️ Advertencia: No se pudo verificar la inicialización del Replica Set. Procediendo de todas formas...${NC}"
     fi
 done
 
