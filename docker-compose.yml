@@ -27,6 +27,7 @@ services:
       - ./services/auth-tenant:/app
       - /app/node_modules
       - ./libs/shared:/libs/shared
+      - /libs/shared/node_modules
     deploy:
       resources:
         limits:
@@ -41,7 +42,7 @@ services:
       - NODE_OPTIONS=--max-old-space-size=768
     networks:
       - mentor_network
-    command: sh -c "./node_modules/.bin/prisma generate && npm run start:dev"
+    command: sh -c "npm run build --prefix /libs/shared && ./node_modules/.bin/prisma generate && npm run start:dev"
 
 
   mentor-core:
@@ -57,6 +58,7 @@ services:
       - ./services/mentor-core:/app
       - /app/node_modules
       - ./libs/shared:/libs/shared
+      - /libs/shared/node_modules
     deploy:
       resources:
         limits:
@@ -167,6 +169,7 @@ services:
       - ./services/audit-service:/app
       - /app/node_modules
       - ./libs/shared:/libs/shared
+      - /libs/shared/node_modules
     deploy:
       resources:
         limits:
@@ -203,6 +206,7 @@ services:
       - ./services/subscription-worker:/app
       - /app/node_modules
       - ./libs/shared:/libs/shared
+      - /libs/shared/node_modules
     environment:
       - KAFKA_BROKERS=mentor_kafka:29092
       - DATABASE_URL=mongodb://mentor_mongo:27017/auth_db?replicaSet=rs0&directConnection=true
