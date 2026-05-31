@@ -100,7 +100,7 @@ export default function SubscriptionsPage() {
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-4 items-stretch">
         {/* Active Plan Console - Consistent with Billing UI */}
-        <div className="tactical-card xl:col-span-8 glass-card bg-slate-900 rounded-[24px] border border-white/10 shadow-2xl relative overflow-hidden group">
+        <div className="tactical-card xl:col-span-8 bg-slate-900 rounded-[24px] border border-slate-700 shadow-2xl relative overflow-hidden group">
           <div className="absolute top-0 right-0 p-10 opacity-5 group-hover:opacity-10 transition-opacity duration-1000">
             <Shield className="w-40 h-40 text-indigo-500 -rotate-12 group-hover:scale-110 transition-transform duration-1000" />
           </div>
