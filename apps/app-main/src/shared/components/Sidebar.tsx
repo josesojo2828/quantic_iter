@@ -143,18 +143,18 @@ export const Sidebar = ({ disabled }: { disabled?: boolean }) => {
 
   // Force modules for development (only for coaches who train students, e.g. Independent or Staff)
   if (isCoach) {
-    if (groupedModules['ACADEMIA'] && !groupedModules['ACADEMIA'].find(m => m.key === 'agenda')) {
-      groupedModules['ACADEMIA'].push({ key: 'agenda', label: 'Agenda maestro', icon: 'Calendar', path: '/dashboard/agenda', module: 'agenda' });
-    }
+    // if (groupedModules['ACADEMIA'] && !groupedModules['ACADEMIA'].find(m => m.key === 'agenda')) {
+    //   groupedModules['ACADEMIA'].push({ key: 'agenda', label: 'Agenda maestro', icon: 'Calendar', path: '/dashboard/agenda', module: 'agenda' });
+    // }
     if (groupedModules['ACADEMIA'] && !groupedModules['ACADEMIA'].find(m => m.key === 'templates')) {
       groupedModules['ACADEMIA'].push({ key: 'templates', label: 'Plantillas', icon: 'Layers', path: '/dashboard/templates', module: 'mentor' });
     }
-    if (groupedModules['ACADEMIA'] && !groupedModules['ACADEMIA'].find(m => m.key === 'groups')) {
-      groupedModules['ACADEMIA'].push({ key: 'groups', label: 'Grupos', icon: 'Users', path: '/dashboard/groups', module: 'mentor' });
-    }
-    if (groupedModules['ACADEMIA'] && !groupedModules['ACADEMIA'].find(m => m.key === 'tasks')) {
-      groupedModules['ACADEMIA'].push({ key: 'tasks', label: 'Tareas', icon: 'ClipboardList', path: '/dashboard/tasks', module: 'mentor' });
-    }
+    // if (groupedModules['ACADEMIA'] && !groupedModules['ACADEMIA'].find(m => m.key === 'groups')) {
+    //   groupedModules['ACADEMIA'].push({ key: 'groups', label: 'Grupos', icon: 'Users', path: '/dashboard/groups', module: 'mentor' });
+    // }
+    // if (groupedModules['ACADEMIA'] && !groupedModules['ACADEMIA'].find(m => m.key === 'tasks')) {
+    //   groupedModules['ACADEMIA'].push({ key: 'tasks', label: 'Tareas', icon: 'ClipboardList', path: '/dashboard/tasks', module: 'mentor' });
+    // }
     if (groupedModules['ACADEMIA'] && !groupedModules['ACADEMIA'].find(m => m.key === 'habits')) {
       groupedModules['ACADEMIA'].push({ key: 'habits', label: 'Hábitos', icon: 'TrendingUp', path: '/dashboard/habits', module: 'mentor' });
     }

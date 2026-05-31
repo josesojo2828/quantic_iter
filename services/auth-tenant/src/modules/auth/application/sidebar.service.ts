@@ -16,8 +16,8 @@ export class SidebarService {
     { key: 'tenants', label: 'Organizaciones / Mentorías', icon: 'Globe', path: '/tenants', module: 'admin' },
     { key: 'users', label: 'Usuarios Globales', icon: 'Users', path: '/users', module: 'admin' },
     { key: 'programs', label: 'Programas', icon: 'BookOpen', path: '/dashboard/programs', module: 'mentor', permission: 'mentor:read' },
-    { key: 'groups', label: 'Grupos / Cohortes', icon: 'Users', path: '/dashboard/groups', module: 'mentor', permission: 'mentor:read' },
-    { key: 'tasks', label: 'Tareas y Objetivos', icon: 'CheckSquare', path: '/dashboard/tasks', module: 'mentor', permission: 'tasks:read' },
+    // { key: 'groups', label: 'Grupos / Cohortes', icon: 'Users', path: '/dashboard/groups', module: 'mentor', permission: 'mentor:read' },
+    // { key: 'tasks', label: 'Tareas y Objetivos', icon: 'CheckSquare', path: '/dashboard/tasks', module: 'mentor', permission: 'tasks:read' },
     { key: 'habits', label: 'Hábitos', icon: 'Calendar', path: '/dashboard/habits', module: 'mentor', permission: 'tasks:read' },
     // { key: 'gamification', label: 'Gamificación', icon: 'Trophy', path: '/dashboard/gamification', module: 'mentor', permission: 'mentor:read' }, // [TEMPORAL] Oculto para todos
     { key: 'branches', label: 'Sedes / Sucursales', icon: 'Map', path: '/dashboard/branches', module: 'branches', permission: 'branches:read' },
