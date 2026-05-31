@@ -70,6 +70,10 @@ export class ProgramService {
     return this.programRepository.toggleMilestone(milestoneId, program.menteeId, date);
   }
 
+  async toggleSubTask(milestoneId: string, title: string, isCompleted: boolean) {
+    return this.programRepository.toggleSubTask(milestoneId, title, isCompleted);
+  }
+
   async togglePhase(programId: string, phaseId: string, scope: QueryScope, date?: Date) {
     const program = await this.programRepository.findOne(programId, scope);
     if (!program || !program.menteeId) {

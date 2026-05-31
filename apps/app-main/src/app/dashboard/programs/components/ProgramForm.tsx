@@ -15,6 +15,7 @@ const programSchema = z.object({
   type: z.enum(['CURRICULUM', 'HABITS', 'ROUTINE']),
   isPublic: z.boolean(),
   category: z.string().optional(),
+  isActive: z.boolean().optional(),
 });
 
 type ProgramFormData = z.infer<typeof programSchema>;
@@ -24,22 +25,39 @@ interface ProgramFormProps {
   onClose: () => void;
   onSubmit: (data: ProgramFormData) => Promise<void>;
   defaultIsTemplate?: boolean;
+  isHabitOnly?: boolean;
 }
 
 export const ProgramForm: React.FC<ProgramFormProps> = ({ 
   isOpen, 
   onClose, 
   onSubmit,
-  defaultIsTemplate = false 
+  defaultIsTemplate = false,
+  isHabitOnly = false
 }) => {
-  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch } = useForm<ProgramFormData>({
+  const { register, handleSubmit, formState: { errors, isSubmitting }, reset, watch, setValue } = useForm<ProgramFormData>({
     resolver: zodResolver(programSchema),
     defaultValues: {
       isTemplate: defaultIsTemplate,
-      type: 'CURRICULUM',
+      type: isHabitOnly ? 'HABITS' : 'CURRICULUM',
       isPublic: false,
+      isActive: true,
     }
   });
+
+  React.useEffect(() => {
+    if (isOpen) {
+      reset({
+        name: '',
+        description: '',
+        duration: '',
+        isTemplate: defaultIsTemplate,
+        type: isHabitOnly ? 'HABITS' : 'CURRICULUM',
+        isPublic: false,
+        isActive: true,
+      });
+    }
+  }, [isOpen, defaultIsTemplate, isHabitOnly, reset]);
 
   const isTemplate = watch('isTemplate');
 
@@ -116,22 +134,46 @@ export const ProgramForm: React.FC<ProgramFormProps> = ({
                       {...register('type')}
                       className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold text-[11px] uppercase tracking-wider focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none appearance-none cursor-pointer"
                     >
-                      <option value="CURRICULUM">Curriculum (Pasos)</option>
-                      <option value="HABITS">Hábitos (Diario)</option>
+                      {!isHabitOnly && <option value="CURRICULUM">Curriculum (Pasos)</option>}
+                      <option value="HABITS">Hábito (Diario)</option>
                       <option value="ROUTINE">Rutina (Semanal)</option>
                     </select>
                  </div>
-                 <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Duración Estimada</label>
-                    <div className="relative">
-                      <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                      <input 
-                        {...register('duration')}
-                        placeholder="Ej: 8 semanas"
-                        className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
-                      />
-                    </div>
-                 </div>
+                 {isHabitOnly ? (
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Estado de Hábito</label>
+                      <div 
+                        onClick={() => {
+                          const currentVal = watch('isActive');
+                          setValue('isActive', !currentVal);
+                        }}
+                        className={`w-full px-5 py-[15px] bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between cursor-pointer hover:bg-slate-100/80 transition-all duration-300 ${watch('isActive') ? 'border-indigo-500/30 bg-indigo-50/10' : ''}`}
+                      >
+                        <div className="flex flex-col">
+                          <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider select-none leading-none mb-1">Habilitado</span>
+                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-tight select-none leading-none">
+                            {watch('isActive') ? 'Check-ins Activos' : 'Desactivado'}
+                          </span>
+                        </div>
+                        <div className={`w-9 h-5 rounded-full p-0.5 transition-colors duration-300 flex items-center shrink-0 ${watch('isActive') ? 'bg-indigo-600' : 'bg-slate-300'}`}>
+                          <div className={`bg-white w-4 h-4 rounded-full shadow-md transform transition-transform duration-300 ${watch('isActive') ? 'translate-x-4' : 'translate-x-0'}`} />
+                        </div>
+                      </div>
+                      <input type="checkbox" className="hidden" {...register('isActive')} />
+                   </div>
+                 ) : (
+                   <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Duración Estimada</label>
+                      <div className="relative">
+                        <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        <input 
+                          {...register('duration')}
+                          placeholder="Ej: 8 semanas"
+                          className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
+                        />
+                      </div>
+                   </div>
+                 )}
               </div>
 
               <div className="grid grid-cols-2 gap-4">

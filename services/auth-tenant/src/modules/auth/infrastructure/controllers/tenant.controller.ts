@@ -1,4 +1,4 @@
-import { Controller, Get, Put, Req, Body, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, Post, Req, Body, UseGuards } from '@nestjs/common';
 import { AuthService } from '../../application/auth.service';
 import { JwtAuthGuard } from '../../../../common/auth/guards/jwt-auth.guard';
 
@@ -19,5 +19,11 @@ export class TenantController {
     // Basic verification: Only mentor_owner should update tenant info
     // For now, we trust the tenantId in the token
     return this.authService.updateTenant(tenantId, dto);
+  }
+
+  @Post('leave')
+  async leaveTenant(@Req() req: any, @Body() body: { tenantId: string }) {
+    const userId = req.user.userId;
+    return this.authService.leaveTenant(userId, body.tenantId);
   }
 }

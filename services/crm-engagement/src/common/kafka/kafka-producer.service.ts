@@ -16,6 +16,22 @@ export class KafkaProducerService implements OnModuleInit, OnModuleDestroy {
   }
 
   async onModuleInit() {
+    const admin = this.kafka.admin();
+    try {
+      await admin.connect();
+      await admin.createTopics({
+        topics: [
+          { topic: 'auth.user_created', numPartitions: 1 },
+          { topic: 'auth.user_updated', numPartitions: 1 },
+        ],
+      });
+      console.log('✅ CRM required topics ensured via Kafka Admin');
+    } catch (e) {
+      console.error('⚠️ CRM error ensuring topics:', e.message);
+    } finally {
+      await admin.disconnect();
+    }
+
     await this.producer.connect();
   }
 

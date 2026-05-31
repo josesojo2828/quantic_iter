@@ -27,9 +27,10 @@ import {
   ChevronDown,
   ChevronUp,
   Info,
-  Target
+  Target,
+  ListTodo
 } from 'lucide-react';
-import { format, isSameDay } from 'date-fns';
+import { format, isSameDay, isSameWeek } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { MonthlyCalendar } from '@/features/agenda/components/MonthlyCalendar';
 
@@ -99,6 +100,90 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
   const [evidenceText, setEvidenceText] = useState('');
   const [evidenceUrl, setEvidenceUrl] = useState('');
   const [checkingHabitId, setCheckingHabitId] = useState<string | null>(null);
+
+  // Subtasks checklist local state
+  const [checkedSubTasks, setCheckedSubTasks] = useState<Record<string, string[]>>({});
+
+  const toggleSubTask = async (programId: string | null, milestoneId: string, title: string) => {
+    if (!programId || programId === milestoneId) {
+      const current = checkedSubTasks[milestoneId] || [];
+      const index = current.indexOf(title);
+      const updated = [...current];
+      if (index > -1) {
+        updated.splice(index, 1);
+      } else {
+        updated.push(title);
+      }
+      setCheckedSubTasks({
+        ...checkedSubTasks,
+        [milestoneId]: updated,
+      });
+      return;
+    }
+
+    let isCurrentlyCompleted = false;
+
+    // 1. Optimistic UI update on local programs state
+    setPrograms((prev: any[]) => {
+      if (!prev) return prev;
+      return prev.map((prog: any) => {
+        if (prog.id !== programId) return prog;
+        return {
+          ...prog,
+          phases: prog.phases?.map((ph: any) => ({
+            ...ph,
+            milestones: ph.milestones?.map((m: any) => {
+              if (m.id !== milestoneId) return m;
+              return {
+                ...m,
+                subTasks: m.subTasks?.map((st: any) => {
+                  if (st.title === title) {
+                    isCurrentlyCompleted = st.isCompleted || false;
+                    return { ...st, isCompleted: !isCurrentlyCompleted };
+                  }
+                  return st;
+                })
+              };
+            })
+          }))
+        };
+      });
+    });
+
+    try {
+      await apiClient.post(`/mentor/programs/${programId}/milestones/${milestoneId}/subtasks/toggle`, {
+        title,
+        isCompleted: !isCurrentlyCompleted,
+      });
+    } catch (error) {
+      toast.error('Error al actualizar el ejercicio');
+      // Revert Optimistic UI update
+      setPrograms((prev: any[]) => {
+        if (!prev) return prev;
+        return prev.map((prog: any) => {
+          if (prog.id !== programId) return prog;
+          return {
+            ...prog,
+            phases: prog.phases?.map((ph: any) => ({
+              ...ph,
+              milestones: ph.milestones?.map((m: any) => {
+                if (m.id !== milestoneId) return m;
+                return {
+                  ...m,
+                  subTasks: m.subTasks?.map((st: any) => {
+                    if (st.title === title) {
+                      return { ...st, isCompleted: isCurrentlyCompleted };
+                    }
+                    return st;
+                  })
+                };
+              })
+            }))
+          };
+        });
+      });
+    }
+  };
 
   // Coach Specific Gamification persistency
   const [coachStats, setCoachStats] = useState<Record<string, { xp: number; level: number; currentStreak: number }>>(() => {
@@ -433,6 +518,28 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
     if (!selectedCoach) return [];
     return habits.filter(h => h.coachId === selectedCoach.id || !h.coachId);
   }, [habits, selectedCoach]);
+
+  // Hábitos específicos para la vista "Today" con filtros temporales avanzados (DAILY / WEEKLY)
+  const todayHabits = React.useMemo(() => {
+    return filteredHabits.filter(habit => {
+      // Si el hábito es diario, siempre se muestra hoy (esté completado o no)
+      if (habit.frequency === 'DAILY' || !habit.frequency) {
+        return true;
+      }
+      // Si el hábito es semanal:
+      if (habit.frequency === 'WEEKLY') {
+        // Verificamos si tiene algún check-in esta semana en curso
+        const hasCheckinThisWeek = habit.checkins?.some((c: any) => {
+          const checkinDate = c.date || c.createdAt;
+          if (!checkinDate) return false;
+          return isSameWeek(new Date(checkinDate), new Date(), { weekStartsOn: 1 }); // Semana de lunes a domingo
+        });
+        // Si ya tiene un check-in esta semana, no debe aparecer en la pestaña "Today"
+        return !hasCheckinThisWeek;
+      }
+      return true;
+    });
+  }, [filteredHabits]);
 
   const filteredTasks = React.useMemo(() => {
     if (!selectedCoach) return [];
@@ -890,20 +997,112 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                 </span>
               </div>
 
-              {filteredHabits.length === 0 ? (
+              {todayHabits.length === 0 ? (
                 <div className="text-center py-8">
                   <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">
                     No hay hábitos asignados para hoy.
                   </p>
                   <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-1">
-                    Tu coach definirá tus hábitos pronto.
+                    Tu coach definirá tus hábitos pronto o ya completaste los de esta semana.
                   </p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredHabits.map((habit) => {
+                  {todayHabits.map((habit) => {
                     const isChecked = habit.checkedToday;
                     const isChecking = checkingHabitId === habit.id;
+                    const hasSubTasks = habit.subTasks && habit.subTasks.length > 0;
+                    const completedSubTasks = checkedSubTasks[habit.id] || [];
+                    const allSubTasksChecked = hasSubTasks ? habit.subTasks.every((st: any) => completedSubTasks.includes(st.title)) : true;
+
+                    if (hasSubTasks) {
+                      return (
+                        <div
+                          key={habit.id}
+                          className={`flex flex-col p-5 rounded-[28px] border transition-all duration-500 text-left relative overflow-hidden shadow-sm hover:shadow-md ${
+                            isChecked
+                              ? 'bg-[#E5FAF0]/40 border-[#D1FAE5] text-[#2C3A50]'
+                              : 'bg-white border-[#EAF0F6]'
+                          }`}
+                        >
+                          {/* Header */}
+                          <div className="flex items-start justify-between gap-3 mb-4">
+                            <div className="space-y-0.5 max-w-[70%]">
+                              <span className={`text-[11px] font-black uppercase tracking-tight italic block ${
+                                isChecked ? 'line-through text-slate-400' : 'text-[#2C3A50]'
+                              }`}>
+                                {habit.name}
+                              </span>
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block leading-tight">
+                                {habit.description || 'Rutina estructurada'}
+                              </span>
+                              <div className="flex items-center gap-1 mt-1">
+                                <span className="text-[6.5px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                  {habit.frequency === 'WEEKLY' ? 'SEMANAL' : 'DIARIO'}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Main Check-in Button */}
+                            <button
+                              disabled={isChecked || isChecking || !allSubTasksChecked}
+                              onClick={() => handleHabitCheckin(habit.id)}
+                              className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300 ${
+                                isChecked
+                                  ? 'bg-[#2CD79A] text-white shadow-lg shadow-[#2CD79A]/20'
+                                  : allSubTasksChecked
+                                    ? 'bg-[#7B91EB] text-white shadow-lg shadow-[#7B91EB]/20 hover:scale-105 active:scale-95'
+                                    : 'bg-slate-100 text-slate-300 cursor-not-allowed opacity-60'
+                              }`}
+                            >
+                              {isChecking ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              ) : isChecked ? (
+                                <Check size={16} strokeWidth={3} />
+                              ) : (
+                                <Check size={16} />
+                              )}
+                            </button>
+                          </div>
+
+                          {/* Subtasks Checklist */}
+                          <div className="space-y-1.5 bg-slate-50/50 border border-slate-100 rounded-2xl p-3">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <ListTodo className="w-3.5 h-3.5 text-indigo-500" />
+                              <span className="text-[7.5px] font-black text-indigo-500 uppercase tracking-widest italic leading-none">Ejercicios completados ({isChecked ? habit.subTasks.length : completedSubTasks.length}/{habit.subTasks.length})</span>
+                            </div>
+                            
+                            {habit.subTasks.map((task: any, idx: number) => {
+                              const isSubChecked = isChecked || completedSubTasks.includes(task.title);
+                              return (
+                                <button
+                                  key={idx}
+                                  disabled={isChecked}
+                                  type="button"
+                                  onClick={() => toggleSubTask(habit.id, task.title)}
+                                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all duration-300 ${
+                                    isSubChecked
+                                      ? 'bg-emerald-50/30 border-emerald-100/50 text-emerald-800'
+                                      : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
+                                  }`}
+                                >
+                                  <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
+                                    isSubChecked 
+                                      ? 'bg-emerald-600 border-emerald-500 text-white' 
+                                      : 'border-slate-300 bg-white group-hover:border-indigo-400'
+                                  }`}>
+                                    {isSubChecked && <Check size={10} strokeWidth={4} />}
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight italic leading-tight ${isSubChecked ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                    {task.title}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    }
 
                     return (
                       <button
@@ -1218,23 +1417,127 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                                       </button>
                                     </div>
                                   ) : (
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                       {phase.milestones.map((milestone: any) => {
                                         const isCompleted = checkMilestoneCompleted(milestone, crmMenteeId);
                                         const isToggling = togglingMilestoneId === milestone.id;
+                                        
+                                        const hasSubTasks = milestone.subTasks && milestone.subTasks.length > 0;
+                                        const isHabitOrRoutine = program.type === 'HABITS' || program.type === 'ROUTINE' || milestone.frequency !== 'ONCE';
+
+                                        if (isHabitOrRoutine || hasSubTasks) {
+                                          const completedSubTasks = hasSubTasks ? milestone.subTasks.filter((st: any) => st.isCompleted) : [];
+                                          const allSubTasksChecked = hasSubTasks ? milestone.subTasks.every((st: any) => st.isCompleted) : true;
+
+                                          return (
+                                            <div key={milestone.id} className="bg-white border border-[#EAF0F6] rounded-[24px] p-5 shadow-sm hover:shadow-md transition-all duration-300 space-y-4 relative overflow-hidden">
+                                              <div className="flex justify-between items-start gap-4">
+                                                <div className="space-y-1">
+                                                  <h4 className="text-[10px] font-black text-[#2C3A50] uppercase tracking-tight italic leading-tight">
+                                                    {milestone.title}
+                                                  </h4>
+                                                  <div className="flex items-center gap-1.5 flex-wrap">
+                                                    {milestone.xpReward && (
+                                                      <div className="px-1.5 py-0.5 bg-amber-50 rounded text-[6.5px] font-black text-amber-500 uppercase tracking-widest italic border border-amber-100 shadow-sm">+{milestone.xpReward} XP</div>
+                                                    )}
+                                                    <div className="px-1.5 py-0.5 bg-indigo-50 rounded text-[6.5px] font-black text-[#7B91EB] uppercase tracking-widest italic border border-indigo-50 shadow-sm">
+                                                      {milestone.frequency === 'DAILY' ? 'DIARIO' : milestone.frequency === 'WEEKLY' ? 'SEMANAL' : 'ÚNICO'}
+                                                    </div>
+                                                  </div>
+                                                </div>
+                                              </div>
+
+                                              {/* Checklist of subtasks */}
+                                              {hasSubTasks && (
+                                                <div className="space-y-1.5 bg-slate-50 border border-slate-100 rounded-xl p-2.5">
+                                                  <div className="flex items-center gap-1 mb-0.5">
+                                                    <ListTodo className="w-3 h-3 text-[#7B91EB]" />
+                                                    <span className="text-[7px] font-black text-[#7B91EB] uppercase tracking-widest italic leading-none">
+                                                      Ejercicios completados ({isCompleted ? milestone.subTasks.length : completedSubTasks.length}/{milestone.subTasks.length})
+                                                    </span>
+                                                  </div>
+                                                  
+                                                  <div className="grid grid-cols-1 gap-1">
+                                                    {milestone.subTasks.map((task: any, idx: number) => {
+                                                      const isSubChecked = isCompleted || task.isCompleted;
+                                                      const isBtnDisabled = isCompleted;
+
+                                                      return (
+                                                        <button
+                                                          key={idx}
+                                                          disabled={isBtnDisabled}
+                                                          type="button"
+                                                          onClick={() => toggleSubTask(program.id, milestone.id, task.title)}
+                                                          className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left transition-all duration-300 active:scale-[0.98] ${
+                                                            isSubChecked
+                                                              ? 'bg-emerald-50/30 border-emerald-100/50 text-emerald-800'
+                                                              : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
+                                                          }`}
+                                                        >
+                                                          <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                                                            isSubChecked 
+                                                              ? 'bg-emerald-600 border-emerald-500 text-white' 
+                                                              : 'border-slate-300 bg-white'
+                                                          }`}>
+                                                            {isSubChecked && <Check size={8} strokeWidth={4} />}
+                                                          </div>
+                                                          <span className={`text-[9px] font-black uppercase tracking-tight italic leading-tight ${isSubChecked ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                                            {task.title}
+                                                          </span>
+                                                        </button>
+                                                      );
+                                                    })}
+                                                  </div>
+                                                </div>
+                                              )}
+
+                                              {/* Check-in Button */}
+                                              <div className="pt-1">
+                                                {isCompleted ? (
+                                                  <div className="w-full py-2.5 bg-emerald-50 text-emerald-600 border border-emerald-200/60 rounded-xl text-[7.5px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm italic">
+                                                    <Check className="w-3.5 h-3.5 stroke-[3] animate-bounce" />
+                                                    Rutina Completada hoy
+                                                  </div>
+                                                ) : (
+                                                  <button
+                                                    disabled={isToggling || !allSubTasksChecked}
+                                                    onClick={() => handleToggleMilestone(program.id, milestone.id)}
+                                                    className={`w-full py-2.5 rounded-xl text-[7.5px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1.5 group italic ${
+                                                      allSubTasksChecked
+                                                        ? 'bg-slate-900 hover:bg-[#7B91EB] text-white cursor-pointer shadow-md'
+                                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed border-none opacity-60'
+                                                    }`}
+                                                  >
+                                                    {isToggling ? (
+                                                      <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                    ) : allSubTasksChecked ? (
+                                                      <>
+                                                        <Check className="w-3.5 h-3.5 group-hover:scale-125 transition-transform" />
+                                                        Registrar Check-in Hoy
+                                                      </>
+                                                    ) : (
+                                                      <>
+                                                        <ListTodo className="w-3.5 h-3.5" />
+                                                        Completá los ejercicios primero
+                                                      </>
+                                                    )}
+                                                  </button>
+                                                )}
+                                              </div>
+                                            </div>
+                                          );
+                                        }
 
                                         return (
-                                          <button
+                                          <div
                                             key={milestone.id}
-                                            disabled={isToggling}
-                                            onClick={() => handleToggleMilestone(program.id, milestone.id)}
-                                            className={`flex items-center justify-between p-3.5 rounded-[18px] border transition-all duration-300 text-left relative overflow-hidden group ${
+                                            className={`flex items-center justify-between p-4 rounded-[20px] border transition-all duration-300 text-left relative overflow-hidden group ${
                                               isCompleted
                                                 ? 'bg-[#E5FAF0]/50 border-[#D1FAE5] text-[#2C3A50]'
-                                                : 'bg-white hover:bg-slate-50 border-[#EAF0F6] shadow-sm'
+                                                : 'bg-white hover:bg-slate-50/50 border-[#EAF0F6] shadow-sm hover:shadow-md'
                                             }`}
                                           >
-                                            <div className="space-y-0.5 max-w-[80%]">
+                                            <div className="space-y-1 max-w-[80%] pr-4">
                                               <span className={`text-[10px] font-black uppercase tracking-tight italic block ${
                                                 isCompleted ? 'line-through text-slate-400' : 'text-[#2C3A50]'
                                               }`}>
@@ -1244,26 +1547,31 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                                                 {milestone.description || 'Objetivo de aprendizaje'}
                                               </span>
                                               {milestone.xpReward && (
-                                                <span className="inline-block mt-1 text-[6.5px] font-black bg-amber-50 text-amber-500 border border-amber-100 px-1 rounded uppercase tracking-wider">
+                                                <span className="inline-block mt-1.5 text-[6.5px] font-black bg-amber-50 text-amber-500 border border-amber-100 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
                                                   +{milestone.xpReward} EXP
                                                 </span>
                                               )}
                                             </div>
 
-                                            <div className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-300 shrink-0 ${
-                                              isCompleted
-                                                ? 'bg-[#2CD79A] text-white'
-                                                : 'bg-[#F0F3FF] text-[#7B91EB] group-hover:bg-[#7B91EB] group-hover:text-white'
-                                            }`}>
+                                            <button
+                                              disabled={isToggling}
+                                              onClick={() => handleToggleMilestone(program.id, milestone.id)}
+                                              className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0 shadow-sm active:scale-90 cursor-pointer ${
+                                                isCompleted
+                                                  ? 'bg-[#2CD79A] text-white hover:bg-[#23be87]'
+                                                  : 'bg-[#F0F3FF] text-[#7B91EB] hover:bg-[#7B91EB] hover:text-white'
+                                              }`}
+                                              title={isCompleted ? "Marcar como incompleto" : "Completar hito"}
+                                            >
                                               {isToggling ? (
                                                 <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                               ) : isCompleted ? (
-                                                <Check size={12} strokeWidth={3} />
+                                                <Check size={14} strokeWidth={3.5} className="animate-bounce" />
                                               ) : (
-                                                <Check size={12} />
+                                                <Check size={14} strokeWidth={2.5} />
                                               )}
-                                            </div>
-                                          </button>
+                                            </button>
+                                          </div>
                                         );
                                       })}
                                     </div>

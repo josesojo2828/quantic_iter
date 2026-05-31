@@ -3,6 +3,9 @@ import type { ISubscriptionRepository } from '../domain/subscription.repository'
 import { ClientKafka } from '@nestjs/microservices';
 import { AuditAction, AuditPayload } from '@mentor/shared';
 import { Subscription } from '../domain/subscription.entity';
+import { type IEventBus } from '../../../common/events/event-bus.interface';
+import { SubscriptionCreatedEvent } from '../domain/events/subscription-created.event';
+import { SubscriptionUpdatedEvent } from '../domain/events/subscription-updated.event';
 
 @Injectable()
 export class SubscriptionService {
@@ -10,6 +13,7 @@ export class SubscriptionService {
     @Inject('ISubscriptionRepository')
     private readonly subscriptionRepository: ISubscriptionRepository,
     @Inject('AUDIT_SERVICE') private readonly auditClient: ClientKafka,
+    @Inject('IEventBus') private readonly eventBus: IEventBus,
   ) { }
 
   private emitAudit(data: Omit<AuditPayload, 'timestamp'>) {
@@ -40,6 +44,18 @@ export class SubscriptionService {
           expiresAt: newExpiresAt,
           status: 'ACTIVE'
         });
+
+        // Publish Domain Event to Kafka
+        const config = nextPlan.config || {};
+        await this.eventBus.publish(new SubscriptionUpdatedEvent(tenantId, {
+          tenantId,
+          planId: sub.nextPlanId,
+          planSlug: nextPlan.slug,
+          maxCoaches: config.maxUsers || 5,
+          maxMentees: config.maxMentees || 20,
+          expiresAt: newExpiresAt,
+          status: 'ACTIVE',
+        }));
 
         this.emitAudit({
           userId: 'SYSTEM', // System triggered action
@@ -211,6 +227,18 @@ export class SubscriptionService {
         expiresAt,
         status: 'ACTIVE',
       });
+
+      // Publish Domain Event to Kafka
+      const config = plan.config || {};
+      await this.eventBus.publish(new SubscriptionCreatedEvent(tenantId, {
+        tenantId,
+        planId: plan.id,
+        planSlug: plan.slug,
+        maxCoaches: config.maxUsers || 5,
+        maxMentees: config.maxMentees || 20,
+        expiresAt,
+        status: 'ACTIVE',
+      }));
 
       this.emitAudit({
         userId,

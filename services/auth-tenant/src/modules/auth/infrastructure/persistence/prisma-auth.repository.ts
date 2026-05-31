@@ -226,6 +226,21 @@ export class PrismaAuthRepository implements IAuthRepository {
         },
       });
 
+      // Mark matching pending invitation as accepted
+      const pendingInvites = await (tx as any).invitation.findMany({
+        where: {
+          email,
+        },
+      });
+      for (const inv of pendingInvites) {
+        if (inv.tenantId.toString() === tenantId && !inv.acceptedAt) {
+          await (tx as any).invitation.update({
+            where: { id: inv.id },
+            data: { acceptedAt: new Date() },
+          });
+        }
+      }
+
       const userWithRoles = await tx.user.findUnique({
         where: { id: user.id },
         include: {
@@ -515,5 +530,95 @@ export class PrismaAuthRepository implements IAuthRepository {
       }),
       total,
     };
+  }
+
+  async addUserRole(userId: string, roleId: string, tenantId: string, branchId?: string): Promise<void> {
+    await (this.prisma as any).userRole.create({
+      data: {
+        userId,
+        roleId,
+        tenantId,
+        branchId,
+      },
+    });
+
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { lastTenantId: tenantId } as any,
+    });
+  }
+
+  async findInvitationByToken(token: string): Promise<any | null> {
+    return (this.prisma as any).invitation.findUnique({
+      where: { token },
+    });
+  }
+
+  async removeUserRole(userId: string, tenantId: string): Promise<void> {
+    await (this.prisma as any).userRole.deleteMany({
+      where: {
+        userId,
+        tenantId,
+      },
+    });
+  }
+
+  async createIndependentTenantForUser(userId: string): Promise<any> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+    if (!user) throw new Error('Usuario no encontrado');
+
+    const tenantName = `Coach ${user.firstName} ${user.lastName}`;
+    const rand = Math.floor(100 + Math.random() * 900);
+    const slug = `coach-${user.firstName.toLowerCase().replace(/[^a-z0-9]/g, '')}-${user.lastName.toLowerCase().replace(/[^a-z0-9]/g, '')}-${rand}`;
+
+    return this.prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+      // 1. Crear el tenant
+      const tenant = await tx.tenant.create({
+        data: {
+          name: tenantName,
+          slug,
+          mentor_ownerId: userId,
+        },
+      });
+
+      // 2. Crear la branch Sede Central
+      const branch = await (tx as any).branch.create({
+        data: {
+          name: 'Sede Central',
+          address: 'Dirección por completar',
+          phone: '000000000',
+          tenantId: tenant.id,
+        },
+      });
+
+      // 3. Buscar el rol de mentor_owner
+      const role = await tx.role.findFirst({
+        where: { slug: 'mentor_owner' },
+      });
+      if (!role) throw new Error('Rol de Propietario no encontrado');
+
+      // 4. Crear el userRole
+      await (tx as any).userRole.create({
+        data: {
+          userId,
+          roleId: role.id,
+          tenantId: tenant.id,
+          branchId: branch.id,
+        },
+      });
+
+      // 5. No creamos la suscripción por defecto para permitir que el coach seleccione su plan en el Setup State
+      // El dashboard estará bloqueado en el frontend hasta que elija activar su prueba gratuita de 30 días.
+
+      // 6. Actualizar lastTenantId
+      await tx.user.update({
+        where: { id: userId },
+        data: { lastTenantId: tenant.id },
+      });
+
+      return tenant;
+    });
   }
 }

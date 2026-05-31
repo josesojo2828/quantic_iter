@@ -23,7 +23,7 @@ import {
 } from 'lucide-react';
 import { apiClient } from '@/core/api/api.client';
 import { toast } from 'react-hot-toast';
-import { ProgramForm } from '../programs/components/ProgramForm';
+import { HabitTemplateForm } from './components/HabitTemplateForm';
 import { contactsService, Contact } from '@/features/crm/services/contacts.service';
 
 export default function HabitsPage() {
@@ -102,8 +102,48 @@ export default function HabitsPage() {
 
   const handleCreateHabitTemplate = async (formData: any) => {
     try {
-      await apiClient.post('/mentor/programs', { ...formData, isTemplate: true });
-      toast.success('Plantilla de hábito creada');
+      const { formType, name, description, frequency, xpReward, requiredEvidence } = formData;
+      
+      let finalPayload: any = {
+        name,
+        description,
+        status: 'ACTIVE',
+        isTemplate: true,
+        type: 'HABITS',
+        duration: '30 d',
+      };
+
+      if (formType === 'SINGLE') {
+        finalPayload.phases = [
+          {
+            name: 'Hábitos del Protocolo',
+            order: 0,
+            description: 'Lista de hábitos diarios y semanales asignados a este protocolo.',
+            milestones: [
+              {
+                title: name,
+                description: description || `Hábito de consistencia diaria: ${name}`,
+                xpReward: xpReward || 15,
+                frequency: frequency || 'DAILY',
+                requiredEvidence: requiredEvidence || 'NONE',
+                order: 0
+              }
+            ]
+          }
+        ];
+      } else {
+        // Protocol
+        finalPayload.phases = [
+          {
+            name: 'Hábitos del Protocolo',
+            order: 0,
+            description: description || 'Lista de hábitos asignados a este protocolo.'
+          }
+        ];
+      }
+
+      await apiClient.post('/mentor/programs', finalPayload);
+      toast.success(formType === 'SINGLE' ? 'Hábito único diseñado con éxito' : 'Protocolo de hábitos diseñado con éxito');
       setIsFormOpen(false);
       fetchData();
     } catch (error) {
@@ -156,11 +196,10 @@ export default function HabitsPage() {
 
   return (
     <div className="w-full p-4 lg:p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700">
-      <ProgramForm 
+      <HabitTemplateForm 
         isOpen={isFormOpen}
         onClose={() => setIsFormOpen(false)}
         onSubmit={handleCreateHabitTemplate}
-        defaultIsTemplate={true}
       />
 
       {/* Assign Habit Modal - Aura v2.0 */}

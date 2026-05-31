@@ -9,8 +9,10 @@ export class RegisterData {
   planId?: string;
   roleId?: string;
   avatarUrl?: string;
+  gender?: string; // Optional: user selected gender identity
   tenantId?: string; // Optional: if provided, adds user to existing tenant
   role?: string;     // Optional: role slug to assign
+  invitationToken?: string; // Optional: registration via invitation
 }
 
 export class CreateUserData {
@@ -65,4 +67,8 @@ export interface IAuthRepository {
   findTenantById(id: string): Promise<any>;
   updateTenant(id: string, data: any): Promise<any>;
   findAllUsers(filters: { search?: string; page?: number; limit?: number; roleId?: string }): Promise<{ items: UserData[]; total: number }>;
+  addUserRole(userId: string, roleId: string, tenantId: string, branchId?: string): Promise<void>;
+  removeUserRole(userId: string, tenantId: string): Promise<void>;
+  findInvitationByToken(token: string): Promise<any | null>;
+  createIndependentTenantForUser(userId: string): Promise<any>;
 }

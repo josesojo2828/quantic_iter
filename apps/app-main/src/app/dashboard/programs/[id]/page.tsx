@@ -19,7 +19,8 @@ import {
   Calendar,
   Camera,
   X,
-  Flame
+  Flame,
+  ListTodo
 } from 'lucide-react';
 import { apiClient } from '@/core/api/api.client';
 import toast from 'react-hot-toast';
@@ -40,8 +41,67 @@ export default function ProgramDetailPage() {
   const [isPhaseModalOpen, setIsPhaseModalOpen] = useState(false);
   const [isMilestoneModalOpen, setIsMilestoneModalOpen] = useState(false);
   const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState(false);
-  const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
-  const [evidenceTarget, setEvidenceTarget] = useState<any>(null);
+   const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
+   const [evidenceTarget, setEvidenceTarget] = useState<any>(null);
+
+   const toggleSubTask = async (milestoneId: string, title: string) => {
+     let isCurrentlyCompleted = false;
+     
+     // 1. Optimistic UI update on program object
+     setProgram((prev: any) => {
+       if (!prev) return prev;
+       return {
+         ...prev,
+         phases: prev.phases?.map((ph: any) => ({
+           ...ph,
+           milestones: ph.milestones?.map((m: any) => {
+             if (m.id !== milestoneId) return m;
+             return {
+               ...m,
+               subTasks: m.subTasks?.map((st: any) => {
+                 if (st.title === title) {
+                   isCurrentlyCompleted = st.isCompleted || false;
+                   return { ...st, isCompleted: !isCurrentlyCompleted };
+                 }
+                 return st;
+               })
+             };
+           })
+         }))
+       };
+     });
+
+     try {
+       await apiClient.post(`/mentor/programs/${params.id}/milestones/${milestoneId}/subtasks/toggle`, {
+         title,
+         isCompleted: !isCurrentlyCompleted,
+       });
+     } catch (error) {
+       toast.error('Error al actualizar el ejercicio');
+       // Revert Optimistic UI update
+       setProgram((prev: any) => {
+         if (!prev) return prev;
+         return {
+           ...prev,
+           phases: prev.phases?.map((ph: any) => ({
+             ...ph,
+             milestones: ph.milestones?.map((m: any) => {
+               if (m.id !== milestoneId) return m;
+               return {
+                 ...m,
+                 subTasks: m.subTasks?.map((st: any) => {
+                   if (st.title === title) {
+                     return { ...st, isCompleted: isCurrentlyCompleted };
+                   }
+                   return st;
+                 })
+               };
+             })
+           }))
+         };
+       });
+     }
+   };
 
   const fetchProgram = async () => {
     try {
@@ -77,6 +137,20 @@ export default function ProgramDetailPage() {
       fetchProgram();
     } catch (error) {
       toast.error('Error al añadir la fase');
+    }
+  };
+
+  const handleQuickInitializePhase = async () => {
+    try {
+      await apiClient.post(`/mentor/programs/${params.id}/phases`, {
+        name: 'Hábitos del Protocolo',
+        description: 'Lista de hábitos diarios y semanales asignados a este protocolo.',
+        order: 0
+      });
+      toast.success('¡Lista de hábitos inicializada!');
+      fetchProgram();
+    } catch (error) {
+      toast.error('Error al inicializar los hábitos');
     }
   };
 
@@ -278,6 +352,10 @@ export default function ProgramDetailPage() {
 
   if (!program) return null;
 
+  const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+  const from = searchParams ? searchParams.get('from') : null;
+  const isHabits = program.type === 'HABITS' || program.type === 'ROUTINE' || from === 'habits';
+
   return (
     <div className="w-full p-4 lg:p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
       {/* Modals */}
@@ -290,6 +368,7 @@ export default function ProgramDetailPage() {
         isOpen={isMilestoneModalOpen}
         onClose={() => setIsMilestoneModalOpen(false)}
         onSubmit={handleAddMilestone}
+        isHabitOnly={isHabits}
       />
       <EvidenceModal
         isOpen={isEvidenceModalOpen}
@@ -303,8 +382,7 @@ export default function ProgramDetailPage() {
         <div className="flex flex-col gap-4">
           <button
             onClick={() => {
-              const from = new URLSearchParams(window.location.search).get('from');
-              if (from === 'habits' || program.type === 'HABITS' || program.type === 'ROUTINE') {
+              if (isHabits) {
                 router.push('/dashboard/habits');
               } else {
                 router.push('/dashboard/programs');
@@ -315,7 +393,7 @@ export default function ProgramDetailPage() {
             <div className="w-8 h-8 bg-white border border-slate-100 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:shadow-md transition-all">
               <ChevronLeft className="w-4 h-4" />
             </div>
-            Regresar a Programas
+            {isHabits ? 'Regresar a Hábitos' : 'Regresar a Programas'}
           </button>
 
           <div className="tactical-header">
@@ -380,187 +458,302 @@ export default function ProgramDetailPage() {
         {/* Left Column: Phases & Milestones */}
         <div className="lg:col-span-8 space-y-4">
           <div className="flex items-center justify-between px-1">
-            <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-1.5">
-              <BookOpen className="w-4 h-4 text-indigo-600" />
-              Estructura del Currículum
-            </h2>
-            <button
-              onClick={() => setIsPhaseModalOpen(true)}
-              className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 transition-colors font-bold text-[9px] uppercase tracking-widest group"
-            >
-              <Plus className="w-3.5 h-3.5 p-0.5 bg-indigo-100 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all" />
-              Añadir Fase
-            </button>
+            <div>
+              <h2 className="text-sm font-black text-slate-900 uppercase tracking-tight flex items-center gap-1.5">
+                {isHabits ? (
+                  <>
+                    <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
+                    Panel de Consistencia de Hábitos
+                  </>
+                ) : (
+                  <>
+                    <BookOpen className="w-4 h-4 text-indigo-600" />
+                    Estructura del Currículum
+                  </>
+                )}
+              </h2>
+              {isHabits && (
+                <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.25em] italic opacity-60 mt-1">
+                  Registrá y gestioná las rutinas diarias y semanales de este protocolo.
+                </p>
+              )}
+            </div>
+            {!isHabits ? (
+              <button
+                onClick={() => setIsPhaseModalOpen(true)}
+                className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 transition-colors font-bold text-[9px] uppercase tracking-widest group"
+              >
+                <Plus className="w-3.5 h-3.5 p-0.5 bg-indigo-100 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all" />
+                Añadir Fase
+              </button>
+            ) : (
+              program.phases && program.phases.length > 0 ? (
+                <button
+                  onClick={() => {
+                    setSelectedPhaseId(program.phases[0].id);
+                    setIsMilestoneModalOpen(true);
+                  }}
+                  className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 transition-colors font-bold text-[9px] uppercase tracking-widest group"
+                >
+                  <Plus className="w-3.5 h-3.5 p-0.5 bg-indigo-100 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all animate-pulse" />
+                  Añadir Hábito
+                </button>
+              ) : (
+                <button
+                  onClick={handleQuickInitializePhase}
+                  className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 transition-colors font-bold text-[9px] uppercase tracking-widest group"
+                >
+                  <Plus className="w-3.5 h-3.5 p-0.5 bg-indigo-100 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all" />
+                  Inicializar Hábitos
+                </button>
+              )
+            )}
           </div>
              {/* Habits / Routines Unified Layout */}
-          {(program.type === 'HABITS' || program.type === 'ROUTINE') ? (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between px-1">
-                <div className="space-y-1">
-                  <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter italic leading-none flex items-center gap-1.5">
-                    <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
-                    PANEL DE CONSISTENCIA DE HÁBITOS
-                  </h3>
-                  <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.25em] italic opacity-60">
-                    Registrá y gestioná las rutinas diarias y semanales del estudiante.
-                  </p>
-                </div>
-                {program.phases && program.phases.length > 0 && (
+          {isHabits ? (
+            <div className="space-y-8">
+              {/* List phases and their habits */}
+              {(!program.phases || program.phases.length === 0) ? (
+                <div className="glass-card bg-white/50 border-2 border-dashed border-slate-200 p-10 rounded-[24px] text-center space-y-4">
+                  <Flame className="w-10 h-10 text-indigo-400 mx-auto animate-pulse" />
+                  <div className="space-y-1">
+                    <h3 className="text-base font-black text-slate-900 uppercase tracking-tighter italic leading-none">Sin Consistencia Inicial</h3>
+                    <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.2em] italic">Para poder incorporar hábitos y rutinas, inicializá la lista de consistencia.</p>
+                  </div>
                   <button
-                    onClick={() => {
-                      setSelectedPhaseId(program.phases[0].id);
-                      setIsMilestoneModalOpen(true);
-                    }}
-                    className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 transition-colors font-bold text-[9px] uppercase tracking-widest group"
+                    onClick={handleQuickInitializePhase}
+                    className="px-6 py-3 bg-indigo-600 text-white rounded-[16px] font-black text-[8px] uppercase tracking-[0.3em] hover:bg-slate-900 transition-all shadow-lg active:scale-95 italic"
                   >
-                    <Plus className="w-3.5 h-3.5 p-0.5 bg-indigo-100 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all" />
-                    Añadir Hábito / Rutina
+                    Inicializar Hábitos del Protocolo
                   </button>
-                )}
-              </div>
-
-              {/* Grid of habits */}
-              {(() => {
-                const allMilestones = program.phases?.flatMap((p: any) => p.milestones?.map((m: any) => ({ ...m, phaseId: p.id })) || []) || [];
-                
-                if (allMilestones.length === 0) {
-                  return (
-                    <div className="glass-card bg-white/50 border-2 border-dashed border-slate-200 p-10 rounded-[24px] text-center space-y-4">
-                      <Flame className="w-10 h-10 text-slate-300 mx-auto animate-pulse" />
-                      <div className="space-y-1">
-                        <h3 className="text-base font-black text-slate-900 uppercase tracking-tighter italic leading-none">Sin hábitos programados</h3>
-                        <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.2em] italic">Crea una fase inicial para poder incorporar hábitos.</p>
-                      </div>
-                      {(!program.phases || program.phases.length === 0) ? (
-                        <button
-                          onClick={() => handleAddPhase({ name: 'HÁBITOS PRINCIPALES', description: 'Rutas de consistencia' })}
-                          className="px-6 py-3 bg-slate-900 text-white rounded-[16px] font-black text-[8px] uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-lg active:scale-95 italic"
-                        >
-                          Inicializar Categoría de Hábitos
-                        </button>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setSelectedPhaseId(program.phases[0].id);
-                            setIsMilestoneModalOpen(true);
-                          }}
-                          className="px-6 py-3 bg-slate-900 text-white rounded-[16px] font-black text-[8px] uppercase tracking-[0.3em] hover:bg-indigo-600 transition-all shadow-lg active:scale-95 italic"
-                        >
-                          Crear Primer Hábito
-                        </button>
-                      )}
-                    </div>
-                  );
-                }
-
-                return (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {allMilestones.map((milestone: any) => {
-                      const isCompletedToday = isMilestoneLockedForDate(milestone, new Date());
-                      const currentStreak = calculateStreak(milestone.completions || []);
-                      const streakColor = currentStreak > 0 ? 'text-orange-500 bg-orange-50 border-orange-100' : 'text-slate-400 bg-slate-50 border-slate-100';
-                      
-                      return (
-                        <div key={milestone.id} className="glass-card bg-white border border-white hover:border-slate-100/50 rounded-[28px] p-6 shadow-soft hover:shadow-2xl transition-all duration-500 space-y-6 relative overflow-hidden">
-                          {/* Streak fire background effect */}
-                          {currentStreak > 0 && (
-                            <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/[0.02] to-transparent rounded-bl-full pointer-events-none" />
-                          )}
-
-                          <div className="flex justify-between items-start gap-4">
+                </div>
+              ) : (
+                <div className="space-y-8">
+                  {program.phases.map((phase: any, index: number) => (
+                    <div key={phase.id} className={isHabits ? "space-y-4" : "space-y-4 bg-slate-50/40 p-5 rounded-[28px] border border-slate-100/50"}>
+                      {/* Phase Header */}
+                      {!isHabits && (
+                          <div className="flex items-center justify-between px-1">
                             <div className="space-y-1">
-                              <h4 className="text-base font-black text-slate-900 uppercase tracking-tight italic leading-tight">
-                                {milestone.title}
-                              </h4>
-                              <div className="flex items-center gap-1.5 flex-wrap">
-                                <div className="px-2 py-0.5 bg-indigo-50 rounded text-[7px] font-black text-indigo-500 uppercase tracking-widest italic border border-indigo-100 shadow-sm">+{milestone.xpReward} XP</div>
-                                <div className="px-2 py-0.5 bg-emerald-50 rounded text-[7px] font-black text-emerald-600 uppercase tracking-widest italic border border-emerald-100 shadow-sm">
-                                  {milestone.frequency === 'DAILY' ? 'DIARIO' : milestone.frequency === 'WEEKLY' ? 'SEMANAL' : 'ÚNICO'}
-                                </div>
-                                {milestone.requiredEvidence !== 'NONE' && (
-                                  <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded text-[7px] font-black text-amber-600 uppercase tracking-widest italic border border-amber-100 shadow-sm">
-                                    <Zap className="w-2.5 h-2.5 animate-pulse" />
-                                    EVIDENCIA
-                                  </div>
-                                )}
-                              </div>
+                              <h3 className="text-sm font-black text-slate-900 uppercase tracking-tighter italic leading-none flex items-center gap-1.5">
+                                <Layers className="w-4 h-4 text-indigo-500" />
+                                FASE {String(index + 1).padStart(2, '0')}: {phase.name}
+                              </h3>
+                              {phase.description && (
+                                <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.25em] italic opacity-60">
+                                  {phase.description}
+                                </p>
+                              )}
                             </div>
-
-                            <div className="flex items-center gap-1.5">
-                              <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[7.5px] font-black uppercase tracking-widest italic shadow-sm shrink-0 ${streakColor}`}>
-                                <Flame className={`w-3.5 h-3.5 fill-current ${currentStreak > 0 ? 'animate-pulse' : ''}`} />
-                                RACHA: {currentStreak}D
-                              </div>
+                            <div className="flex items-center gap-2">
                               <button
-                                onClick={() => handleDeleteMilestone(milestone.phaseId, milestone.id)}
-                                className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-slate-50 rounded-xl transition-all active:scale-90 border border-transparent hover:border-slate-100"
+                                onClick={() => {
+                                  setSelectedPhaseId(phase.id);
+                                  setIsMilestoneModalOpen(true);
+                                }}
+                                className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 transition-colors font-bold text-[9px] uppercase tracking-widest group"
+                              >
+                                <Plus className="w-3.5 h-3.5 p-0.5 bg-indigo-100 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all" />
+                                Añadir Hábito / Rutina
+                              </button>
+                              <button
+                                onClick={() => handleDeletePhase(phase.id)}
+                                className="w-8 h-8 flex items-center justify-center bg-white border border-slate-100 text-slate-300 hover:text-red-500 hover:shadow-xl rounded-xl transition-all active:scale-90"
                               >
                                 <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </div>
+                        )}
 
-                          {/* Quick Check-in Button */}
-                          <div className="pt-2">
-                            {isCompletedToday ? (
-                              <div className="w-full py-4 bg-emerald-50 text-emerald-600 border border-emerald-200/60 rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-2 shadow-sm italic">
-                                <Check className="w-4 h-4 stroke-[3] animate-bounce" />
-                                Hábito Registrado (Límite Alcanzado)
-                              </div>
-                            ) : (
-                              <button
-                                disabled={program.isTemplate}
-                                onClick={() => handleToggleMilestone(milestone)}
-                                className="w-full py-4 bg-slate-900 hover:bg-indigo-600 text-white rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 group italic border border-white/5"
-                              >
-                                <Check className="w-4 h-4 group-hover:scale-125 transition-transform" />
-                                Registrar Check-in Hoy
-                              </button>
-                            )}
+                        {/* Habits inside this specific phase */}
+                        {(!phase.milestones || phase.milestones.length === 0) ? (
+                          <div className="glass-card bg-white border border-dashed border-slate-200 p-8 rounded-[24px] text-center space-y-3 shadow-sm">
+                            <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.2em] italic">
+                              {isHabits ? 'No hay hábitos definidos en este protocolo.' : 'Sin hábitos asignados en esta categoría.'}
+                            </p>
+                            <button
+                              onClick={() => {
+                                setSelectedPhaseId(phase.id);
+                                setIsMilestoneModalOpen(true);
+                              }}
+                              className="px-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white rounded-[12px] font-black text-[8px] uppercase tracking-[0.3em] transition-all active:scale-95 italic"
+                            >
+                              {isHabits ? 'Crear primer Hábito' : 'Crear Hábito'}
+                            </button>
                           </div>
+                        ) : (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {phase.milestones.map((milestone: any) => {
+                            const isCompletedToday = isMilestoneLockedForDate(milestone, new Date());
+                            const currentStreak = calculateStreak(milestone.completions || []);
+                            const streakColor = currentStreak > 0 ? 'text-orange-500 bg-orange-50 border-orange-100' : 'text-slate-400 bg-slate-50 border-slate-100';
+                            
+                            const hasSubTasks = milestone.subTasks && milestone.subTasks.length > 0;
+                            const completedSubTasks = hasSubTasks ? milestone.subTasks.filter((st: any) => st.isCompleted) : [];
+                            const allSubTasksChecked = hasSubTasks ? milestone.subTasks.every((st: any) => st.isCompleted) : true;
 
-                          {/* Consistency Grid */}
-                          <div className="bg-slate-50/60 border border-slate-100 rounded-[20px] p-4 space-y-3">
-                            <span className="text-[7.5px] font-black text-slate-400 uppercase tracking-[0.25em] block italic">Registro de Consistencia (Últimos 14 días)</span>
-                            <div className="grid grid-cols-7 sm:grid-cols-14 gap-2 justify-items-center">
-                              {getLast14Days().map((day, idx) => {
-                                const completed = isDayCompleted(milestone, day);
-                                const isToday = new Date().toDateString() === day.toDateString();
-                                const dayLetter = format(day, 'EEEEEE', { locale: es }).toUpperCase();
-                                const dayNumber = format(day, 'd');
-                                
-                                return (
-                                  <div key={idx} className="flex flex-col items-center gap-1">
-                                    <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider">{dayLetter}</span>
-                                    <button
-                                      disabled={program.isTemplate}
-                                      onClick={() => handleToggleMilestoneForDate(milestone, day)}
-                                      title={`${format(day, "d 'de' MMMM", { locale: es })} - ${completed ? 'Completado' : 'Pendiente'}`}
-                                      className={`w-6 h-6 rounded-[8px] flex items-center justify-center transition-all ${
-                                        completed
-                                          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 hover:bg-emerald-500'
-                                          : isToday
-                                            ? 'bg-white border-2 border-dashed border-indigo-500 text-indigo-600 animate-pulse hover:border-indigo-600'
-                                            : 'bg-white border border-slate-200 text-slate-300 hover:border-indigo-400 hover:text-indigo-500'
-                                      }`}
-                                    >
-                                      {completed ? (
-                                        <Check className="w-3 h-3 stroke-[3]" />
-                                      ) : (
-                                        <span className="text-[7px] font-bold">{dayNumber}</span>
+                            return (
+                              <div key={milestone.id} className="glass-card bg-white border border-white hover:border-slate-100/50 rounded-[28px] p-6 shadow-soft hover:shadow-2xl transition-all duration-500 space-y-6 relative overflow-hidden">
+                                {/* Streak fire background effect */}
+                                {currentStreak > 0 && (
+                                  <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-orange-500/[0.02] to-transparent rounded-bl-full pointer-events-none" />
+                                )}
+
+                                <div className="flex justify-between items-start gap-4">
+                                  <div className="space-y-1">
+                                    <h4 className="text-base font-black text-slate-900 uppercase tracking-tight italic leading-tight">
+                                      {milestone.title}
+                                    </h4>
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <div className="px-2 py-0.5 bg-indigo-50 rounded text-[7px] font-black text-indigo-500 uppercase tracking-widest italic border border-indigo-100 shadow-sm">+{milestone.xpReward} XP</div>
+                                      <div className="px-2 py-0.5 bg-emerald-50 rounded text-[7px] font-black text-emerald-600 uppercase tracking-widest italic border border-emerald-100 shadow-sm">
+                                        {milestone.frequency === 'DAILY' ? 'DIARIO' : milestone.frequency === 'WEEKLY' ? 'SEMANAL' : 'ÚNICO'}
+                                      </div>
+                                      {milestone.requiredEvidence !== 'NONE' && (
+                                        <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded text-[7px] font-black text-amber-600 uppercase tracking-widest italic border border-amber-100 shadow-sm">
+                                          <Zap className="w-2.5 h-2.5 animate-pulse" />
+                                          EVIDENCIA
+                                        </div>
                                       )}
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-1.5">
+                                    <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[7.5px] font-black uppercase tracking-widest italic shadow-sm shrink-0 ${streakColor}`}>
+                                      <Flame className={`w-3.5 h-3.5 fill-current ${currentStreak > 0 ? 'animate-pulse' : ''}`} />
+                                      RACHA: {currentStreak}D
+                                    </div>
+                                    <button
+                                      onClick={() => handleDeleteMilestone(phase.id, milestone.id)}
+                                      className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-slate-50 rounded-xl transition-all active:scale-90 border border-transparent hover:border-slate-100"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
                                     </button>
                                   </div>
-                                );
-                              })}
-                            </div>
-                          </div>
+                                </div>
+
+                                {/* Exercise/Habit Subtasks (Checklist) */}
+                                {hasSubTasks && (
+                                  <div className="space-y-2 bg-slate-50/50 border border-slate-100 rounded-2xl p-3">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                      <ListTodo className="w-3.5 h-3.5 text-indigo-500" />
+                                      <span className="text-[7.5px] font-black text-indigo-500 uppercase tracking-widest italic leading-none">
+                                        Ejercicios completados ({isCompletedToday ? milestone.subTasks.length : completedSubTasks.length}/{milestone.subTasks.length})
+                                      </span>
+                                    </div>
+                                    
+                                    <div className="grid grid-cols-1 gap-1.5">
+                                      {milestone.subTasks.map((task: any, idx: number) => {
+                                        const isSubChecked = isCompletedToday || task.isCompleted;
+                                        const isBtnDisabled = program.isTemplate || isCompletedToday;
+
+                                        return (
+                                          <button
+                                            key={idx}
+                                            disabled={isBtnDisabled}
+                                            type="button"
+                                            onClick={() => toggleSubTask(milestone.id, task.title)}
+                                            className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all duration-300 active:scale-[0.98] ${
+                                              isSubChecked
+                                                ? 'bg-emerald-50/30 border-emerald-100/50 text-emerald-800'
+                                                : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
+                                            }`}
+                                          >
+                                            <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
+                                              isSubChecked 
+                                                ? 'bg-emerald-600 border-emerald-500 text-white' 
+                                                : 'border-slate-300 bg-white group-hover:border-indigo-400'
+                                            }`}>
+                                              {isSubChecked && <Check size={10} strokeWidth={4} />}
+                                            </div>
+                                            <span className={`text-[10px] font-black uppercase tracking-tight italic leading-tight ${isSubChecked ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                              {task.title}
+                                            </span>
+                                          </button>
+                                        );
+                                      })}
+                                    </div>
+                                  </div>
+                                )}
+
+                                {/* Quick Check-in Button */}
+                                <div className="pt-2">
+                                  {isCompletedToday ? (
+                                    <div className="w-full py-4 bg-emerald-50 text-emerald-600 border border-emerald-200/60 rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-2 shadow-sm italic">
+                                      <Check className="w-4 h-4 stroke-[3] animate-bounce" />
+                                      Hábito Registrado (Límite Alcanzado)
+                                    </div>
+                                  ) : (
+                                    <button
+                                      disabled={program.isTemplate || !allSubTasksChecked}
+                                      onClick={() => handleToggleMilestone(milestone)}
+                                      className={`w-full py-4 rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] transition-all shadow-xl active:scale-95 flex items-center justify-center gap-2 group italic border border-white/5 ${
+                                        allSubTasksChecked
+                                          ? 'bg-slate-900 hover:bg-indigo-600 text-white cursor-pointer'
+                                          : 'bg-slate-100 text-slate-400 cursor-not-allowed border-none opacity-60'
+                                      }`}
+                                    >
+                                      {allSubTasksChecked ? (
+                                        <>
+                                          <Check className="w-4 h-4 group-hover:scale-125 transition-transform" />
+                                          Registrar Check-in Hoy
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ListTodo className="w-4 h-4" />
+                                          Completá los ejercicios primero
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+                                </div>
+
+                                {/* Consistency Grid */}
+                                <div className="bg-slate-50/60 border border-slate-100 rounded-[20px] p-4 space-y-3">
+                                  <span className="text-[7.5px] font-black text-slate-400 uppercase tracking-[0.25em] block italic">Registro de Consistencia (Últimos 14 días)</span>
+                                  <div className="grid grid-cols-7 sm:grid-cols-14 gap-2 justify-items-center">
+                                    {getLast14Days().map((day, idx) => {
+                                      const completed = isDayCompleted(milestone, day);
+                                      const isToday = new Date().toDateString() === day.toDateString();
+                                      const dayLetter = format(day, 'EEEEEE', { locale: es }).toUpperCase();
+                                      const dayNumber = format(day, 'd');
+                                      
+                                      return (
+                                        <div key={idx} className="flex flex-col items-center gap-1">
+                                          <span className="text-[6.5px] font-black text-slate-400 uppercase tracking-wider">{dayLetter}</span>
+                                          <button
+                                            disabled={program.isTemplate}
+                                            onClick={() => handleToggleMilestoneForDate(milestone, day)}
+                                            title={`${format(day, "d 'de' MMMM", { locale: es })} - ${completed ? 'Completado' : 'Pendiente'}`}
+                                            className={`w-6 h-6 rounded-[8px] flex items-center justify-center transition-all ${
+                                              completed
+                                                ? 'bg-emerald-600 text-white shadow-md shadow-emerald-200 hover:bg-emerald-500'
+                                                : isToday
+                                                  ? 'bg-white border-2 border-dashed border-indigo-500 text-indigo-600 animate-pulse hover:border-indigo-600'
+                                                  : 'bg-white border border-slate-200 text-slate-300 hover:border-indigo-400 hover:text-indigo-500'
+                                            }`}
+                                          >
+                                            {completed ? (
+                                              <Check className="w-3 h-3 stroke-[3]" />
+                                            ) : (
+                                              <span className="text-[7px] font-bold">{dayNumber}</span>
+                                            )}
+                                          </button>
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
                         </div>
-                      );
-                    })}
-                  </div>
-                );
-              })()}
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <>
@@ -658,6 +851,26 @@ export default function ProgramDetailPage() {
                                     </button>
                                   </div>
                                 </div>
+
+                                {/* Habit Subtasks (Checklist) */}
+                                {milestone.subTasks && milestone.subTasks.length > 0 && (
+                                  <div className="bg-indigo-50/20 border border-indigo-100/30 rounded-[20px] p-4 space-y-2">
+                                    <div className="flex items-center gap-2 mb-1.5">
+                                      <ListTodo className="w-3.5 h-3.5 text-indigo-500" />
+                                      <p className="text-[7.5px] font-black text-indigo-500 uppercase tracking-[0.25em] italic leading-none">Ejercicios de la Rutina ({milestone.subTasks.length})</p>
+                                    </div>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {milestone.subTasks.map((task: any, idx: number) => (
+                                        <div key={idx} className="flex items-center gap-2 bg-white px-3 py-2 rounded-xl border border-indigo-100/10 shadow-sm">
+                                          <div className="w-4 h-4 rounded border border-indigo-200 flex items-center justify-center bg-indigo-50/50 text-[9px] text-indigo-600 font-bold shrink-0">
+                                            {idx + 1}
+                                          </div>
+                                          <span className="text-[9.5px] font-black text-slate-700 uppercase tracking-tight italic">{task.title}</span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
 
                                 {/* Habit Calendar Grid (Last 14 Days) */}
                                 <div className="bg-slate-50/50 border border-slate-100/50 rounded-[20px] p-4">
@@ -777,27 +990,51 @@ export default function ProgramDetailPage() {
             </div>
             <div className="relative z-10">
               <div className="w-10 h-10 bg-white/10 backdrop-blur-md rounded-[10px] flex items-center justify-center mb-5 border border-white/10 group-hover:scale-110 transition-all duration-500">
-                <Edit3 className="w-5 h-5 text-indigo-400" />
+                {(program.type === 'HABITS' || program.type === 'ROUTINE') ? (
+                  <Flame className="w-5 h-5 text-orange-400" />
+                ) : (
+                  <Edit3 className="w-5 h-5 text-indigo-400" />
+                )}
               </div>
-              <h3 className="text-base font-black uppercase tracking-tighter italic leading-none mb-3">Diseño Curricular</h3>
+              <h3 className="text-base font-black uppercase tracking-tighter italic leading-none mb-3">
+                {(program.type === 'HABITS' || program.type === 'ROUTINE') ? 'Diseño de Hábitos' : 'Diseño Curricular'}
+              </h3>
               <p className="text-slate-400 text-[8px] leading-relaxed font-black uppercase tracking-widest mb-5 italic opacity-80">
-                Estructurá tu programa en fases de <span className="text-white">4 a 6 hitos</span>. Mantener etapas cortas y claras mejora la tasa de finalización táctica de tus activos.
+                {(program.type === 'HABITS' || program.type === 'ROUTINE') ? (
+                  <>
+                    Diseñá protocolos de consistencia simples con metas de <span className="text-white">5 a 15 XP</span>. Un hábito diario claro y bien delimitado estimula el streak de tus mentoreados.
+                  </>
+                ) : (
+                  <>
+                    Estructurá tu programa en fases de <span className="text-white">4 a 6 hitos</span>. Mantener etapas cortas y claras mejora la tasa de finalización táctica de tus activos.
+                  </>
+                )}
               </p>
               <div className="p-3 bg-white/5 rounded-[16px] border border-white/10 text-[8px] font-black uppercase tracking-[0.3em] flex items-center gap-2 italic">
                 <Zap className="w-4 h-4 text-amber-400 animate-pulse" />
-                Motor XP: Activo
+                {(program.type === 'HABITS' || program.type === 'ROUTINE') ? 'Rachas Boosters: Activo' : 'Motor XP: Activo'}
               </div>
             </div>
           </div>
 
           <div className="glass-card bg-white/70 backdrop-blur-xl p-5 rounded-[20px] border border-white shadow-soft">
-            <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em] mb-5 italic border-b border-slate-100 pb-3">Protocolos de Despliegue</h3>
+            <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em] mb-5 italic border-b border-slate-100 pb-3">
+              {(program.type === 'HABITS' || program.type === 'ROUTINE') ? 'Protocolos de Consistencia' : 'Protocolos de Despliegue'}
+            </h3>
             <div className="space-y-4">
-              {[
-                { step: '01', title: 'Arquitectura Base', desc: 'Define las fases principales de transformación táctica.' },
-                { step: '02', title: 'Incentivos Tácticos', desc: 'Asigna XP para motivar el progreso de tus activos.' },
-                { step: '03', title: 'Sincronización', desc: 'Publica los cambios para la visualización del mentee.' }
-              ].map((item, i) => (
+              {((program.type === 'HABITS' || program.type === 'ROUTINE') ? (
+                [
+                  { step: '01', title: 'Diseño Táctico', desc: 'Definí metas de consistencia claras y rápidas.' },
+                  { step: '02', title: 'Rachas Activas', desc: 'Mantené el streak dando el check cada día.' },
+                  { step: '03', title: 'Gamificación', desc: 'Suma XP y sube de nivel de forma interactiva.' }
+                ]
+              ) : (
+                [
+                  { step: '01', title: 'Arquitectura Base', desc: 'Define las fases principales de transformación táctica.' },
+                  { step: '02', title: 'Incentivos Tácticos', desc: 'Asigna XP para motivar el progreso de tus activos.' },
+                  { step: '03', title: 'Sincronización', desc: 'Publica los cambios para la visualización del mentee.' }
+                ]
+              )).map((item, i) => (
                 <div key={i} className="flex items-start gap-3 group">
                   <div className="w-7 h-7 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center shrink-0 text-[8px] font-black text-indigo-600 shadow-inner group-hover:bg-slate-900 group-hover:text-white transition-all duration-500 italic">
                     {item.step}

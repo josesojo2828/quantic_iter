@@ -100,6 +100,30 @@ export class AuthController {
     };
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post('activate-independent')
+  @HttpCode(HttpStatus.OK)
+  async activateIndependent(
+    @Req() req: any,
+    @Res({ passthrough: true }) response: Response,
+  ) {
+    const result = await this.authService.activateIndependentProfile(
+      req.user.userId,
+    );
+
+    // Refresh HttpOnly cookie with the new token (new context)
+    response.cookie('access_token', result.access_token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
+    });
+
+    return {
+      user: result.user,
+    };
+  }
+
   @Public()
   @Get('impersonate')
   async impersonate(

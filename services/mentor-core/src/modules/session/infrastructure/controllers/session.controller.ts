@@ -1,10 +1,11 @@
 import { Controller, Post, Get, Patch, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { SessionService } from '../../application/session.service';
 import { ScopeGuard } from '../../../../common/guards/scope.guard';
+import { SubscriptionActiveGuard } from '../../../../common/guards/subscription-active.guard';
 import { type Request } from 'express';
 
 @Controller('sessions')
-@UseGuards(ScopeGuard)
+@UseGuards(ScopeGuard, SubscriptionActiveGuard)
 export class SessionController {
   constructor(private readonly service: SessionService) {}
 

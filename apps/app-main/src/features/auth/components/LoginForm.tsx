@@ -38,18 +38,7 @@ export const LoginForm = () => {
 
   const { refreshProfile } = useAuth();
 
-  useEffect(() => {
-    if (formRef.current) {
-      gsap.from(formRef.current.querySelectorAll('.form-field'), {
-        y: 20,
-        autoAlpha: 0,
-        duration: 0.8,
-        stagger: 0.1,
-        ease: 'power3.out',
-        delay: 0.4
-      });
-    }
-  }, []);
+  // Entry animation disabled for testing
 
   useEffect(() => {
     if (error && errorRef.current) {

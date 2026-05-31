@@ -29,6 +29,7 @@ export class UpdateStaffDto {
   roleSlug?: string;
   branchId?: string;
   avatarUrl?: string;
+  extraPermissions?: string[];
 }
 
 export class UpdateFieldDto {

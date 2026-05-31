@@ -4,9 +4,10 @@ import { ProgramService } from './application/program.service';
 import { ProgramRepository } from './infrastructure/persistence/program.repository';
 import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 import { ObjectiveModule } from '../objective/objective.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
 @Module({
-  imports: [ObjectiveModule],
+  imports: [ObjectiveModule, SubscriptionModule],
   controllers: [ProgramController],
   providers: [ProgramService, ProgramRepository, PrismaService],
   exports: [ProgramService],

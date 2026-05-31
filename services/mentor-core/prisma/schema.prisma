@@ -305,6 +305,7 @@ model Milestone {
   daysOfWeek  Int[]    // 0-6
   requiredEvidence String @default("NONE") // NONE, IMAGE, TEXT, LINK
   isHabit     Boolean  @default(false)
+  subTasks    SubTask[]
   program     Program  @relation(fields: [programId], references: [id])
   phase       Phase?   @relation(fields: [phaseId], references: [id])
   completions MilestoneCompletion[]
@@ -312,6 +313,11 @@ model Milestone {
   updatedAt   DateTime @updatedAt
 
   @@map("milestones")
+}
+
+type SubTask {
+  title       String
+  isCompleted Boolean  @default(false)
 }
 
 model MilestoneCompletion {

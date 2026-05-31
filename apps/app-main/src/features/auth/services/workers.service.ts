@@ -13,6 +13,7 @@ export interface Worker {
   branchId?: string | null;
   avatarUrl?: string;
   createdAt: string;
+  extraPermissions?: string[];
 }
 
 
@@ -43,17 +44,10 @@ export const workersService = {
 
   inviteWorker: async (data: {
     email: string;
-    firstName: string;
-    lastName: string;
     roleSlug: 'facilitator' | 'support';
     branchId?: string;
-    password?: string;
-  }): Promise<Worker> => {
-    const payload = {
-      ...data,
-      password: data.password || 'Mentor2026*',
-    };
-    return apiClient.post<Worker>('/staff', payload);
+  }): Promise<{ message: string; token: string }> => {
+    return apiClient.post<{ message: string; token: string }>('/invitation/send', data);
   },
 
   updateWorker: async (id: string, data: Partial<any>): Promise<Worker> => {
@@ -62,6 +56,26 @@ export const workersService = {
 
   deleteWorker: async (id: string): Promise<void> => {
     return apiClient.delete(`/staff/${id}`);
+  },
+
+  getInvitations: async (): Promise<any[]> => {
+    return apiClient.get<any[]>('/invitation');
+  },
+
+  cancelInvitation: async (id: string): Promise<void> => {
+    return apiClient.delete(`/invitation/${id}`);
+  },
+
+  getSubscriptionStatus: async (): Promise<any> => {
+    return apiClient.get<any>('/subscriptions/my');
+  },
+
+  getMyPendingInvitations: async (): Promise<any[]> => {
+    return apiClient.get<any[]>('/invitation/my/pending');
+  },
+
+  acceptInvitation: async (token: string): Promise<any> => {
+    return apiClient.post<any>(`/invitation/accept/${token}`, {});
   },
 };
 

@@ -22,6 +22,8 @@ interface User {
   modules: ModuleItem[];
   tenantId: string;
   avatarUrl?: string;
+  roles?: any[];
+  activeRole?: any;
 }
 
 interface AuthContextType {

@@ -81,6 +81,7 @@ export class PrismaStaffRepository implements IStaffRepository {
             userRole?.role || null,
             userRole?.branchId || null,
             i.avatarUrl,
+            userRole?.extraPermissions || null,
           );
         }
       ),
@@ -130,6 +131,7 @@ export class PrismaStaffRepository implements IStaffRepository {
       userRole.role,
       userRole.branchId,
       i.avatarUrl,
+      userRole.extraPermissions || null,
     );
   }
 
@@ -178,6 +180,7 @@ export class PrismaStaffRepository implements IStaffRepository {
         userRole.role,
         userRole.branchId,
         user.avatarUrl,
+        userRole.extraPermissions || null,
       );
     });
   }
@@ -203,7 +206,7 @@ export class PrismaStaffRepository implements IStaffRepository {
         } as any,
       });
 
-      if (data.roleSlug || data.branchId) {
+      if (data.roleSlug || data.branchId || data.extraPermissions) {
         // Find existing role for this tenant
         // For simplicity, we assume one role per tenant in this context
         const existingRole = user.userRoles.find(ur => ur.tenantId === (user as any).lastTenantId);
@@ -220,6 +223,7 @@ export class PrismaStaffRepository implements IStaffRepository {
             data: {
               roleId,
               branchId: data.branchId === '' ? null : (data.branchId ?? existingRole.branchId),
+              ...(data.extraPermissions ? { extraPermissions: data.extraPermissions } : {}),
             }
           });
         }
@@ -250,6 +254,7 @@ export class PrismaStaffRepository implements IStaffRepository {
         userRole.role,
         userRole.branchId,
         updatedUser.avatarUrl,
+        userRole.extraPermissions || null,
       );
     });
   }

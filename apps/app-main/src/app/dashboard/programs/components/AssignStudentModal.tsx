@@ -4,6 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { X, Search, Users, Check, GraduationCap, Loader2, Target, Plus, Calendar, ChevronLeft, Award } from 'lucide-react';
 import { contactsService, Contact } from '@/features/crm/services/contacts.service';
 import { apiClient } from '@/core/api/api.client';
+import { useAuth } from '@/core/contexts/AuthContext';
+import { workersService } from '@/features/auth/services/workers.service';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 
@@ -21,6 +23,7 @@ export const AssignStudentModal: React.FC<AssignStudentModalProps> = ({
   templateName 
 }) => {
   const router = useRouter();
+  const { user } = useAuth();
   
   // Paso 1: Selección de estudiantes
   const [students, setStudents] = useState<Contact[]>([]);
@@ -46,8 +49,22 @@ export const AssignStudentModal: React.FC<AssignStudentModalProps> = ({
   const fetchStudents = async () => {
     try {
       setLoading(true);
-      const res = await contactsService.getContacts({ search });
-      setStudents(res.items || []);
+      const [contactsRes, coachesRes] = await Promise.all([
+        contactsService.getContacts({ search }),
+        workersService.getWorkers({ excludeRole: 'mentee' }).catch(() => ({ items: [], total: 0 }))
+      ]);
+
+      const rawClients = contactsRes.items || [];
+      const coachesList = coachesRes.items || [];
+
+      // Filtrar excluyendo coaches, staff y al usuario actual (el coach activo)
+      const filteredStudents = rawClients.filter(client => {
+        const isCoach = coachesList.some(c => c.email?.toLowerCase() === client.email?.toLowerCase());
+        const isCurrentUser = user?.email && client.email?.toLowerCase() === user.email.toLowerCase();
+        return !isCoach && !isCurrentUser;
+      });
+
+      setStudents(filteredStudents);
     } catch (error) {
       console.error(error);
       toast.error('Error al cargar estudiantes');

@@ -157,7 +157,7 @@ export class ProgramRepository extends BaseRepository<Program> {
   }
 
   async addMilestone(programId: string, phaseId: string, data: any, scope: QueryScope) {
-    const { dueDate, xpReward, order, ...rest } = data;
+    const { dueDate, xpReward, order, subTasks, ...rest } = data;
     return this.prisma.milestone.create({
       data: {
         ...rest,
@@ -167,12 +167,13 @@ export class ProgramRepository extends BaseRepository<Program> {
         programId,
         phaseId,
         tenantId: scope.tenantId!,
+        subTasks: subTasks ? subTasks.map((t: any) => ({ title: t.title, isCompleted: t.isCompleted || false })) : [],
       },
     });
   }
 
   async updateMilestone(id: string, data: any) {
-    const { dueDate, xpReward, order, ...rest } = data;
+    const { dueDate, xpReward, order, subTasks, ...rest } = data;
     return this.prisma.milestone.update({
       where: { id },
       data: {
@@ -180,6 +181,7 @@ export class ProgramRepository extends BaseRepository<Program> {
         dueDate: dueDate ? new Date(dueDate) : (dueDate === null ? null : undefined),
         xpReward: xpReward !== undefined ? (xpReward ? parseInt(xpReward, 10) : 0) : undefined,
         order: order !== undefined ? (order ? parseInt(order, 10) : 0) : undefined,
+        subTasks: subTasks !== undefined ? subTasks.map((t: any) => ({ title: t.title, isCompleted: t.isCompleted || false })) : undefined,
       },
     });
   }
@@ -187,6 +189,27 @@ export class ProgramRepository extends BaseRepository<Program> {
   async deleteMilestone(id: string) {
     return this.prisma.milestone.delete({
       where: { id },
+    });
+  }
+
+  async toggleSubTask(milestoneId: string, title: string, isCompleted: boolean) {
+    const milestone = await this.prisma.milestone.findUnique({
+      where: { id: milestoneId },
+    });
+    if (!milestone) throw new Error('Milestone not found');
+
+    const updatedSubTasks = (milestone.subTasks || []).map((st: any) => {
+      if (st.title === title) {
+        return { ...st, isCompleted };
+      }
+      return st;
+    });
+
+    return this.prisma.milestone.update({
+      where: { id: milestoneId },
+      data: {
+        subTasks: updatedSubTasks,
+      },
     });
   }
 

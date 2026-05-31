@@ -11,5 +11,6 @@ export class StaffMember {
     public readonly role?: { id: string; name: string; slug: string },
     public readonly branchId?: string | null,
     public readonly avatarUrl?: string | null,
+    public readonly extraPermissions?: string[] | null,
   ) {}
 }

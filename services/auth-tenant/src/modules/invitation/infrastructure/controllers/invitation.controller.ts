@@ -1,7 +1,7 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Request } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Request, Delete } from '@nestjs/common';
 import { InvitationService } from '../../application/invitation.service';
 import { JwtAuthGuard } from '../../../../common/auth/guards/jwt-auth.guard';
-import { CheckPermissions, PermissionAction, AuthUser } from '@mentor/shared';
+import { CheckPermissions, PermissionAction, AuthUser, Public } from '@mentor/shared';
 
 @Controller('invitation')
 export class InvitationController {
@@ -12,7 +12,8 @@ export class InvitationController {
   @CheckPermissions(PermissionAction.STAFF_CREATE)
   async sendInvitation(@Request() req: any, @Body() dto: { 
     email: string; 
-    roleId: string; 
+    roleId?: string; 
+    roleSlug?: string;
     tenantId?: string;
     branchId?: string;
   }) {
@@ -30,6 +31,7 @@ export class InvitationController {
     });
   }
 
+  @Public()
   @Get('validate/:token')
   async validateToken(@Param('token') token: string) {
     return this.invitationService.validateToken(token);
@@ -39,12 +41,36 @@ export class InvitationController {
   @UseGuards(JwtAuthGuard)
   async acceptInvitation(@Request() req: any, @Param('token') token: string) {
     // This is for existing users accepting an invite
-    const invitation = await this.invitationService.acceptInvitation(token);
+    const invitation = await this.invitationService.acceptInvitation(token, req.user.userId);
     
-    // TODO: Add logic to link req.user.userId to invitation.tenantId/branchId
     return {
-      message: 'Te has unido al mentoría con éxito',
+      message: 'Te has unido al mentoria con exito',
       invitation,
     };
+  }
+
+  @Get('my/pending')
+  @UseGuards(JwtAuthGuard)
+  async getMyPendingInvitations(@Request() req: any) {
+    const email = req.user.email;
+    console.log('[BACKEND CONTROLADOR DEBUG] Solicitando invitaciones para el email extraído del token:', email);
+    const result = await this.invitationService.getPendingInvitationsForEmail(email);
+    console.log('[BACKEND CONTROLADOR DEBUG] Resultado retornado por el servicio:', result);
+    return result;
+  }
+
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  async getInvitations(@Request() req: any) {
+    const user = req.user as AuthUser;
+    return this.invitationService.getInvitationsByTenant(user.tenantId);
+  }
+
+  @Delete(':id')
+  @UseGuards(JwtAuthGuard)
+  @CheckPermissions(PermissionAction.STAFF_DELETE)
+  async cancelInvitation(@Param('id') id: string) {
+    await this.invitationService.cancelInvitation(id);
+    return { message: 'Invitacion cancelada con exito' };
   }
 }

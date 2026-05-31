@@ -21,7 +21,7 @@ export class InvitationService {
     return this.repository.create({
       ...data,
       token,
-      tenantId: scope.tenantId!,
+      tenantId: data.tenantId || scope.tenantId!,
       coachId: scope.userId,
     });
   }

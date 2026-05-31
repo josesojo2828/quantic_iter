@@ -4,7 +4,7 @@ import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { X, Layers, Target, Trophy, Check, Sparkles, Calendar, Clock } from 'lucide-react';
+import { X, Layers, Target, Trophy, Check, Sparkles, Calendar, Clock, ListTodo } from 'lucide-react';
 
 // --- SCHEMAS ---
 const phaseSchema = z.object({
@@ -29,10 +29,11 @@ const milestoneSchema = z.object({
   requiredEvidence: z.enum(['NONE', 'IMAGE', 'TEXT', 'LINK']),
   isHabit: z.boolean(),
   daysOfWeek: z.array(z.number()).optional(),
+  subTasks: z.array(z.object({ title: z.string() })).optional(),
 });
 
 type PhaseFormData = z.infer<typeof phaseSchema>;
-type MilestoneFormData = z.infer<typeof milestoneSchema>;
+type MilestoneFormData = z.infer<typeof milestoneSchema> & { subTasks?: { title: string }[] };
 
 interface FormProps {
   isOpen: boolean;
@@ -181,23 +182,59 @@ export const PhaseForm: React.FC<PhaseFormProps> = ({ isOpen, onClose, onSubmit,
 interface MilestoneFormProps extends FormProps {
   onSubmit: (data: MilestoneFormData) => Promise<void>;
   initialData?: any;
+  isHabitOnly?: boolean;
 }
 
-export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, onSubmit, initialData }) => {
-  const { register, handleSubmit, watch, setValue, formState: { errors, isSubmitting } } = useForm<MilestoneFormData>({
+export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, onSubmit, initialData, isHabitOnly }) => {
+  const { register, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm<MilestoneFormData>({
     resolver: zodResolver(milestoneSchema),
     defaultValues: initialData || { 
-      xpReward: 500, 
+      xpReward: isHabitOnly ? 10 : 500, 
       order: 0, 
-      frequency: 'ONCE', 
+      frequency: isHabitOnly ? 'DAILY' : 'ONCE', 
       requiredEvidence: 'NONE',
-      isHabit: false,
+      isHabit: isHabitOnly ? true : false,
       daysOfWeek: [] 
     }
   });
 
   const frequency = watch('frequency');
+  const xpReward = watch('xpReward');
   const daysOfWeek = watch('daysOfWeek') || [];
+
+  const [localSubTasks, setLocalSubTasks] = React.useState<{ title: string }[]>([]);
+  const [subTaskInput, setSubTaskInput] = React.useState('');
+
+  React.useEffect(() => {
+    if (frequency === 'DAILY' || frequency === 'WEEKLY') {
+      if (xpReward === 500 || xpReward > 100) {
+        setValue('xpReward', 10);
+      }
+    } else if (frequency === 'ONCE') {
+      if (xpReward <= 15) {
+        setValue('xpReward', 500);
+      }
+    }
+  }, [frequency, xpReward, setValue]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setLocalSubTasks(initialData?.subTasks || []);
+      setSubTaskInput('');
+      if (initialData) {
+        reset(initialData);
+      } else {
+        reset({
+          xpReward: isHabitOnly ? 10 : 500, 
+          order: 0, 
+          frequency: isHabitOnly ? 'DAILY' : 'ONCE', 
+          requiredEvidence: 'NONE',
+          isHabit: isHabitOnly ? true : false,
+          daysOfWeek: [] 
+        });
+      }
+    }
+  }, [isOpen, initialData, reset, isHabitOnly]);
 
   const toggleDay = (day: number) => {
     const current = [...daysOfWeek];
@@ -205,6 +242,23 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
     if (index > -1) current.splice(index, 1);
     else current.push(day);
     setValue('daysOfWeek', current);
+  };
+
+  const handleAddSubTask = () => {
+    if (!subTaskInput.trim()) return;
+    setLocalSubTasks([...localSubTasks, { title: subTaskInput.trim() }]);
+    setSubTaskInput('');
+  };
+
+  const handleRemoveSubTask = (index: number) => {
+    setLocalSubTasks(localSubTasks.filter((_, i) => i !== index));
+  };
+
+  const handleFormSubmit = async (data: MilestoneFormData) => {
+    await onSubmit({
+      ...data,
+      subTasks: localSubTasks
+    });
   };
 
   if (!isOpen) return null;
@@ -227,7 +281,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
         </div>
 
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
-          <form id="milestone-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <form id="milestone-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Título del Hito / Hábito</label>
               <input 
@@ -245,7 +299,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
                   {...register('frequency')}
                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold text-[11px] uppercase focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none appearance-none cursor-pointer"
                 >
-                  <option value="ONCE">Una vez (Hito)</option>
+                  {!isHabitOnly && <option value="ONCE">Una vez (Hito)</option>}
                   <option value="DAILY">Diario (Hábito)</option>
                   <option value="WEEKLY">Semanal (Rutina)</option>
                 </select>
@@ -284,30 +338,98 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
               </div>
             )}
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className={`${frequency === 'ONCE' ? 'grid grid-cols-2' : 'grid grid-cols-1'} gap-4`}>
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Recompensa XP</label>
-                <div className="relative">
-                  <Trophy className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
-                  <input 
-                    type="number"
-                    {...register('xpReward', { valueAsNumber: true })}
-                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
-                  />
-                </div>
+                {frequency === 'ONCE' ? (
+                  <div className="relative">
+                    <Trophy className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
+                    <input 
+                      type="number"
+                      {...register('xpReward', { valueAsNumber: true })}
+                      className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
+                    />
+                  </div>
+                ) : (
+                  <div className="flex gap-2 pt-1">
+                    {[5, 10, 15].map((val) => (
+                      <button
+                        key={val}
+                        type="button"
+                        onClick={() => setValue('xpReward', val)}
+                        className={`flex-1 py-3.5 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
+                          xpReward === val
+                            ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/10'
+                            : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-950 hover:bg-slate-100'
+                        }`}
+                      >
+                        {val} XP
+                      </button>
+                    ))}
+                  </div>
+                )}
               </div>
 
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Fecha Objetivo</label>
-                <div className="relative">
-                  <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input 
-                    type="date"
-                    {...register('dueDate')}
-                    className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
-                  />
+              {frequency === 'ONCE' && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Fecha Objetivo</label>
+                  <div className="relative">
+                    <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input 
+                      type="date"
+                      {...register('dueDate')}
+                      className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
+                    />
+                  </div>
                 </div>
+              )}
+            </div>
+
+            <div className="space-y-4 pt-4 border-t border-slate-100 animate-in fade-in duration-300">
+              <div className="flex items-center gap-2">
+                <ListTodo className="w-4 h-4 text-indigo-600" />
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Ejercicios / Sub-tareas de la Rutina</label>
               </div>
+              
+              <div className="flex gap-2">
+                <input 
+                  type="text"
+                  value={subTaskInput}
+                  onChange={(e) => setSubTaskInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      handleAddSubTask();
+                    }
+                  }}
+                  placeholder="Ej: Flexiones de pecho 4 series 12 reps"
+                  className="flex-1 px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs font-semibold focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
+                />
+                <button 
+                  type="button"
+                  onClick={handleAddSubTask}
+                  className="px-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all text-xs uppercase tracking-wider shrink-0"
+                >
+                  Agregar
+                </button>
+              </div>
+
+              {localSubTasks.length > 0 && (
+                <div className="space-y-1.5 max-h-48 overflow-y-auto bg-slate-50/50 p-3 rounded-2xl border border-slate-100">
+                  {localSubTasks.map((task, idx) => (
+                    <div key={idx} className="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-100 shadow-sm animate-in slide-in-from-bottom-2 duration-300">
+                      <span className="text-[11px] font-bold text-slate-700">{task.title}</span>
+                      <button 
+                        type="button" 
+                        onClick={() => handleRemoveSubTask(idx)}
+                        className="text-slate-400 hover:text-red-500 transition-all p-1"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
             <div className="p-6 bg-emerald-50/50 border border-emerald-100 rounded-3xl flex items-start gap-4">

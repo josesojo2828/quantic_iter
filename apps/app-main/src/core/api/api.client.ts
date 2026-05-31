@@ -13,6 +13,7 @@ export const apiClient = {
         ...options.headers,
       },
       credentials: 'include',
+      cache: 'no-store', // Disable Next.js aggressive caching for dynamic API operations
     };
 
     let response: Response;

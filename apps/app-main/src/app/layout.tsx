@@ -9,8 +9,13 @@ const inter = Inter({ subsets: ['latin'] });
 
 
 export const metadata: Metadata = {
-  title: 'Quantic Ecosystem | Portal',
-  description: 'Enterprise Mentor & Client Management Portal',
+  title: 'ITER | Portal',
+  description: 'ITER - Ecosistema de Mentoría e Inteligencia Operativa',
+  icons: {
+    icon: '/assets/logo_iter_vector.svg',
+    shortcut: '/assets/logo_iter_vector.svg',
+    apple: '/assets/logo_iter_vector.svg',
+  }
 };
 
 export default function RootLayout({

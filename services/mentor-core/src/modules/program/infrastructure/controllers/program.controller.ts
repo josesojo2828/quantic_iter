@@ -1,9 +1,10 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Req } from '@nestjs/common';
 import { ProgramService } from '../../application/program.service';
 import { ScopeGuard } from '../../../../common/guards/scope.guard';
+import { SubscriptionActiveGuard } from '../../../../common/guards/subscription-active.guard';
 
 @Controller('programs')
-@UseGuards(ScopeGuard)
+@UseGuards(ScopeGuard, SubscriptionActiveGuard)
 export class ProgramController {
   constructor(private readonly programService: ProgramService) {}
 
@@ -98,6 +99,17 @@ export class ProgramController {
   ) {
     const toggleDate = date ? new Date(date) : undefined;
     return this.programService.toggleMilestone(id, milestoneId, req.scope, toggleDate);
+  }
+
+  @Post(':id/milestones/:milestoneId/subtasks/toggle')
+  async toggleSubTask(
+    @Param('id') id: string,
+    @Param('milestoneId') milestoneId: string,
+    @Body('title') title: string,
+    @Body('isCompleted') isCompleted: boolean,
+    @Req() req: any
+  ) {
+    return this.programService.toggleSubTask(milestoneId, title, isCompleted);
   }
 
   @Post(':id/phases/:phaseId/toggle')

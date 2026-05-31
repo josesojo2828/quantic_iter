@@ -6,9 +6,10 @@ import { SessionController } from './infrastructure/controllers/session.controll
 import { PrismaService } from '../../infrastructure/persistence/prisma.service';
 import { GamificationModule } from '../gamification/gamification.module';
 import { ProgressModule } from '../progress/progress.module';
+import { SubscriptionModule } from '../subscription/subscription.module';
 
 @Module({
-  imports: [GamificationModule, ProgressModule],
+  imports: [GamificationModule, ProgressModule, SubscriptionModule],
   controllers: [SessionController],
   providers: [SessionService, QrTokenService, SessionRepository, PrismaService],
   exports: [SessionService],

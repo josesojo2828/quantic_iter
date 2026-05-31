@@ -218,7 +218,14 @@ export class PrismaSubscriptionRepository implements ISubscriptionRepository {
   async countTenantUsers(tenantId: string): Promise<number> {
     return this.prisma.user.count({
       where: { 
-        userRoles: { some: { tenantId } },
+        userRoles: { 
+          some: { 
+            tenantId,
+            role: {
+              slug: { not: 'mentee' }
+            }
+          } 
+        },
         OR: [
           { deletedAt: null },
           { deletedAt: { isSet: false } }

@@ -27,26 +27,74 @@ export class AuthService {
 
   private readonly AVATAR_POOL = [
     'avatar_female_1.png',
-    'avatar_male_1.png',
-    'avatar_neutral_1.png',
     'avatar_female_2.png',
-    'avatar_male_2.png',
     'avatar_female_3.png',
-    'avatar_male_3.png',
     'avatar_female_4.png',
-    'avatar_male_4.png',
     'avatar_female_5.png',
-    'avatar_male_5.png',
-    'avatar_neutral_2.png',
     'avatar_female_6.png',
     'avatar_female_7.png',
+    'avatar_female_8.png',
+    'avatar_female_9.png',
+    'avatar_female_10.png',
+    'avatar_female_11.png',
+    'avatar_female_12.png',
+    'avatar_female_13.png',
+    'avatar_female_14.png',
+    'avatar_female_15.png',
+    'avatar_female_16.png',
+    'avatar_female_17.png',
+    'avatar_male_1.png',
+    'avatar_male_2.png',
+    'avatar_male_3.png',
+    'avatar_male_4.png',
+    'avatar_male_5.png',
     'avatar_male_6.png',
+    'avatar_male_7.png',
+    'avatar_male_8.png',
+    'avatar_male_9.png',
+    'avatar_male_10.png',
+    'avatar_male_11.png',
+    'avatar_male_12.png',
+    'avatar_male_13.png',
+    'avatar_male_14.png',
+    'avatar_male_15.png',
+    'avatar_male_16.png',
+    'avatar_neutral_1.png',
+    'avatar_neutral_2.png',
     'avatar_neutral_3.png',
+    'avatar_neutral_4.png',
+    'avatar_neutral_5.png',
+    'avatar_neutral_6.png',
+    'avatar_neutral_7.png',
+    'avatar_neutral_8.png',
+    'avatar_neutral_9.png',
+    'avatar_neutral_10.png',
+    'avatar_neutral_11.png',
+    'avatar_neutral_12.png',
+    'avatar_neutral_13.png',
+    'avatar_neutral_14.png',
+    'avatar_neutral_15.png',
+    'avatar_neutral_16.png',
+    'avatar_neutral_17.png',
+    'avatar_neutral_18.png',
+    'avatar_neutral_19.png',
+    'avatar_neutral_20.png',
+    'avatar_neutral_21.png',
+    'avatar_neutral_22.png',
+    'avatar_neutral_23.png',
+    'avatar_neutral_24.png',
+    'avatar_neutral_25.png',
   ];
 
-  private getRandomAvatar(): string {
-    const randomIndex = Math.floor(Math.random() * this.AVATAR_POOL.length);
-    return this.AVATAR_POOL[randomIndex];
+  private getRandomAvatar(gender?: string): string {
+    let pool = this.AVATAR_POOL;
+    if (gender === 'male' || gender === 'female' || gender === 'neutral') {
+      pool = this.AVATAR_POOL.filter((avatar) => avatar.startsWith(`avatar_${gender}_`));
+    }
+    if (pool.length === 0) pool = this.AVATAR_POOL;
+
+    const randomIndex = Math.floor(Math.random() * pool.length);
+    return pool[randomIndex];
   }
 
   async register(dto: RegisterData) {
@@ -66,7 +114,32 @@ export class AuthService {
       let user;
       let primaryTenantId: string;
 
-      if (dto.tenantId) {
+      if (dto.invitationToken) {
+        // Registro por medio de invitación
+        const invitation = await this.authRepository.findInvitationByToken(dto.invitationToken);
+        if (!invitation) {
+          throw new BadRequestException('Invitación inválida o no encontrada.');
+        }
+        if (invitation.acceptedAt) {
+          throw new BadRequestException('Esta invitación ya ha sido aceptada.');
+        }
+        if (new Date() > new Date(invitation.expiresAt)) {
+          throw new BadRequestException('Esta invitación ha expirado.');
+        }
+
+        // Crear usuario dentro del tenant existente con el rol invitado
+        user = await this.authRepository.createUser({
+          email: dto.email,
+          password: hashedPassword,
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          tenantId: invitation.tenantId,
+          roleId: invitation.roleId,
+          branchId: invitation.branchId,
+          avatarUrl: dto.avatarUrl || this.getRandomAvatar(dto.gender),
+        });
+        primaryTenantId = invitation.tenantId;
+      } else if (dto.tenantId) {
         // Get the default branch for the tenant
         const tenant = await this.authRepository.findTenantById(dto.tenantId);
         if (!tenant) throw new NotFoundException('Mentoría no encontrada');
@@ -82,7 +155,7 @@ export class AuthService {
           tenantId: dto.tenantId,
           roleId: role.id,
           branchId,
-          avatarUrl: dto.avatarUrl || this.getRandomAvatar(),
+          avatarUrl: dto.avatarUrl || this.getRandomAvatar(dto.gender),
         });
         primaryTenantId = dto.tenantId;
       } else {
@@ -91,23 +164,10 @@ export class AuthService {
           ...dto,
           password: hashedPassword,
           roleId: role.id,
-          avatarUrl: this.getRandomAvatar(),
+          avatarUrl: dto.avatarUrl || this.getRandomAvatar(dto.gender),
         });
         primaryTenantId = user.roles[0].tenantId;
 
-        // Auto-subscribe to the basic plan (only for new tenants)
-        try {
-          await this.subscriptionService.subscribeToPlan(
-            primaryTenantId,
-            user.id,
-            'basico',
-          );
-        } catch (subError) {
-          console.error(
-            'Failed to auto-subscribe tenant to basic plan:',
-            subError,
-          );
-        }
       }
 
       this.auditClient.emit('audit.log', {
@@ -335,6 +395,27 @@ export class AuthService {
     };
   }
 
+  async activateIndependentProfile(userId: string) {
+    const user = await this.authRepository.findById(userId);
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    // 1. Verificar si ya tiene un perfil independiente activo
+    const existingIndependent = user.roles.find(
+      (r) => r.roleSlug === 'mentor_owner' && r.tenantName?.startsWith('Coach ')
+    );
+
+    if (existingIndependent) {
+      // Si ya existe, simplemente cambiamos de contexto a ese tenant
+      return this.switchContext(userId, existingIndependent.tenantId!);
+    }
+
+    // 2. Crear el nuevo tenant de tipo Coach
+    const tenant = await this.authRepository.createIndependentTenantForUser(userId);
+
+    // 3. Cambiar de contexto al nuevo tenant
+    return this.switchContext(userId, tenant.id);
+  }
+
   async getProfileWithModules(userId: string, activeTenantId?: string) {
     const user = await this.authRepository.findById(userId);
     if (!user) throw new NotFoundException('Usuario no encontrado');
@@ -489,5 +570,35 @@ export class AuthService {
       message:
         'Si el correo electrónico existe, recibirás instrucciones para recuperar tu contraseña.',
     };
+  }
+
+  async leaveTenant(userId: string, tenantId: string) {
+    const user = await this.authRepository.findById(userId);
+    if (!user) throw new NotFoundException('Usuario no encontrado');
+
+    const activeRole = user.roles.find((r) => r.tenantId === tenantId);
+    if (!activeRole) {
+      throw new BadRequestException('No perteneces a esta organización.');
+    }
+
+    if (activeRole.roleSlug === 'mentor_owner') {
+      throw new BadRequestException('Como propietario del gimnasio, no puedes abandonarlo. Debes transferir la propiedad primero.');
+    }
+
+    // 1. Remove UserRole
+    await this.authRepository.removeUserRole(userId, tenantId);
+
+    // 2. Adjust lastTenantId to first remaining role
+    const remainingRoles = user.roles.filter((r) => r.tenantId !== tenantId);
+    let nextTenantId = null;
+    if (remainingRoles.length > 0) {
+      nextTenantId = remainingRoles[0].tenantId;
+    }
+
+    await this.authRepository.updateUser(userId, {
+      lastTenantId: nextTenantId,
+    } as any);
+
+    return { success: true, nextTenantId };
   }
 }

@@ -46,18 +46,103 @@ export class DashboardService {
   }
 
   async getOwnerDashboard(scope: QueryScope) {
-    const [totalMentees, programs, totalXp, coachesCount] = await Promise.all([
+    const [totalMentees, programs, totalXp, coachesCount, groups, tasks, sessions] = await Promise.all([
       this.prisma.menteeProfile.count({ where: { tenantId: scope.tenantId } }),
       this.prisma.program.findMany({ where: { tenantId: scope.tenantId } }),
       this.prisma.xpTransaction.aggregate({ where: { tenantId: scope.tenantId }, _sum: { amount: true } }),
-      this.prisma.group.groupBy({ by: ['coachId'], where: { tenantId: scope.tenantId } })
+      this.prisma.group.groupBy({ by: ['coachId'], where: { tenantId: scope.tenantId } }),
+      this.prisma.group.findMany({ where: { tenantId: scope.tenantId }, include: { members: true } }),
+      this.prisma.task.findMany({ where: { tenantId: scope.tenantId } }),
+      this.prisma.session.findMany({ where: { tenantId: scope.tenantId } })
     ]);
+
+    const coachStatsMap: Record<string, {
+      coachId: string;
+      assignedMentees: Set<string>;
+      completedSessionsCount: number;
+      pendingReviewsCount: number;
+      createdProgramsCount: number;
+    }> = {};
+
+    groups.forEach(group => {
+      if (!coachStatsMap[group.coachId]) {
+        coachStatsMap[group.coachId] = {
+          coachId: group.coachId,
+          assignedMentees: new Set(),
+          completedSessionsCount: 0,
+          pendingReviewsCount: 0,
+          createdProgramsCount: 0
+        };
+      }
+      group.members.forEach(member => {
+        coachStatsMap[group.coachId].assignedMentees.add(member.menteeId);
+      });
+    });
+
+    programs.forEach(prog => {
+      if (prog.coachId) {
+        if (!coachStatsMap[prog.coachId]) {
+          coachStatsMap[prog.coachId] = {
+            coachId: prog.coachId,
+            assignedMentees: new Set(),
+            completedSessionsCount: 0,
+            pendingReviewsCount: 0,
+            createdProgramsCount: 0
+          };
+        }
+        coachStatsMap[prog.coachId].createdProgramsCount++;
+      }
+    });
+
+    tasks.forEach(task => {
+      if (task.coachId) {
+        if (!coachStatsMap[task.coachId]) {
+          coachStatsMap[task.coachId] = {
+            coachId: task.coachId,
+            assignedMentees: new Set(),
+            completedSessionsCount: 0,
+            pendingReviewsCount: 0,
+            createdProgramsCount: 0
+          };
+        }
+        if (task.status === 'SUBMITTED') {
+          coachStatsMap[task.coachId].pendingReviewsCount++;
+        }
+      }
+    });
+
+    sessions.forEach(sess => {
+      if (sess.coachId) {
+        if (!coachStatsMap[sess.coachId]) {
+          coachStatsMap[sess.coachId] = {
+            coachId: sess.coachId,
+            assignedMentees: new Set(),
+            completedSessionsCount: 0,
+            pendingReviewsCount: 0,
+            createdProgramsCount: 0
+          };
+        }
+        if (sess.status === 'COMPLETED') {
+          coachStatsMap[sess.coachId].completedSessionsCount++;
+        }
+      }
+    });
+
+    const staffPerformance = Object.values(coachStatsMap).map(stat => ({
+      coachId: stat.coachId,
+      assignedMenteesCount: stat.assignedMentees.size,
+      completedSessionsCount: stat.completedSessionsCount,
+      pendingReviewsCount: stat.pendingReviewsCount,
+      createdProgramsCount: stat.createdProgramsCount,
+      overallRating: 5
+    }));
 
     return { 
       totalMentees, 
       totalPrograms: programs.length, 
       totalXpGenerated: totalXp._sum.amount || 0,
-      activeCoachesCount: coachesCount.length
+      activeCoachesCount: coachesCount.length,
+      staffPerformance
     };
   }
 }
