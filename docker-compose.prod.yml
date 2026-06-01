@@ -15,6 +15,7 @@ services:
       - ADMIN_DOMAIN_NAME=${ADMIN_DOMAIN_NAME}
       - LANDING_DOMAIN_NAME=${LANDING_DOMAIN_NAME}
       - NGINX_ENVSUBST_OUTPUT_DIR=/etc/nginx
+      - NGINX_ENVSUBST_FILTER=^(DOMAIN_NAME|ADMIN_DOMAIN_NAME|LANDING_DOMAIN_NAME)$$
     networks:
       - mentor_network
     depends_on:
