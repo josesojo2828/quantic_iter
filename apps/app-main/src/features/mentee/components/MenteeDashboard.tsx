@@ -31,6 +31,7 @@ import {
   ListTodo
 } from 'lucide-react';
 import { format, isSameDay, isSameWeek } from 'date-fns';
+import { toast } from 'react-hot-toast';
 import { es } from 'date-fns/locale';
 import { MonthlyCalendar } from '@/features/agenda/components/MonthlyCalendar';
 
