@@ -1080,7 +1080,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                                   key={idx}
                                   disabled={isChecked}
                                   type="button"
-                                  onClick={() => toggleSubTask(habit.id, task.title)}
+                                  onClick={() => toggleSubTask(habit.id, habit.id, task.title)}
                                   className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all duration-300 ${
                                     isSubChecked
                                       ? 'bg-emerald-50/30 border-emerald-100/50 text-emerald-800'
