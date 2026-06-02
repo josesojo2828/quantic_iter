@@ -75,6 +75,17 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+echo -e "${GREEN}✓ Aplicaciones y microservicios levantados.${NC}"
+
+# 6.1. Hot-Reload del Gateway para actualizar la caché de DNS de Docker (Previene 502 Bad Gateway)
+echo -e "\n${YELLOW}🔄 Recargando Nginx Gateway para actualizar rutas y DNS de Docker...${NC}"
+docker exec mentor_gateway nginx -s reload
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Gateway Nginx recargado en caliente exitosamente (DNS actualizado).${NC}"
+else
+    echo -e "${YELLOW}⚠️ Advertencia: No se pudo recargar el gateway automáticamente. Recomendamos correr 'docker exec mentor_gateway nginx -s reload' manualmente.${NC}"
+fi
+
 # 7. Ejecutar Datos Semilla (Seeds)
 echo -e "\n${YELLOW}4️⃣  Inicializando Datos Semilla (Prisma Seeds)...${NC}"
 sleep 3
