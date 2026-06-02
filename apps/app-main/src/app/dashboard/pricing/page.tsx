@@ -110,23 +110,25 @@ export default function PricingPage() {
         </header>
 
         {/* Pricing Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-          {plans.map((plan, index) => {
-            const isActive = currentSubscription?.plan?.slug === plan.slug;
-            const isScheduled = currentSubscription?.nextPlan?.slug === plan.slug;
-            const isEnterprise = plan.slug.startsWith('enterprise');
-            const isProEnterprise = plan.slug === 'enterprise_pro';
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 max-w-4xl mx-auto gap-8">
+          {plans
+            .filter((p) => p.isActive !== false && !p.config?.disabled)
+            .map((plan, index) => {
+              const isActive = currentSubscription?.plan?.slug === plan.slug;
+              const isScheduled = currentSubscription?.nextPlan?.slug === plan.slug;
+              const isEnterprise = plan.slug.startsWith('enterprise');
+              const isProEnterprise = plan.slug === 'enterprise_pro';
 
-            return (
-              <div
-                key={plan.id}
-                ref={el => { cardsRef.current[index] = el; }}
-                className={`group glass-card relative flex flex-col rounded-[40px] border transition-all duration-700 hover:-translate-y-2 ${
-                  isEnterprise 
-                    ? 'bg-slate-900 border-slate-800 shadow-2xl shadow-slate-900/40 text-white' 
-                    : 'bg-white/70 backdrop-blur-xl border-white shadow-soft text-slate-900'
-                } ${isActive ? 'ring-4 ring-emerald-500/20 border-emerald-500/30' : ''}`}
-              >
+              return (
+                <div
+                  key={plan.id}
+                  ref={el => { cardsRef.current[index] = el; }}
+                  className={`group relative flex flex-col rounded-[40px] border transition-all duration-700 hover:-translate-y-2 ${
+                    isEnterprise 
+                      ? 'bg-slate-950 border-slate-800 shadow-2xl shadow-slate-950/50 text-white' 
+                      : 'glass-card bg-white/70 backdrop-blur-xl border-white shadow-soft text-slate-900'
+                  } ${isActive ? 'ring-4 ring-emerald-500/20 border-emerald-500/30' : ''}`}
+                >
                 {/* Visual Accent */}
                 {isEnterprise && (
                    <div className="absolute top-0 right-0 p-8 opacity-10 group-hover:opacity-20 transition-opacity">

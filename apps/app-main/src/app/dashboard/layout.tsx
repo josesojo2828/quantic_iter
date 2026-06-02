@@ -286,19 +286,21 @@ export default function DashboardLayout({
                   <Loader2 className="w-12 h-12 text-[#8A94F4] animate-spin" />
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-stretch">
-                  {plans.map((plan: any) => {
-                    const isEnterprise = plan.slug.startsWith('enterprise');
-                    const isPro = plan.slug === 'pro';
-                    return (
-                      <div
-                        key={plan.id}
-                        className={`group glass-card relative flex flex-col rounded-[40px] border transition-all duration-700 hover:-translate-y-2 p-10 ${
-                          isEnterprise
-                            ? 'bg-slate-900 border-slate-800 text-white shadow-2xl shadow-slate-900/40'
-                            : 'bg-white/70 backdrop-blur-xl border-white shadow-soft text-slate-900'
-                        }`}
-                      >
+                <div className="grid grid-cols-1 md:grid-cols-2 max-w-4xl mx-auto gap-8 items-stretch">
+                  {plans
+                    .filter((p: any) => p.isActive !== false && !p.config?.disabled)
+                    .map((plan: any) => {
+                      const isEnterprise = plan.slug.startsWith('enterprise');
+                      const isPro = plan.slug === 'pro';
+                      return (
+                        <div
+                          key={plan.id}
+                          className={`group relative flex flex-col rounded-[40px] border transition-all duration-700 hover:-translate-y-2 p-10 ${
+                            isEnterprise
+                              ? 'bg-slate-950 border-slate-800 text-white shadow-2xl shadow-slate-950/50'
+                              : 'glass-card bg-white/70 backdrop-blur-xl border-white shadow-soft text-slate-900'
+                          }`}
+                        >
                         <div className="flex-1 flex flex-col relative z-10">
                           {/* Top Card Icon & Tag */}
                           <div className="flex justify-between items-start mb-8">

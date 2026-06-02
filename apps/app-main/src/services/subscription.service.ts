@@ -11,6 +11,7 @@ export interface Plan {
     maxUsers: number;
     [key: string]: any;
   };
+  isActive?: boolean;
 }
 
 export interface SubscriptionStatus {

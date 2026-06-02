@@ -234,6 +234,7 @@ async function main() {
       description: 'Coach independiente básico',
       price: 0,
       config: { maxUsers: 1, maxMentees: 25, disabled: false },
+      isActive: true,
     },
     create: {
       name: 'Personal',
@@ -241,6 +242,7 @@ async function main() {
       description: 'Coach independiente básico',
       price: 0,
       config: { maxUsers: 1, maxMentees: 25, disabled: false },
+      isActive: true,
     },
   });
 
@@ -251,6 +253,7 @@ async function main() {
       description: 'Coach con servicio de página web',
       price: 29.99,
       config: { maxUsers: 2, maxMentees: 500, hasWebsite: true, disabled: true },
+      isActive: false,
     },
     create: {
       name: 'Personal Plus',
@@ -258,6 +261,7 @@ async function main() {
       description: 'Coach con servicio de página web',
       price: 29.99,
       config: { maxUsers: 2, maxMentees: 500, hasWebsite: true, disabled: true },
+      isActive: false,
     },
   });
 
@@ -268,6 +272,7 @@ async function main() {
       description: 'Para gimnasios y centros deportivos con staff',
       price: 149.99,
       config: { maxUsers: 20, maxMentees: 5000, multiBranch: true, maxBranches: 5, vipSupport: true, disabled: false },
+      isActive: true,
     },
     create: {
       name: 'Enterprise',
@@ -275,6 +280,7 @@ async function main() {
       description: 'Para gimnasios y centros deportivos con staff',
       price: 149.99,
       config: { maxUsers: 20, maxMentees: 5000, multiBranch: true, maxBranches: 5, vipSupport: true, disabled: false },
+      isActive: true,
     },
   });
 
@@ -285,6 +291,7 @@ async function main() {
       description: 'Plataforma corporativa: Asistencias, inventario, sitio web y más',
       price: 299.99,
       config: { maxUsers: 100, maxMentees: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true, disabled: true },
+      isActive: false,
     },
     create: {
       name: 'Enterprise Plus',
@@ -292,6 +299,7 @@ async function main() {
       description: 'Plataforma corporativa: Asistencias, inventario, sitio web y más',
       price: 299.99,
       config: { maxUsers: 100, maxMentees: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true, disabled: true },
+      isActive: false,
     },
   });
 
