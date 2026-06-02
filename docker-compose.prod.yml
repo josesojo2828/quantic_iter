@@ -65,8 +65,8 @@ services:
       dockerfile: ./infra/docker/Dockerfile
       args:
         SERVICE_PATH: ./apps/app-main
-        NEXT_PUBLIC_LANDING_URL: https://${LANDING_DOMAIN_NAME}
-        NEXT_PUBLIC_APP_URL: https://${DOMAIN_NAME}
+        NEXT_PUBLIC_LANDING_URL: ${PROTOCOL}://${LANDING_DOMAIN_NAME}
+        NEXT_PUBLIC_APP_URL: ${PROTOCOL}://${DOMAIN_NAME}
     container_name: mentor_app_main
     restart: always
     ports:
@@ -74,8 +74,8 @@ services:
     environment:
       - PORT=3001
       - NEXT_PUBLIC_API_URL=/api
-      - NEXT_PUBLIC_APP_URL=https://${DOMAIN_NAME}
-      - NEXT_PUBLIC_LANDING_URL=https://${LANDING_DOMAIN_NAME}
+      - NEXT_PUBLIC_APP_URL=${PROTOCOL}://${DOMAIN_NAME}
+      - NEXT_PUBLIC_LANDING_URL=${PROTOCOL}://${LANDING_DOMAIN_NAME}
       - NODE_ENV=production
     networks:
       - mentor_network
@@ -105,16 +105,16 @@ services:
       dockerfile: ./infra/docker/Dockerfile
       args:
         SERVICE_PATH: ./apps/landing
-        NEXT_PUBLIC_LANDING_URL: https://${LANDING_DOMAIN_NAME}
-        NEXT_PUBLIC_APP_URL: https://${DOMAIN_NAME}
+        NEXT_PUBLIC_LANDING_URL: ${PROTOCOL}://${LANDING_DOMAIN_NAME}
+        NEXT_PUBLIC_APP_URL: ${PROTOCOL}://${DOMAIN_NAME}
     container_name: mentor_landing
     restart: always
     ports:
       - "3003:3003"
     environment:
       - PORT=3003
-      - NEXT_PUBLIC_APP_URL=https://${DOMAIN_NAME}
-      - NEXT_PUBLIC_LANDING_URL=https://${LANDING_DOMAIN_NAME}
+      - NEXT_PUBLIC_APP_URL=${PROTOCOL}://${DOMAIN_NAME}
+      - NEXT_PUBLIC_LANDING_URL=${PROTOCOL}://${LANDING_DOMAIN_NAME}
       - NODE_ENV=production
     networks:
       - mentor_network
