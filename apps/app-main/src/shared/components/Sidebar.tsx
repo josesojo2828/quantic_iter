@@ -95,6 +95,12 @@ export const Sidebar = ({ disabled }: { disabled?: boolean }) => {
     (r: any) => r.roleSlug === 'mentor_owner' && r.tenantName?.startsWith('Coach ')
   );
 
+  const hasGymRoles = user?.roles?.some(
+    (r: any) => !r.tenantName?.startsWith('Coach ')
+  );
+
+  const showTenantSelector = !hasIndependentProfile || hasGymRoles;
+
   const activeRole = user?.roles?.find((r: any) => r.tenantId === user.tenantId);
   const isOwner = activeRole?.roleSlug === 'mentor_owner';
   const isIndependentCoach = isOwner && activeRole?.tenantName?.startsWith('Coach ');
@@ -292,34 +298,36 @@ export const Sidebar = ({ disabled }: { disabled?: boolean }) => {
       {/* Operator Unit */}
       <div className="mt-auto px-5 pt-6 border-t border-slate-100/50 space-y-4">
         {/* Selector de Perfil/Sede */}
-        <div className="space-y-2 px-1">
-          <div className="flex items-center gap-2">
-            <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
-            <h4 className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] italic">SEDE / PERFIL ACTIVO</h4>
-          </div>
+        {showTenantSelector && (
+          <div className="space-y-2 px-1">
+            <div className="flex items-center gap-2">
+              <div className="w-1.5 h-1.5 bg-indigo-500 rounded-full animate-pulse" />
+              <h4 className="text-[8px] font-black text-slate-400 uppercase tracking-[0.2em] italic">SEDE / PERFIL ACTIVO</h4>
+            </div>
 
-          <select
-            value={user?.tenantId}
-            onChange={(e) => handleSwitchTenant(e.target.value)}
-            className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 hover:border-slate-200 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] focus:outline-none transition-all shadow-sm italic cursor-pointer"
-          >
-            {user?.roles?.map((r: any) => (
-              <option key={r.tenantId} value={r.tenantId}>
-                {r.tenantName ? r.tenantName.toUpperCase() : 'GIMNASIO ITER'} ({r.roleSlug === 'mentor_owner' ? 'PROPIETARIO' : 'STAFF / COACH'})
-              </option>
-            ))}
-          </select>
-
-          {!hasIndependentProfile && (
-            <button
-              onClick={handleActivateIndependent}
-              className="w-full mt-2.5 py-2.5 px-3 border border-dashed border-indigo-200 hover:border-indigo-500 bg-indigo-50/20 hover:bg-indigo-50/50 text-indigo-600 rounded-xl text-[8.5px] font-black uppercase tracking-wider transition-all duration-300 active:scale-95 italic flex items-center justify-center gap-1.5"
+            <select
+              value={user?.tenantId}
+              onChange={(e) => handleSwitchTenant(e.target.value)}
+              className="w-full px-4 py-2.5 bg-slate-50 border border-slate-100 hover:border-slate-200 rounded-xl text-[9px] font-black uppercase tracking-[0.15em] focus:outline-none transition-all shadow-sm italic cursor-pointer"
             >
-              <Zap className="w-3 h-3 text-indigo-500 animate-bounce" />
-              Activar mi Marca Personal
-            </button>
-          )}
-        </div>
+              {user?.roles?.map((r: any) => (
+                <option key={r.tenantId} value={r.tenantId}>
+                  {r.tenantName ? r.tenantName.toUpperCase() : 'GIMNASIO ITER'} ({r.roleSlug === 'mentor_owner' ? 'PROPIETARIO' : 'STAFF / COACH'})
+                </option>
+              ))}
+            </select>
+
+            {!hasIndependentProfile && (
+              <button
+                onClick={handleActivateIndependent}
+                className="w-full mt-2.5 py-2.5 px-3 border border-dashed border-indigo-200 hover:border-indigo-500 bg-indigo-50/20 hover:bg-indigo-50/50 text-indigo-600 rounded-xl text-[8.5px] font-black uppercase tracking-wider transition-all duration-300 active:scale-95 italic flex items-center justify-center gap-1.5"
+              >
+                <Zap className="w-3 h-3 text-indigo-500 animate-bounce" />
+                Activar mi Marca Personal
+              </button>
+            )}
+          </div>
+        )}
 
         <div className="flex items-center gap-4 px-4 py-4 bg-slate-50/50 border border-slate-100/50 rounded-[28px] group hover:bg-white transition-all duration-500 shadow-sm">
           <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center overflow-hidden shadow-xl border border-white/10 group-hover:rotate-6 transition-transform">
