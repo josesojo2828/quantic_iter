@@ -327,47 +327,144 @@ export default function DashboardLayout({
 
                           {/* Features Checklist */}
                           <div className="space-y-4 mb-8 flex-1">
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
-                                <Check className="w-3 h-3 stroke-[4]" />
-                              </div>
-                              <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
-                                {plan.config.maxUsers} Usuarios Admin
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
-                                <Check className="w-3 h-3 stroke-[4]" />
-                              </div>
-                              <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
-                                {plan.config.maxMentees} Alumnos Activos
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
-                                <Check className="w-3 h-3 stroke-[4]" />
-                              </div>
-                              <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
-                                Soporte 24/7 Priority
-                              </span>
-                            </div>
+                            {plan.slug === 'basico' && (
+                              <>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    1 Coach Independiente
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    Hasta 25 Alumnos Activos
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    Planificación Esencial
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            {plan.slug === 'pro' && (
+                              <>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    1 Coach + 1 Staff
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    Hasta 500 Alumnos Activos
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    Página Web Personalizada
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            {plan.slug === 'enterprise' && (
+                              <>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    Hasta 20 Coordinadores
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    Hasta 5000 Alumnos Activos
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    Soporte VIP 24/7 Priority
+                                  </span>
+                                </div>
+                              </>
+                            )}
+                            {plan.slug === 'enterprise_pro' && (
+                              <>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    Coaches/Staff Ilimitados
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    Asistencias e Inventario
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <div className={`w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0 ${isEnterprise ? 'bg-[#8A94F4]/20 text-[#8A94F4]' : 'bg-[#8A94F4]/10 text-[#8A94F4]'}`}>
+                                    <Check className="w-3 h-3 stroke-[4]" />
+                                  </div>
+                                  <span className={`text-[10px] font-black uppercase tracking-tight ${isEnterprise ? 'text-slate-400' : 'text-slate-600 opacity-80'}`}>
+                                    Sitio Web de la Academia
+                                  </span>
+                                </div>
+                              </>
+                            )}
                           </div>
 
-                          <button
-                            onClick={() => handleSelectPlan(plan)}
-                            disabled={!!processingId}
-                            className={`w-full py-5 rounded-2xl font-black text-[9.5px] uppercase tracking-[0.25em] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer ${
-                              isEnterprise
-                                ? 'bg-gradient-to-br from-[#8A94F4] to-[#7C3AED] text-white shadow-lg border border-[#8A94F4]/20 hover:brightness-105'
-                                : 'bg-slate-900 text-white hover:bg-slate-800 shadow-sm border border-slate-700'
-                            }`}
-                          >
-                            {processingId === plan.id ? (
-                              <Loader2 className="w-4 h-4 animate-spin" />
-                            ) : (
-                              <>Iniciar Prueba Gratis 14 Días <Zap className="w-3.5 h-3.5 fill-white" /></>
-                            )}
-                          </button>
+                          {plan.config?.disabled ? (
+                            <button
+                              disabled
+                              className="w-full py-5 rounded-2xl font-black text-[9.5px] uppercase tracking-[0.25em] flex items-center justify-center gap-2 border transition-all bg-amber-500/10 text-amber-500 border-amber-500/20 cursor-not-allowed"
+                            >
+                              Próximamente <Sparkles className="w-4 h-4 animate-pulse" />
+                            </button>
+                          ) : (
+                            <button
+                              onClick={() => handleSelectPlan(plan)}
+                              disabled={!!processingId}
+                              className={`w-full py-5 rounded-2xl font-black text-[9.5px] uppercase tracking-[0.25em] flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 cursor-pointer ${
+                                isEnterprise
+                                  ? 'bg-gradient-to-br from-[#8A94F4] to-[#7C3AED] text-white shadow-lg border border-[#8A94F4]/20 hover:brightness-105'
+                                  : 'bg-slate-900 text-white hover:bg-slate-800 shadow-sm border border-slate-700'
+                              }`}
+                            >
+                              {processingId === plan.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <>Iniciar Prueba Gratis 14 Días <Zap className="w-3.5 h-3.5 fill-white" /></>
+                              )}
+                            </button>
+                          )}
                         </div>
                       </div>
                     );

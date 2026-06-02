@@ -229,59 +229,69 @@ async function main() {
   // 3. Create Subscription Plans
   await prisma.subscriptionPlan.upsert({
     where: { slug: 'basico' },
-    update: {},
-    create: {
-      name: 'Plan Básico',
-      slug: 'basico',
-      description: 'Para mentores independientes',
+    update: {
+      name: 'Personal',
+      description: 'Coach independiente básico',
       price: 0,
-      config: { maxUsers: 2, maxMentees: 20 },
+      config: { maxUsers: 1, maxMentees: 25, disabled: false },
+    },
+    create: {
+      name: 'Personal',
+      slug: 'basico',
+      description: 'Coach independiente básico',
+      price: 0,
+      config: { maxUsers: 1, maxMentees: 25, disabled: false },
     },
   });
 
   await prisma.subscriptionPlan.upsert({
     where: { slug: 'pro' },
-    update: {},
-    create: {
-      name: 'Plan Profesional',
-      slug: 'pro',
-      description: 'Para coaches en crecimiento',
+    update: {
+      name: 'Personal Plus',
+      description: 'Coach con servicio de página web',
       price: 29.99,
-      config: { maxUsers: 10, maxMentees: 500 },
+      config: { maxUsers: 2, maxMentees: 500, hasWebsite: true, disabled: true },
+    },
+    create: {
+      name: 'Personal Plus',
+      slug: 'pro',
+      description: 'Coach con servicio de página web',
+      price: 29.99,
+      config: { maxUsers: 2, maxMentees: 500, hasWebsite: true, disabled: true },
     },
   });
 
   await prisma.subscriptionPlan.upsert({
     where: { slug: 'enterprise' },
     update: {
-      name: 'MentorQuantic Enterprise Basic',
-      description: 'Expansión para academias y grupos',
+      name: 'Enterprise',
+      description: 'Para gimnasios y centros deportivos con staff',
       price: 149.99,
-      config: { maxUsers: 500, maxMentees: 10000, multiBranch: true, maxBranches: 5, vipSupport: true },
+      config: { maxUsers: 20, maxMentees: 5000, multiBranch: true, maxBranches: 5, vipSupport: true, disabled: false },
     },
     create: {
-      name: 'MentorQuantic Enterprise Basic',
+      name: 'Enterprise',
       slug: 'enterprise',
-      description: 'Expansión para academias y grupos',
+      description: 'Para gimnasios y centros deportivos con staff',
       price: 149.99,
-      config: { maxUsers: 500, maxMentees: 10000, multiBranch: true, maxBranches: 5, vipSupport: true },
+      config: { maxUsers: 20, maxMentees: 5000, multiBranch: true, maxBranches: 5, vipSupport: true, disabled: false },
     },
   });
 
   await prisma.subscriptionPlan.upsert({
     where: { slug: 'enterprise_pro' },
     update: {
-      name: 'MentorQuantic Enterprise Pro',
-      description: 'Control total corporativo multinivel',
+      name: 'Enterprise Plus',
+      description: 'Plataforma corporativa: Asistencias, inventario, sitio web y más',
       price: 299.99,
-      config: { maxUsers: 1500, maxMentees: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true },
+      config: { maxUsers: 100, maxMentees: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true, disabled: true },
     },
     create: {
-      name: 'MentorQuantic Enterprise Pro',
+      name: 'Enterprise Plus',
       slug: 'enterprise_pro',
-      description: 'Control total corporativo multinivel',
+      description: 'Plataforma corporativa: Asistencias, inventario, sitio web y más',
       price: 299.99,
-      config: { maxUsers: 1500, maxMentees: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true },
+      config: { maxUsers: 100, maxMentees: 50000, multiBranch: true, maxBranches: 999, vipSupport: true, advancedAudit: true, disabled: true },
     },
   });
 

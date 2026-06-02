@@ -166,41 +166,76 @@ export default function PricingPage() {
 
                   {/* Features List */}
                   <div className="space-y-4 mb-12 flex-1">
-                    <Feature text={`${plan.config.maxUsers} Usuarios Admin`} isDark={isEnterprise} />
-                    <Feature text={`${plan.config.maxMentees} Alumnos Activos`} isDark={isEnterprise} />
-                    {isEnterprise && (
+                    {plan.slug === 'basico' && (
                       <>
-                        <Feature text={`${isProEnterprise ? 'Sucursales Ilimitadas' : 'Hasta 5 Sucursales'}`} highlight isDark={isEnterprise} />
-                        <Feature text="Auditoría Forense Quántica" highlight isDark={isEnterprise} />
+                        <Feature text="1 Coach Independiente" isDark={isEnterprise} />
+                        <Feature text="Hasta 25 Alumnos Activos" isDark={isEnterprise} />
+                        <Feature text="Planificación de Hábitos y Tareas" isDark={isEnterprise} />
+                        <Feature text="Estadísticas Básicas de Rendimiento" isDark={isEnterprise} />
                       </>
                     )}
-                    {plan.slug !== 'basico' && <Feature text="Soporte VIP 24/7" isDark={isEnterprise} />}
+                    {plan.slug === 'pro' && (
+                      <>
+                        <Feature text="1 Coach + 1 Staff de Apoyo" isDark={isEnterprise} />
+                        <Feature text="Hasta 500 Alumnos Activos" isDark={isEnterprise} />
+                        <Feature text="Página Web Personalizada" highlight isDark={isEnterprise} />
+                        <Feature text="Planificación y Módulos Avanzados" isDark={isEnterprise} />
+                      </>
+                    )}
+                    {plan.slug === 'enterprise' && (
+                      <>
+                        <Feature text="Hasta 20 Coordinadores y Staff" isDark={isEnterprise} />
+                        <Feature text="Hasta 5000 Alumnos Activos" isDark={isEnterprise} />
+                        <Feature text="Gestión de 5 Sucursales/Sedes" highlight isDark={isEnterprise} />
+                        <Feature text="Auditoría Operativa Completa" highlight isDark={isEnterprise} />
+                        <Feature text="Soporte VIP Prioritario 24/7" isDark={isEnterprise} />
+                      </>
+                    )}
+                    {plan.slug === 'enterprise_pro' && (
+                      <>
+                        <Feature text="Staff y Coaches Ilimitados" isDark={isEnterprise} />
+                        <Feature text="Alumnos Activos Ilimitados" isDark={isEnterprise} />
+                        <Feature text="Sitio Web de la Academia" highlight isDark={isEnterprise} />
+                        <Feature text="Control de Asistencias (Staff y Clientes)" highlight isDark={isEnterprise} />
+                        <Feature text="Gestión de Inventario y Ventas" highlight isDark={isEnterprise} />
+                        <Feature text="Consultoría Estratégica Directa" isDark={isEnterprise} />
+                      </>
+                    )}
                   </div>
 
                   {/* Action Button */}
-                  <button
-                    onClick={() => handleUpgrade(plan)}
-                    disabled={!!processingId || isActive || isScheduled}
-                    className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 disabled:scale-100 ${
-                      isActive 
-                        ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 cursor-default' 
-                        : isScheduled
-                          ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20 cursor-default'
-                          : isEnterprise
-                            ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-xl shadow-emerald-500/20 border border-emerald-400/30'
-                            : 'bg-slate-900 text-white hover:bg-slate-800 shadow-xl shadow-slate-200 border border-slate-700/30'
-                    }`}
-                  >
-                    {processingId === plan.id ? (
-                      <Loader2 className="w-5 h-5 animate-spin" />
-                    ) : isActive ? (
-                      <>Plan Actual <Check className="w-5 h-5" /></>
-                    ) : isScheduled ? (
-                      <>Plan Siguiente <Calendar className="w-5 h-5" /></>
-                    ) : (
-                      <>Activar Ahora <ArrowRight className="w-5 h-5" /></>
-                    )}
-                  </button>
+                  {(plan.config as any)?.disabled ? (
+                    <button
+                      disabled
+                      className="w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 border transition-all bg-amber-500/10 text-amber-500 border-amber-500/20 cursor-not-allowed"
+                    >
+                      Próximamente <Sparkles className="w-5 h-5 animate-pulse" />
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleUpgrade(plan)}
+                      disabled={!!processingId || isActive || isScheduled}
+                      className={`w-full py-5 rounded-2xl font-black text-[10px] uppercase tracking-[0.2em] flex items-center justify-center gap-3 transition-all active:scale-95 disabled:scale-100 ${
+                        isActive 
+                          ? 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20 cursor-default' 
+                          : isScheduled
+                            ? 'bg-blue-500/10 text-blue-500 border border-blue-500/20 cursor-default'
+                            : isEnterprise
+                              ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-xl shadow-emerald-500/20 border border-emerald-400/30'
+                              : 'bg-slate-900 text-white hover:bg-slate-800 shadow-xl shadow-slate-200 border border-slate-700/30'
+                      }`}
+                    >
+                      {processingId === plan.id ? (
+                        <Loader2 className="w-5 h-5 animate-spin" />
+                      ) : isActive ? (
+                        <>Plan Actual <Check className="w-5 h-5" /></>
+                      ) : isScheduled ? (
+                        <>Plan Siguiente <Calendar className="w-5 h-5" /></>
+                      ) : (
+                        <>Activar Ahora <ArrowRight className="w-5 h-5" /></>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
             );
