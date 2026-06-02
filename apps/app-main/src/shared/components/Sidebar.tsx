@@ -16,9 +16,12 @@ import {
   Calendar,
   Layers,
   Zap,
-  Target
+  Target,
+  Globe
 } from 'lucide-react';
 import Link from 'next/link';
+
+const LANDING_URL = process.env.NEXT_PUBLIC_LANDING_URL || 'http://localhost:3003';
 import { usePathname } from 'next/navigation';
 import { useAuth, ModuleItem } from '@/core/contexts/AuthContext';
 import { apiClient } from '@/core/api/api.client';
@@ -348,6 +351,14 @@ export const Sidebar = ({ disabled }: { disabled?: boolean }) => {
             <p className="text-[9px] text-slate-400 truncate font-black uppercase tracking-[0.2em] italic opacity-60">OPERADOR {user?.role?.split('_')[0]}</p>
           </div>
         </div>
+
+        <a
+          href={LANDING_URL}
+          className="w-full flex items-center gap-4 px-6 py-4 text-slate-400 hover:text-[#8A94F4] transition-all rounded-[20px] hover:bg-[#8A94F4]/5 group italic"
+        >
+          <Globe className="w-5 h-5 group-hover:rotate-12 transition-transform duration-500 text-slate-400 group-hover:text-[#8A94F4]" />
+          <span className="text-[10px] font-black uppercase tracking-[0.2em]">Sitio Oficial</span>
+        </a>
 
         <button
           onClick={logout}

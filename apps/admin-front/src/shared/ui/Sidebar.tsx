@@ -13,9 +13,12 @@ import {
   HelpCircle,
   CreditCard,
   Package,
-  ShieldAlert
+  ShieldAlert,
+  Globe
 } from 'lucide-react';
 import { useAuth } from '@/core/auth/AuthContext';
+
+const LANDING_URL = process.env.NEXT_PUBLIC_LANDING_URL || 'http://localhost:3003';
 
 const menuItems = [
   { icon: BarChart2, label: 'Resumen', href: '/dashboard' },
@@ -79,6 +82,13 @@ export const Sidebar = () => {
       {/* Support & Profile */}
       <div className="px-4 pb-8 border-t border-white/5 pt-8 space-y-6">
         <div className="space-y-2">
+          <a
+            href={LANDING_URL}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/40 hover:bg-white/5 hover:text-white/70 transition-all"
+          >
+            <Globe className="w-4 h-4" />
+            <span>Sitio Oficial</span>
+          </a>
           <button className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-bold text-white/40 hover:bg-white/5 hover:text-white/70 transition-all">
             <HelpCircle className="w-4 h-4" />
             <span>Soporte</span>
