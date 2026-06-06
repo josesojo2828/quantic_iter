@@ -628,6 +628,7 @@ export default function ProgramDetailPage() {
                                     </div>
                                   </div>
 
+                                  <div className="flex items-center gap-1.5">
                                     {/* Racha badge - Oculto temporalmente */}
                                     <button
                                       onClick={() => handleDeleteMilestone(phase.id, milestone.id)}
