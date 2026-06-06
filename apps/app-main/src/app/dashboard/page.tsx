@@ -275,7 +275,8 @@ function CoachDashboard() {
         </div>
 
         {/* Behavior Pulso Monitor */}
-          {/* Behavior Pulso Monitor - Racha Global - Oculto temporalmente */}
+        <div className="xl:col-span-5 flex flex-col gap-6">
+          {/* Racha Global - Oculto temporalmente */}
 
           <div className="glass-card bg-white/70 backdrop-blur-xl p-5 rounded-lg border border-slate-200 shadow-sm relative overflow-hidden group">
             <div className="flex items-center justify-between mb-4">
