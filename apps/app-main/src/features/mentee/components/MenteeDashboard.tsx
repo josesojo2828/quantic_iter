@@ -953,7 +953,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                         {stats.currentStreak}
                       </span>
                     </div>
-                  </div> */>
+                  </div> */}
                 </div>
 
                 <div className="pt-6 mt-4">
@@ -2101,7 +2101,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                   {totalXp} XP Totales
                 </span>
               </div>
-            </div> */>
+            </div> */}
           </div>
         </div>
 
