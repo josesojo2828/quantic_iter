@@ -106,10 +106,11 @@ export class ProgramController {
     @Param('id') id: string,
     @Param('milestoneId') milestoneId: string,
     @Body('title') title: string,
+    @Body('index') index: number,
     @Body('isCompleted') isCompleted: boolean,
     @Req() req: any
   ) {
-    return this.programService.toggleSubTask(milestoneId, title, isCompleted);
+    return this.programService.toggleSubTask(milestoneId, title, isCompleted, index);
   }
 
   @Post(':id/phases/:phaseId/toggle')

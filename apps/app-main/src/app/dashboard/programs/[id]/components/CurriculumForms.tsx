@@ -75,7 +75,7 @@ export const PhaseForm: React.FC<PhaseFormProps> = ({ isOpen, onClose, onSubmit,
           <form id="phase-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Nombre de la Fase</label>
-              <input 
+              <input
                 {...register('name')}
                 placeholder="Ej: Fundamentos y Mentalidad"
                 className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
@@ -88,7 +88,7 @@ export const PhaseForm: React.FC<PhaseFormProps> = ({ isOpen, onClose, onSubmit,
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Hora Inicio</label>
                 <div className="relative">
                   <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input 
+                  <input
                     type="time"
                     {...register('startTime')}
                     className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
@@ -99,7 +99,7 @@ export const PhaseForm: React.FC<PhaseFormProps> = ({ isOpen, onClose, onSubmit,
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Hora Fin</label>
                 <div className="relative">
                   <Clock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input 
+                  <input
                     type="time"
                     {...register('endTime')}
                     className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
@@ -113,7 +113,7 @@ export const PhaseForm: React.FC<PhaseFormProps> = ({ isOpen, onClose, onSubmit,
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Fecha Inicio (Calendario)</label>
                 <div className="relative">
                   <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input 
+                  <input
                     type="date"
                     {...register('startDate')}
                     className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
@@ -124,7 +124,7 @@ export const PhaseForm: React.FC<PhaseFormProps> = ({ isOpen, onClose, onSubmit,
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Fecha Fin (Calendario)</label>
                 <div className="relative">
                   <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                  <input 
+                  <input
                     type="date"
                     {...register('endDate')}
                     className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
@@ -136,7 +136,7 @@ export const PhaseForm: React.FC<PhaseFormProps> = ({ isOpen, onClose, onSubmit,
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Semanas Estimadas</label>
-                <input 
+                <input
                   type="number"
                   {...register('estimatedWeeks', { valueAsNumber: true })}
                   placeholder="Ej: 4"
@@ -146,7 +146,7 @@ export const PhaseForm: React.FC<PhaseFormProps> = ({ isOpen, onClose, onSubmit,
               <div className="space-y-2">
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Color Identificador</label>
                 <div className="flex items-center gap-4 px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                   <input 
+                  <input
                     type="color"
                     {...register('color')}
                     className="w-8 h-8 rounded-lg cursor-pointer border-none bg-transparent"
@@ -158,7 +158,7 @@ export const PhaseForm: React.FC<PhaseFormProps> = ({ isOpen, onClose, onSubmit,
 
             <div className="space-y-2">
               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Descripción (Opcional)</label>
-              <textarea 
+              <textarea
                 {...register('description')}
                 rows={3}
                 placeholder="¿Qué logrará el alumno en esta etapa?"
@@ -183,20 +183,23 @@ interface MilestoneFormProps extends FormProps {
   onSubmit: (data: MilestoneFormData) => Promise<void>;
   initialData?: any;
   isHabitOnly?: boolean;
+  programType?: string;
 }
 
-export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, onSubmit, initialData, isHabitOnly }) => {
+export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, onSubmit, initialData, isHabitOnly, programType }) => {
   const { register, handleSubmit, watch, setValue, reset, formState: { errors, isSubmitting } } = useForm<MilestoneFormData>({
     resolver: zodResolver(milestoneSchema),
-    defaultValues: initialData || { 
-      xpReward: isHabitOnly ? 10 : 500, 
-      order: 0, 
-      frequency: isHabitOnly ? 'DAILY' : 'ONCE', 
+    defaultValues: initialData || {
+      xpReward: isHabitOnly ? 10 : 500,
+      order: 0,
+      frequency: programType === 'ROUTINE' ? 'WEEKLY' : (isHabitOnly ? 'DAILY' : 'ONCE'),
       requiredEvidence: 'NONE',
       isHabit: isHabitOnly ? true : false,
-      daysOfWeek: [] 
+      daysOfWeek: []
     }
   });
+
+  const isRoutine = programType === 'ROUTINE';
 
   const frequency = watch('frequency');
   const xpReward = watch('xpReward');
@@ -225,16 +228,16 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
         reset(initialData);
       } else {
         reset({
-          xpReward: isHabitOnly ? 10 : 500, 
-          order: 0, 
-          frequency: isHabitOnly ? 'DAILY' : 'ONCE', 
+          xpReward: isHabitOnly ? 10 : 500,
+          order: 0,
+          frequency: programType === 'ROUTINE' ? 'WEEKLY' : (isHabitOnly ? 'DAILY' : 'ONCE'),
           requiredEvidence: 'NONE',
           isHabit: isHabitOnly ? true : false,
-          daysOfWeek: [] 
+          daysOfWeek: []
         });
       }
     }
-  }, [isOpen, initialData, reset, isHabitOnly]);
+  }, [isOpen, initialData, reset, isHabitOnly, programType]);
 
   const toggleDay = (day: number) => {
     const current = [...daysOfWeek];
@@ -257,6 +260,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
   const handleFormSubmit = async (data: MilestoneFormData) => {
     await onSubmit({
       ...data,
+      frequency: isRoutine ? 'WEEKLY' : data.frequency,
       subTasks: localSubTasks
     });
   };
@@ -271,9 +275,13 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
           <div>
             <div className="flex items-center gap-2 mb-1">
               <Target className="w-4 h-4 text-emerald-600" />
-              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Hito de Progreso</span>
+              <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">
+                {isRoutine ? 'Paso de Rutina' : (isHabitOnly ? 'Hábito' : 'Hito de Progreso')}
+              </span>
             </div>
-            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">{initialData ? 'Editar Hito' : 'Nuevo Hito'}</h2>
+            <h2 className="text-2xl font-black text-slate-900 uppercase tracking-tight">
+              {initialData ? 'Editar' : 'Nuevo'} {isRoutine ? 'Paso' : (isHabitOnly ? 'Hábito' : 'Hito')}
+            </h2>
           </div>
           <button onClick={onClose} className="w-10 h-10 rounded-full bg-white border border-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-900 transition-all">
             <X className="w-5 h-5" />
@@ -283,8 +291,10 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
           <form id="milestone-form" onSubmit={handleSubmit(handleFormSubmit)} className="space-y-6">
             <div className="space-y-2">
-              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Título del Hito / Hábito</label>
-              <input 
+              <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">
+                Título del {isRoutine ? 'Paso' : (isHabitOnly ? 'Hábito' : 'Hito')}
+              </label>
+              <input
                 {...register('title')}
                 placeholder="Ej: Tomar 2L de agua"
                 className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
@@ -292,21 +302,23 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
               {errors.title && <p className="text-[10px] text-red-500 font-bold ml-1 uppercase">{errors.title.message}</p>}
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Frecuencia</label>
-                <select 
-                  {...register('frequency')}
-                  className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold text-[11px] uppercase focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none appearance-none cursor-pointer"
-                >
-                  {!isHabitOnly && <option value="ONCE">Una vez (Hito)</option>}
-                  <option value="DAILY">Diario (Hábito)</option>
-                  <option value="WEEKLY">Semanal (Rutina)</option>
-                </select>
-              </div>
-              <div className="space-y-2">
+             <div className="grid grid-cols-2 gap-4">
+              {!isRoutine && (
+                <div className="space-y-2">
+                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Frecuencia</label>
+                  <select
+                    {...register('frequency')}
+                    className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold text-[11px] uppercase focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none appearance-none cursor-pointer"
+                  >
+                    {!isHabitOnly && <option value="ONCE">Una vez (Hito)</option>}
+                    <option value="DAILY">Diario (Hábito)</option>
+                    <option value="WEEKLY">Semanal (Rutina)</option>
+                  </select>
+                </div>
+              )}
+              <div className={isRoutine ? "col-span-2 space-y-2" : "space-y-2"}>
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Evidencia</label>
-                <select 
+                <select
                   {...register('requiredEvidence')}
                   className="w-full px-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-bold text-[11px] uppercase focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none appearance-none cursor-pointer"
                 >
@@ -318,18 +330,17 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
               </div>
             </div>
 
-            {frequency === 'WEEKLY' && (
+            {(frequency === 'WEEKLY' || isRoutine) && (
               <div className="space-y-3 animate-in slide-in-from-top-2 duration-300">
-                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Días de ejecución</label>
+                <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Días de ejecución del Paso</label>
                 <div className="flex flex-wrap gap-2">
                   {['L', 'M', 'X', 'J', 'V', 'S', 'D'].map((day, i) => (
                     <button
                       key={i}
                       type="button"
                       onClick={() => toggleDay(i)}
-                      className={`w-10 h-10 rounded-xl font-bold text-xs transition-all ${
-                        daysOfWeek.includes(i) ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:border-indigo-300'
-                      }`}
+                      className={`w-10 h-10 rounded-xl font-bold text-xs transition-all ${daysOfWeek.includes(i) ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 text-slate-400 border border-slate-200 hover:border-indigo-300'
+                        }`}
                     >
                       {day}
                     </button>
@@ -344,7 +355,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
                 {frequency === 'ONCE' ? (
                   <div className="relative">
                     <Trophy className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-500" />
-                    <input 
+                    <input
                       type="number"
                       {...register('xpReward', { valueAsNumber: true })}
                       className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
@@ -357,11 +368,10 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
                         key={val}
                         type="button"
                         onClick={() => setValue('xpReward', val)}
-                        className={`flex-1 py-3.5 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${
-                          xpReward === val
+                        className={`flex-1 py-3.5 rounded-2xl border text-[10px] font-black uppercase tracking-widest transition-all ${xpReward === val
                             ? 'bg-indigo-600 border-indigo-600 text-white shadow-lg shadow-indigo-500/10'
                             : 'bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-950 hover:bg-slate-100'
-                        }`}
+                          }`}
                       >
                         {val} XP
                       </button>
@@ -375,7 +385,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block ml-1">Fecha Objetivo</label>
                   <div className="relative">
                     <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                    <input 
+                    <input
                       type="date"
                       {...register('dueDate')}
                       className="w-full pl-12 pr-6 py-4 bg-slate-50 border border-slate-200 rounded-2xl text-slate-900 font-medium focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
@@ -390,9 +400,9 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
                 <ListTodo className="w-4 h-4 text-indigo-600" />
                 <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">Ejercicios / Sub-tareas de la Rutina</label>
               </div>
-              
+
               <div className="flex gap-2">
-                <input 
+                <input
                   type="text"
                   value={subTaskInput}
                   onChange={(e) => setSubTaskInput(e.target.value)}
@@ -405,7 +415,7 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
                   placeholder="Ej: Flexiones de pecho 4 series 12 reps"
                   className="flex-1 px-5 py-3.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-800 text-xs font-semibold focus:ring-2 focus:ring-indigo-600/10 focus:border-indigo-600 transition-all outline-none"
                 />
-                <button 
+                <button
                   type="button"
                   onClick={handleAddSubTask}
                   className="px-5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-all text-xs uppercase tracking-wider shrink-0"
@@ -419,8 +429,8 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
                   {localSubTasks.map((task, idx) => (
                     <div key={idx} className="flex items-center justify-between bg-white px-4 py-2.5 rounded-xl border border-slate-100 shadow-sm animate-in slide-in-from-bottom-2 duration-300">
                       <span className="text-[11px] font-bold text-slate-700">{task.title}</span>
-                      <button 
-                        type="button" 
+                      <button
+                        type="button"
                         onClick={() => handleRemoveSubTask(idx)}
                         className="text-slate-400 hover:text-red-500 transition-all p-1"
                       >
@@ -433,20 +443,20 @@ export const MilestoneForm: React.FC<MilestoneFormProps> = ({ isOpen, onClose, o
             </div>
 
             <div className="p-6 bg-emerald-50/50 border border-emerald-100 rounded-3xl flex items-start gap-4">
-               <Sparkles className="w-5 h-5 text-emerald-600 mt-1" />
-               <div>
-                  <h4 className="text-[11px] font-black text-emerald-900 uppercase tracking-widest mb-1">Estructura Dinámica</h4>
-                  <p className="text-[11px] text-emerald-800/60 font-medium leading-relaxed">
-                    Este hito se adaptará al tipo de programa. Si es un hábito, se mostrará diariamente para el alumno.
-                  </p>
-               </div>
+              <Sparkles className="w-5 h-5 text-emerald-600 mt-1" />
+              <div>
+                <h4 className="text-[11px] font-black text-emerald-900 uppercase tracking-widest mb-1">Estructura Dinámica</h4>
+                <p className="text-[11px] text-emerald-800/60 font-medium leading-relaxed">
+                  Este hito se adaptará al tipo de programa. Si es una rutina o hábito, se mostrará para el alumno de acuerdo a su frecuencia.
+                </p>
+              </div>
             </div>
           </form>
         </div>
 
         <div className="p-8 border-t border-slate-100 bg-white">
           <button type="submit" form="milestone-form" disabled={isSubmitting} className="w-full py-5 bg-emerald-600 text-white rounded-2xl font-bold text-sm uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all flex items-center justify-center gap-3 shadow-lg shadow-emerald-100">
-            {isSubmitting ? 'Guardando...' : <><Check className="w-5 h-5" /> Guardar Hito</>}
+            {isSubmitting ? 'Guardando...' : <><Check className="w-5 h-5" /> Guardar {isRoutine ? 'Paso' : (isHabitOnly ? 'Hábito' : 'Hito')}</>}
           </button>
         </div>
       </div>

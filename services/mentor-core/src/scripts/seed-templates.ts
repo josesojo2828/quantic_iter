@@ -65,7 +65,7 @@ async function main() {
 
   // 1. Limpiar versiones viejas si quedaron
   const programsToDelete = await prisma.program.findMany({
-    where: { 
+    where: {
       name: { in: templates.map(t => t.name) },
       tenantId: myTenantId,
       isTemplate: true
@@ -84,7 +84,7 @@ async function main() {
 
   for (const t of templates) {
     console.log(`🔄 Sincronizando: ${t.name}...`);
-    
+
     await prisma.$transaction(async (tx) => {
       const existingProgram = await tx.program.findFirst({
         where: { name: t.name, isTemplate: true, tenantId: SYSTEM_TENANT_ID }
@@ -93,9 +93,9 @@ async function main() {
       if (existingProgram) {
         await tx.program.update({
           where: { id: existingProgram.id },
-          data: { 
-            isPublic: true, 
-            category: "Aura Official", 
+          data: {
+            isPublic: true,
+            category: "Aura Official",
             status: "PUBLISHED" // <--- EL CAMBIO CLAVE
           }
         });

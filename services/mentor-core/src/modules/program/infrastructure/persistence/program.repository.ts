@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../../../../infrastructure/persistence/prisma.service';
 import { BaseRepository, QueryScope } from '../../../../common/persistence/base.repository';
 import { Program, Phase } from '@prisma/client';
@@ -63,7 +63,7 @@ export class ProgramRepository extends BaseRepository<Program> {
   }
 
   async create(data: any, scope: QueryScope): Promise<Program> {
-    const { phases, ...programData } = data;
+    const { phases, isActive, ...programData } = data;
 
     return this.prisma.$transaction(async (tx) => {
       // 1. Create the Program
@@ -192,14 +192,29 @@ export class ProgramRepository extends BaseRepository<Program> {
     });
   }
 
-  async toggleSubTask(milestoneId: string, title: string, isCompleted: boolean) {
+  async toggleSubTask(milestoneId: string, title: string, isCompleted: boolean, index?: number) {
     const milestone = await this.prisma.milestone.findUnique({
       where: { id: milestoneId },
     });
     if (!milestone) throw new Error('Milestone not found');
 
-    const updatedSubTasks = (milestone.subTasks || []).map((st: any) => {
-      if (st.title === title) {
+    if (milestone.daysOfWeek && milestone.daysOfWeek.length > 0) {
+      const today = new Date();
+      const day = today.getDay();
+      const adjustedDayIndex = day === 0 ? 6 : day - 1;
+      if (!milestone.daysOfWeek.includes(adjustedDayIndex)) {
+        const daysMap = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        const allowedDaysStr = milestone.daysOfWeek.map((d: number) => daysMap[d]).join(', ');
+        throw new BadRequestException(`Los ejercicios de este paso solo se pueden modificar los días: ${allowedDaysStr}`);
+      }
+    }
+
+    const updatedSubTasks = (milestone.subTasks || []).map((st: any, i: number) => {
+      if (index !== undefined && index !== null) {
+        if (i === index) {
+          return { ...st, isCompleted };
+        }
+      } else if (st.title === title) {
         return { ...st, isCompleted };
       }
       return st;
@@ -278,6 +293,17 @@ export class ProgramRepository extends BaseRepository<Program> {
     });
     if (!milestone) {
       throw new Error('Hito no encontrado');
+    }
+
+    const checkinDate = date || new Date();
+    if (milestone.daysOfWeek && milestone.daysOfWeek.length > 0) {
+      const day = checkinDate.getDay();
+      const adjustedDayIndex = day === 0 ? 6 : day - 1;
+      if (!milestone.daysOfWeek.includes(adjustedDayIndex)) {
+        const daysMap = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        const allowedDaysStr = milestone.daysOfWeek.map((d: number) => daysMap[d]).join(', ');
+        throw new BadRequestException(`Este paso solo se puede completar los días: ${allowedDaysStr}`);
+      }
     }
 
     const frequency = milestone.frequency || 'ONCE';

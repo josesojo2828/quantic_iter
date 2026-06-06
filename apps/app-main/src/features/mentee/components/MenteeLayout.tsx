@@ -61,7 +61,7 @@ export const MenteeLayout: React.FC<MenteeLayoutProps> = ({
           {/* User Avatar */}
           <div className="w-9 h-9 rounded-xl overflow-hidden border border-white/80 bg-slate-200 shadow-md">
             {user?.avatarUrl ? (
-              <img src={user.avatarUrl.startsWith('/') ? user.avatarUrl : `/avatars/${user.avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+              <img src={user.avatarUrl.startsWith('/') || user.avatarUrl.startsWith('http') ? user.avatarUrl : `/avatars/${user.avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               <div className="w-full h-full flex items-center justify-center bg-indigo-100 text-indigo-600 text-[12px] font-black uppercase">
                 {user?.firstName?.charAt(0) || 'E'}

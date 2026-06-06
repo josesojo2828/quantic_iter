@@ -1,0 +1,30 @@
+schema: spec-driven
+
+context: |
+  Tech stack: Next.js, React, Tailwind CSS, TypeScript, NestJS, Go, Prisma, Docker
+  Architecture: Microservices + Next.js App Router Mono-repo
+  Testing: Jest, Go test
+  Style: ESLint, Prettier
+
+rules:
+  proposal:
+    - Include rollback plan for risky changes
+    - Identify affected modules/packages in apps and services
+  specs:
+    - Use Given/When/Then format for scenarios
+    - Use RFC 2119 keywords (MUST, SHALL, SHOULD, MAY)
+  design:
+    - Include component tree structure and route alignment
+    - Document API endpoints and service communication details
+  tasks:
+    - Group tasks by phase (frontend, API integration, styling)
+    - Use hierarchical numbering (1.1, 1.2, etc.)
+    - Keep tasks small enough to complete in one session
+  apply:
+    - Follow clean code standards and atomic design principles
+    - Ensure styling matches the premium visual aesthetics
+  verify:
+    - Run build and lint checks
+    - Verify responsiveness and interaction states
+  archive:
+    - Warn before merging destructive deltas

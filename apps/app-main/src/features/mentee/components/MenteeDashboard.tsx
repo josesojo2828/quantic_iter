@@ -5,16 +5,11 @@ import { useAuth } from '@/core/contexts/AuthContext';
 import { apiClient } from '@/core/api/api.client';
 import {
   Zap,
-  Trophy,
-  BookOpen,
   Flame,
-  CheckCircle,
   Clock,
   Calendar,
   Check,
   Award,
-  Shield,
-  ChevronRight,
   ExternalLink,
   Sparkles,
   Send,
@@ -22,18 +17,23 @@ import {
   Users,
   User,
   ArrowRight,
-  Smile,
   Layers,
   ChevronDown,
   ChevronUp,
-  Info,
   Target,
-  ListTodo
+  ListTodo,
+  Video,
+  AlertCircle,
+  Camera,
+  Trophy,
+  ChevronRight,
+  FileText,
+  Plus
 } from 'lucide-react';
-import { format, isSameDay, isSameWeek } from 'date-fns';
+import { format, isSameWeek } from 'date-fns';
 import { toast } from 'react-hot-toast';
 import { es } from 'date-fns/locale';
-import { MonthlyCalendar } from '@/features/agenda/components/MonthlyCalendar';
+import { EvidenceModal } from '@/app/dashboard/programs/[id]/components/EvidenceModal';
 
 interface MenteeDashboardProps {
   activeTab: string;
@@ -41,37 +41,6 @@ interface MenteeDashboardProps {
   selectedCoach: { id: string; name: string; specialty: string; avatarUrl?: string; bio?: string; color?: string; bgLight?: string } | null;
   setSelectedCoach: (coach: { id: string; name: string; specialty: string; avatarUrl?: string; bio?: string; color?: string; bgLight?: string } | null) => void;
 }
-
-// Predefined visually stunning coach templates
-const DEFAULT_COACHES = [
-  {
-    id: 'coach_fitness',
-    name: 'Prof. Lucas Rossi',
-    specialty: 'Entrenamiento y Biomecánica',
-    avatarUrl: '/avatars/avatar_male_1.png',
-    bio: 'Especialista en entrenamiento de fuerza de alta intensidad y biomecánica corporal.',
-    color: '#7B91EB',
-    bgLight: 'rgba(123,145,235,0.1)'
-  },
-  {
-    id: 'coach_nutrition',
-    name: 'Dra. Valeria Gómez',
-    specialty: 'Nutrición Deportiva & Metabolismo',
-    avatarUrl: '/avatars/avatar_female_3.png',
-    bio: 'Especializada en nutrición clínica funcional, recomposición corporal y rendimiento.',
-    color: '#10B981',
-    bgLight: 'rgba(16,185,129,0.1)'
-  },
-  {
-    id: 'coach_mindset',
-    name: 'Lic. Sebastián Peralta',
-    specialty: 'Psicología Deportiva & Hábitos',
-    avatarUrl: '/avatars/avatar_male_3.png',
-    bio: 'Enfoque en desarrollo de mentalidad competitiva, disciplina inquebrantable y rutinas.',
-    color: '#F59E0B',
-    bgLight: 'rgba(245,158,11,0.1)'
-  }
-];
 
 export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
   activeTab,
@@ -93,27 +62,56 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
   const [tenantCoach, setTenantCoach] = useState<any | null>(null);
 
   // UI Interactive States
-  const [panelSubTab, setPanelSubTab] = useState<'today' | 'programs' | 'groups' | 'agenda' | 'journey' | 'library'>('today');
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [panelSubTab, setPanelSubTab] = useState<'today' | 'programs'>('today');
   const [expandedPhases, setExpandedPhases] = useState<Record<string, boolean>>({});
   const [togglingMilestoneId, setTogglingMilestoneId] = useState<string | null>(null);
   const [submittingTaskId, setSubmittingTaskId] = useState<string | null>(null);
   const [evidenceText, setEvidenceText] = useState('');
   const [evidenceUrl, setEvidenceUrl] = useState('');
   const [checkingHabitId, setCheckingHabitId] = useState<string | null>(null);
+  const [isEvidenceModalOpen, setIsEvidenceModalOpen] = useState(false);
+  const [evidenceTarget, setEvidenceTarget] = useState<any>(null);
 
   // Subtasks checklist local state
   const [checkedSubTasks, setCheckedSubTasks] = useState<Record<string, string[]>>({});
 
-  const toggleSubTask = async (programId: string | null, milestoneId: string, title: string) => {
+  const toggleSubTask = async (programId: string | null, milestoneId: string, title: string, index?: number) => {
+    if (programId && programId !== milestoneId) {
+      let milestoneObj: any = null;
+      for (const prog of programs) {
+        if (prog.id === programId) {
+          for (const phase of (prog.phases || [])) {
+            const found = (phase.milestones || []).find((m: any) => m.id === milestoneId);
+            if (found) {
+              milestoneObj = found;
+              break;
+            }
+          }
+        }
+        if (milestoneObj) break;
+      }
+
+      if (milestoneObj && milestoneObj.daysOfWeek && milestoneObj.daysOfWeek.length > 0) {
+        const todayIndex = new Date().getDay(); // 0 (Dom) - 6 (Sab)
+        const adjustedTodayIndex = todayIndex === 0 ? 6 : todayIndex - 1; // 0 (Lun) - 6 (Dom)
+        if (!milestoneObj.daysOfWeek.includes(adjustedTodayIndex)) {
+          const daysMap = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+          const allowedDaysStr = milestoneObj.daysOfWeek.map((d: number) => daysMap[d]).join(', ');
+          toast.error(`Los ejercicios de este paso solo se pueden modificar los días: ${allowedDaysStr}`);
+          return;
+        }
+      }
+    }
+
     if (!programId || programId === milestoneId) {
       const current = checkedSubTasks[milestoneId] || [];
-      const index = current.indexOf(title);
+      const key = index !== undefined ? `${title}-${index}` : title;
+      const keyIndex = current.indexOf(key);
       const updated = [...current];
-      if (index > -1) {
-        updated.splice(index, 1);
+      if (keyIndex > -1) {
+        updated.splice(keyIndex, 1);
       } else {
-        updated.push(title);
+        updated.push(key);
       }
       setCheckedSubTasks({
         ...checkedSubTasks,
@@ -137,8 +135,8 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
               if (m.id !== milestoneId) return m;
               return {
                 ...m,
-                subTasks: m.subTasks?.map((st: any) => {
-                  if (st.title === title) {
+                subTasks: m.subTasks?.map((st: any, i: number) => {
+                  if (index !== undefined ? i === index : st.title === title) {
                     isCurrentlyCompleted = st.isCompleted || false;
                     return { ...st, isCompleted: !isCurrentlyCompleted };
                   }
@@ -154,6 +152,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
     try {
       await apiClient.post(`/mentor/programs/${programId}/milestones/${milestoneId}/subtasks/toggle`, {
         title,
+        index,
         isCompleted: !isCurrentlyCompleted,
       });
     } catch (error) {
@@ -171,8 +170,8 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                 if (m.id !== milestoneId) return m;
                 return {
                   ...m,
-                  subTasks: m.subTasks?.map((st: any) => {
-                    if (st.title === title) {
+                  subTasks: m.subTasks?.map((st: any, i: number) => {
+                    if (index !== undefined ? i === index : st.title === title) {
                       return { ...st, isCompleted: isCurrentlyCompleted };
                     }
                     return st;
@@ -197,11 +196,6 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
           // Fallback below
         }
       }
-      return {
-        'coach_fitness': { xp: 120, level: 2, currentStreak: 3 },
-        'coach_nutrition': { xp: 80, level: 1, currentStreak: 5 },
-        'coach_mindset': { xp: 50, level: 1, currentStreak: 1 }
-      };
     }
     return {};
   });
@@ -315,6 +309,32 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
 
   const handleToggleMilestone = async (programId: string, milestoneId: string) => {
     if (togglingMilestoneId) return;
+
+    let milestoneObj: any = null;
+    for (const prog of programs) {
+      if (prog.id === programId) {
+        for (const phase of (prog.phases || [])) {
+          const found = (phase.milestones || []).find((m: any) => m.id === milestoneId);
+          if (found) {
+            milestoneObj = found;
+            break;
+          }
+        }
+      }
+      if (milestoneObj) break;
+    }
+
+    if (milestoneObj && milestoneObj.daysOfWeek && milestoneObj.daysOfWeek.length > 0) {
+      const todayIndex = new Date().getDay(); // 0 (Dom) - 6 (Sab)
+      const adjustedTodayIndex = todayIndex === 0 ? 6 : todayIndex - 1; // 0 (Lun) - 6 (Dom)
+      if (!milestoneObj.daysOfWeek.includes(adjustedTodayIndex)) {
+        const daysMap = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'];
+        const allowedDaysStr = milestoneObj.daysOfWeek.map((d: number) => daysMap[d]).join(', ');
+        toast.error(`Este paso solo se puede completar los días: ${allowedDaysStr}`);
+        return;
+      }
+    }
+
     setTogglingMilestoneId(milestoneId);
 
     const localTodayStr = new Date().toLocaleDateString('en-CA');
@@ -474,31 +494,35 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
     return Array.from(ids);
   }, [habits, tasks, sessions, programs, groups, tenantCoach?.id]);
 
-  // Build the list of active coaches, mapping backend database IDs to our template layouts
+  // Build the list of active coaches, mapping backend database IDs dynamically
   const coachesList = React.useMemo(() => {
-    return uniqueApiCoachIds.map((id, index) => {
-      const template = DEFAULT_COACHES[index % DEFAULT_COACHES.length];
-      
+    return uniqueApiCoachIds.map((id) => {
       // If this ID matches the inviting tenant coach, override mock details with the real ones!
       if (tenantCoach && id === tenantCoach.id) {
-        const rawAvatar = tenantCoach.avatarUrl || template.avatarUrl;
+        const rawAvatar = tenantCoach.avatarUrl;
         const resolvedAvatar = rawAvatar
           ? (rawAvatar.startsWith('/') || rawAvatar.startsWith('http') ? rawAvatar : `/avatars/${rawAvatar}`)
-          : template.avatarUrl;
+          : '/assets/avatar-placeholder.png';
 
         return {
-          ...template,
           id: tenantCoach.id,
-          name: `${tenantCoach.firstName} ${tenantCoach.lastName}`.trim() || template.name,
+          name: `${tenantCoach.firstName} ${tenantCoach.lastName}`.trim() || 'Coach Principal',
           avatarUrl: resolvedAvatar,
           specialty: 'Coach Principal',
           bio: 'Tu coach principal y guía en la academia.',
+          color: '#7B91EB',
+          bgLight: 'rgba(123,145,235,0.1)'
         };
       }
 
       return {
-        ...template,
-        id: id // Override ID with the actual database ID so filtering is exact!
+        id: id,
+        name: 'Coach Colaborador',
+        avatarUrl: '/assets/avatar-placeholder.png',
+        specialty: 'Coach de la Academia',
+        bio: 'Coach y guía en tu proceso de aprendizaje.',
+        color: '#10B981',
+        bgLight: 'rgba(16,185,129,0.1)'
       };
     });
   }, [uniqueApiCoachIds, tenantCoach]);
@@ -515,14 +539,55 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
   }, [coachesList, selectedCoach, setSelectedCoach, activeTab, setActiveTab]);
 
   // Filter lists strictly by selected coach
+  // Filter lists strictly by selected coach
   const filteredHabits = React.useMemo(() => {
     if (!selectedCoach) return [];
-    return habits.filter(h => h.coachId === selectedCoach.id || !h.coachId);
-  }, [habits, selectedCoach]);
+    
+    // 1. Legacy habits (if any)
+    const legacy = habits.filter(h => h.coachId === selectedCoach.id || !h.coachId);
+    
+    // 2. Program-based habits (where program.type === 'HABITS')
+    const programHabits: any[] = [];
+    programs.forEach(program => {
+      if (program.type === 'HABITS' && (program.coachId === selectedCoach.id || !program.coachId)) {
+        (program.phases || []).forEach((phase: any) => {
+          (phase.milestones || []).forEach((milestone: any) => {
+            programHabits.push({
+              id: milestone.id,
+              programId: program.id,
+              name: milestone.title,
+              description: milestone.description,
+              frequency: milestone.frequency || 'DAILY',
+              daysOfWeek: milestone.daysOfWeek,
+              requiredEvidence: milestone.requiredEvidence,
+              subTasks: milestone.subTasks || [],
+              checkedToday: checkMilestoneCompleted(milestone, crmMenteeId),
+              coachId: program.coachId,
+              checkins: milestone.completions?.map((c: any) => ({
+                date: c.date || c.completedAt || c.createdAt,
+                createdAt: c.completedAt || c.createdAt,
+              })) || [],
+            });
+          });
+        });
+      }
+    });
+
+    return [...legacy, ...programHabits];
+  }, [habits, programs, selectedCoach, crmMenteeId]);
 
   // Hábitos específicos para la vista "Today" con filtros temporales avanzados (DAILY / WEEKLY)
   const todayHabits = React.useMemo(() => {
+    const today = new Date();
+    const dayIndex = today.getDay(); // 0 (Dom) - 6 (Sab)
+    const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1; // 0 (Lun) - 6 (Dom)
+
     return filteredHabits.filter(habit => {
+      // Si el hábito tiene días específicos configurados, solo se muestra en esos días
+      if (habit.daysOfWeek && habit.daysOfWeek.length > 0) {
+        return habit.daysOfWeek.includes(adjustedIndex);
+      }
+
       // Si el hábito es diario, siempre se muestra hoy (esté completado o no)
       if (habit.frequency === 'DAILY' || !habit.frequency) {
         return true;
@@ -551,49 +616,142 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
     if (!selectedCoach) return [];
     return sessions.filter(s => s.coachId === selectedCoach.id || !s.coachId);
   }, [sessions, selectedCoach]);
-
-  const filteredResources = React.useMemo(() => {
-    if (!selectedCoach) return [];
-    return resources.filter(r => r.coachId === selectedCoach.id || !r.coachId);
-  }, [resources, selectedCoach]);
-
+  
   const filteredPrograms = React.useMemo(() => {
     if (!selectedCoach) return [];
-    return programs.filter(p => p.coachId === selectedCoach.id || !p.coachId);
+    return programs.filter(p => (p.coachId === selectedCoach.id || !p.coachId) && p.type !== 'HABITS');
   }, [programs, selectedCoach]);
 
-  const filteredGroups = React.useMemo(() => {
-    if (!selectedCoach) return [];
-    return groups.filter(g => g.coachId === selectedCoach.id || !g.coachId);
-  }, [groups, selectedCoach]);
+  // 1. Program Milestones (Pasos) of today
+  const todayMilestones = React.useMemo(() => {
+    const today = new Date();
+    const dayIndex = today.getDay(); // 0 (Dom) - 6 (Sab)
+    const adjustedIndex = dayIndex === 0 ? 6 : dayIndex - 1; // 0 (Lun) - 6 (Dom)
 
-  const busyDates = React.useMemo(() => {
-    const dates = new Set<string>();
-    filteredSessions.forEach(s => {
-      if (s.date) dates.add(format(new Date(s.date), 'yyyy-MM-dd'));
+    return filteredPrograms.flatMap(program =>
+      (program.phases || []).flatMap((phase: any) =>
+         (phase.milestones || []).filter((milestone: any) => {
+            if (milestone.frequency === 'DAILY') return true;
+            if (milestone.frequency === 'WEEKLY') {
+               return (milestone.daysOfWeek || []).includes(adjustedIndex);
+            }
+            if (milestone.frequency === 'ONCE' && milestone.dueDate) {
+               return new Date(milestone.dueDate).toDateString() === today.toDateString();
+            }
+            return false;
+         }).map((m: any) => ({
+            ...m,
+            programName: program.name,
+            programId: program.id
+         }))
+      )
+    );
+  }, [filteredPrograms]);
+
+  // 2. Today's/Pending Tasks
+  const todayTasks = React.useMemo(() => {
+    const today = new Date();
+    return filteredTasks.filter((task: any) => {
+      if (task.status !== 'COMPLETED' && task.status !== 'APPROVED') return true;
+      if (task.updatedAt) {
+         return new Date(task.updatedAt).toDateString() === today.toDateString();
+      }
+      return false;
     });
-    filteredTasks.forEach(t => {
-      if (t.dueDate) dates.add(format(new Date(t.dueDate), 'yyyy-MM-dd'));
+  }, [filteredTasks]);
+
+  // 3. Today's Sessions
+  const todaySessions = React.useMemo(() => {
+    const today = new Date();
+    return filteredSessions.filter((session: any) => {
+      if (!session.date) return false;
+      return new Date(session.date).toDateString() === today.toDateString();
     });
-    filteredPrograms.forEach(p => {
-      p.phases?.forEach((ph: any) => {
-        ph.milestones?.forEach((m: any) => {
-          m.completions?.forEach((c: any) => {
-            if (c.date) dates.add(format(new Date(c.date), 'yyyy-MM-dd'));
-          });
+  }, [filteredSessions]);
+
+  // 4. Daily Progress Metrics
+  const dailyProgressMetrics = React.useMemo(() => {
+    const completedTasksCount = todayMilestones.filter(t => checkMilestoneCompleted(t, crmMenteeId)).length;
+    const completedHabitsCount = todayHabits.filter(h => h.checkedToday).length;
+    const completedAssignedTasksCount = todayTasks.filter(t => t.status === 'SUBMITTED' || t.status === 'COMPLETED' || t.status === 'APPROVED').length;
+
+    const total = todayMilestones.length + todayHabits.length + todayTasks.length;
+    const completed = completedTasksCount + completedHabitsCount + completedAssignedTasksCount;
+    const percent = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+    return { total, completed, percent };
+  }, [todayMilestones, todayHabits, todayTasks, crmMenteeId]);
+
+  const handleToggleMilestoneClick = (milestone: any, programId: string) => {
+     const isCompleted = checkMilestoneCompleted(milestone, crmMenteeId);
+
+     if (milestone.requiredEvidence && milestone.requiredEvidence !== 'NONE' && !isCompleted) {
+        setEvidenceTarget({ ...milestone, programId });
+        setIsEvidenceModalOpen(true);
+        return;
+     }
+
+     handleToggleMilestone(programId, milestone.id);
+  };
+
+  const handleEvidenceSubmit = async (evidence: string) => {
+     if (!evidenceTarget) return;
+     setIsEvidenceModalOpen(false);
+
+     try {
+        const localTodayStr = new Date().toLocaleDateString('en-CA');
+        const apiDateStr = `${localTodayStr}T12:00:00.000Z`;
+        setTogglingMilestoneId(evidenceTarget.id);
+
+        await apiClient.post(`/mentor/programs/${evidenceTarget.programId}/milestones/${evidenceTarget.id}/toggle`, {
+           date: apiDateStr,
+           evidence
         });
-      });
-    });
-    filteredHabits.forEach(h => {
-      h.checkins?.forEach((c: any) => {
-        if (c.date) dates.add(format(new Date(c.date), 'yyyy-MM-dd'));
-      });
-    });
-    return Array.from(dates);
-  }, [filteredSessions, filteredTasks, filteredPrograms, filteredHabits]);
+
+        toast.success('¡Registro con evidencia completado!');
+
+        // Reload fresh programs list
+        const userPrograms = await apiClient.get<any[]>('/mentor/programs').catch(() => []);
+        setPrograms(userPrograms);
+        
+        // Update XP
+        if (selectedCoach) {
+           const xpAmount = evidenceTarget.xpReward || 30;
+           setCoachStats(prev => {
+              const current = prev[selectedCoach.id] || { xp: 0, level: 1, currentStreak: 0 };
+              const nextXp = current.xp + xpAmount;
+              let nextLevel = current.level;
+              while (nextXp >= getNextLevelXp(nextLevel)) {
+                 nextLevel++;
+              }
+              const updated = {
+                 ...prev,
+                 [selectedCoach.id]: {
+                    ...current,
+                    xp: nextXp,
+                    level: nextLevel
+                 }
+              };
+              localStorage.setItem('iter_coach_stats', JSON.stringify(updated));
+              return updated;
+           });
+        }
+     } catch (error) {
+        toast.error('Error al registrar con evidencia');
+     } finally {
+        setTogglingMilestoneId(null);
+        setEvidenceTarget(null);
+     }
+  };
 
   // Handle Habit Check-in
-  const handleHabitCheckin = async (habitId: string) => {
+  const handleHabitCheckin = async (habit: any) => {
+    if (habit.programId) {
+      handleToggleMilestoneClick(habit, habit.programId);
+      return;
+    }
+
+    const habitId = habit.id;
     setCheckingHabitId(habitId);
     try {
       await apiClient.post(`/mentor/habits/${habitId}/checkin`, { date: new Date().toISOString() });
@@ -871,11 +1029,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
           <div className="flex flex-wrap items-center gap-1.5 bg-slate-50 p-1.5 rounded-2xl border border-slate-100">
             {[
               { key: 'today', label: 'DIARIO', icon: Zap },
-              { key: 'programs', label: 'PROGRAMAS', icon: Layers },
-              { key: 'groups', label: 'GRUPOS', icon: Users },
-              { key: 'agenda', label: 'AGENDA', icon: Calendar },
-              { key: 'journey', label: 'CAMINO', icon: Trophy },
-              { key: 'library', label: 'BIBLIOTECA', icon: BookOpen }
+              { key: 'programs', label: 'PROGRAMAS', icon: Layers }
             ].map((subItem) => {
               const SubIcon = subItem.icon;
               const isSubActive = panelSubTab === subItem.key;
@@ -899,7 +1053,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
 
         {/* DIARIO SECTION */}
         {panelSubTab === 'today' && (
-          <div className="space-y-6">
+          <div className="space-y-6 animate-in fade-in duration-500">
             {/* Player Stats Card */}
             <div className="glass-card bg-white border border-[#EAF0F6] rounded-[32px] p-6 shadow-soft relative overflow-hidden group">
               <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-10 transition-opacity duration-1000">
@@ -920,7 +1074,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                         strokeWidth="8"
                         fill="transparent"
                         strokeDasharray={264}
-                        strokeDashoffset={264 - (264 * progressPercent) / 100}
+                        strokeDashoffset={264 - (264 * (activeCoachStats.xp - getCurrentLevelXpFloor(activeCoachStats.level)) / (getNextLevelXp(activeCoachStats.level) - getCurrentLevelXpFloor(activeCoachStats.level) || 1))}
                         strokeLinecap="round"
                         className="transition-all duration-1000 ease-out"
                       />
@@ -933,7 +1087,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                     </div>
                   </div>
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3 italic">
-                    {activeCoachStats.xp} / {nextLevelXp} EXP total
+                    {activeCoachStats.xp} / {getNextLevelXp(activeCoachStats.level)} EXP total
                   </p>
                 </div>
 
@@ -968,15 +1122,15 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                       <div
                         className="h-full rounded-full transition-all duration-1000 shadow-md"
                         style={{
-                          width: `${progressPercent}%`,
+                          width: `${Math.min(100, Math.max(0, ((activeCoachStats.xp - getCurrentLevelXpFloor(activeCoachStats.level)) / (getNextLevelXp(activeCoachStats.level) - getCurrentLevelXpFloor(activeCoachStats.level) || 1)) * 100))}%`,
                           backgroundColor: selectedCoach.color || '#7B91EB',
-                          boxShadow: `0 0 12px ${selectedCoach.color}30`
+                          boxShadow: `0 0 12px ${selectedCoach.color || '#7B91EB'}30`
                         }}
                       />
                     </div>
                     <div className="flex justify-between text-[8px] font-black text-slate-400 uppercase tracking-widest">
                       <span>Nivel {activeCoachStats.level}</span>
-                      <span>{Math.round(progressPercent)}% completado</span>
+                      <span>{Math.round(Math.min(100, Math.max(0, ((activeCoachStats.xp - getCurrentLevelXpFloor(activeCoachStats.level)) / (getNextLevelXp(activeCoachStats.level) - getCurrentLevelXpFloor(activeCoachStats.level) || 1)) * 100)))}% completado</span>
                       <span>Nivel {activeCoachStats.level + 1}</span>
                     </div>
                   </div>
@@ -984,310 +1138,561 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
               </div>
             </div>
 
-            {/* Daily Habits */}
-            <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft">
-              <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-6">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-4 bg-[#7B91EB] rounded-full" />
-                  <h3 className="text-xs font-black text-[#2C3A50] uppercase tracking-widest italic">
-                    Hábitos Diarios
-                  </h3>
-                </div>
-                <span className="text-[8px] font-extrabold text-[#7B91EB] bg-[#7B91EB]/10 px-2.5 py-1 rounded-xl uppercase tracking-wider border border-[#7B91EB]/20">
-                  +15 EXP c/u
-                </span>
-              </div>
+            {/* Split Layout: Left list of actions, Right progress circle KPI and sessions */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              
+              {/* LEFT COLUMN: Actions Checklist */}
+              <div className="lg:col-span-8 space-y-6">
+                
+                {/* 1. Pasos de hoy (Program Milestones) */}
+                <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft space-y-4">
+                  <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-4 bg-indigo-500 rounded-full animate-pulse" />
+                      <h3 className="text-xs font-black text-[#2C3A50] uppercase tracking-widest italic">
+                         Rutinas y Pasos de Hoy
+                      </h3>
+                    </div>
+                    <span className="text-[8px] font-extrabold text-[#7B91EB] bg-[#7B91EB]/10 px-2.5 py-1 rounded-xl uppercase tracking-wider border border-[#7B91EB]/20">
+                       {todayMilestones.length} asignados
+                    </span>
+                  </div>
 
-              {todayHabits.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">
-                    No hay hábitos asignados para hoy.
-                  </p>
-                  <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-1">
-                    Tu coach definirá tus hábitos pronto o ya completaste los de esta semana.
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {todayHabits.map((habit) => {
-                    const isChecked = habit.checkedToday;
-                    const isChecking = checkingHabitId === habit.id;
-                    const hasSubTasks = habit.subTasks && habit.subTasks.length > 0;
-                    const completedSubTasks = checkedSubTasks[habit.id] || [];
-                    const allSubTasksChecked = hasSubTasks ? habit.subTasks.every((st: any) => completedSubTasks.includes(st.title)) : true;
+                  {todayMilestones.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Clock className="w-8 h-8 text-slate-300 mx-auto mb-2 animate-bounce" />
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">
+                        No tenés rutinas ni pasos configurados para hoy.
+                      </p>
+                      <p className="text-[9px] text-slate-400 uppercase mt-1">
+                        Disfrutá tu día de descanso o consultá con tu coach.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-4">
+                      {todayMilestones.map((milestone) => {
+                        const isCompleted = checkMilestoneCompleted(milestone, crmMenteeId);
+                        const isToggling = togglingMilestoneId === milestone.id;
+                        const hasSubTasks = milestone.subTasks && milestone.subTasks.length > 0;
+                        const completedSubTasks = hasSubTasks ? milestone.subTasks.filter((st: any) => st.isCompleted) : [];
+                        const allSubTasksChecked = hasSubTasks ? milestone.subTasks.every((st: any) => st.isCompleted) : true;
 
-                    if (hasSubTasks) {
-                      return (
-                        <div
-                          key={habit.id}
-                          className={`flex flex-col p-5 rounded-[28px] border transition-all duration-500 text-left relative overflow-hidden shadow-sm hover:shadow-md ${
-                            isChecked
-                              ? 'bg-[#E5FAF0]/40 border-[#D1FAE5] text-[#2C3A50]'
-                              : 'bg-white border-[#EAF0F6]'
-                          }`}
-                        >
-                          {/* Header */}
-                          <div className="flex items-start justify-between gap-3 mb-4">
-                            <div className="space-y-0.5 max-w-[70%]">
+                        const todayIndex = new Date().getDay();
+                        const adjustedTodayIndex = todayIndex === 0 ? 6 : todayIndex - 1;
+                        const isDayAllowed = !milestone.daysOfWeek || milestone.daysOfWeek.length === 0 || milestone.daysOfWeek.includes(adjustedTodayIndex);
+
+                        return (
+                          <div
+                            key={milestone.id}
+                            className={`p-5 rounded-[24px] border transition-all duration-300 relative overflow-hidden flex flex-col gap-4 shadow-sm hover:shadow-md ${
+                              isCompleted
+                                ? 'bg-emerald-50/20 border-emerald-100/50'
+                                : 'bg-white border-[#EAF0F6]'
+                            }`}
+                          >
+                            <div className="flex justify-between items-start gap-4">
+                              <div className="space-y-1">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-[7.5px] font-black bg-slate-100 text-slate-500 border border-slate-200 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                    {milestone.programName}
+                                  </span>
+                                  {milestone.xpReward && (
+                                    <span className="text-[7.5px] font-black bg-amber-50 text-amber-500 border border-amber-100 px-2 py-0.5 rounded-md uppercase tracking-wider">
+                                      +{milestone.xpReward} XP
+                                    </span>
+                                  )}
+                                  {milestone.requiredEvidence && milestone.requiredEvidence !== 'NONE' && (
+                                    <span className="text-[7.5px] font-black bg-blue-50 text-blue-500 border border-blue-100 px-2 py-0.5 rounded-md uppercase tracking-wider flex items-center gap-0.5">
+                                      <Camera className="w-2.5 h-2.5" /> Evidencia
+                                    </span>
+                                  )}
+                                </div>
+                                <h4 className="text-[11px] font-black text-[#2C3A50] uppercase tracking-tight italic mt-1.5 leading-tight">
+                                  {milestone.title}
+                                </h4>
+                                <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-widest">{milestone.description || 'Hito del programa de hoy'}</p>
+                              </div>
+                            </div>
+
+                            {/* Checklist of Exercises/Subtasks */}
+                            {hasSubTasks && (
+                              <div className="space-y-1.5 bg-slate-50 border border-slate-100 rounded-xl p-2.5">
+                                <div className="flex items-center gap-1 mb-0.5">
+                                  <ListTodo className="w-3 h-3 text-[#7B91EB]" />
+                                  <span className="text-[7px] font-black text-[#7B91EB] uppercase tracking-widest italic leading-none">
+                                    Ejercicios completados ({isCompleted ? milestone.subTasks.length : completedSubTasks.length}/{milestone.subTasks.length})
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-1 gap-1">
+                                  {milestone.subTasks.map((task: any, idx: number) => {
+                                    const isSubChecked = isCompleted || task.isCompleted;
+                                    const isBtnDisabled = isCompleted || !isDayAllowed;
+
+                                    return (
+                                      <button
+                                        key={idx}
+                                        disabled={isBtnDisabled}
+                                        type="button"
+                                        onClick={() => toggleSubTask(milestone.programId, milestone.id, task.title, idx)}
+                                        className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left transition-all duration-300 active:scale-[0.98] ${
+                                          isSubChecked
+                                            ? 'bg-emerald-50/30 border-emerald-100/50 text-emerald-800'
+                                            : !isDayAllowed
+                                              ? 'bg-rose-50/20 border-rose-100/30 text-rose-400 cursor-not-allowed opacity-60'
+                                              : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
+                                        }`}
+                                      >
+                                        <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                                          isSubChecked 
+                                            ? 'bg-emerald-600 border-emerald-500 text-white' 
+                                            : !isDayAllowed
+                                              ? 'border-rose-200 bg-white'
+                                              : 'border-slate-300 bg-white'
+                                        }`}>
+                                          {isSubChecked && <Check size={8} strokeWidth={4} />}
+                                        </div>
+                                        <span className={`text-[9px] font-black uppercase tracking-tight italic leading-tight ${
+                                          isSubChecked 
+                                            ? 'line-through text-slate-400' 
+                                            : !isDayAllowed
+                                              ? 'text-rose-300'
+                                              : 'text-slate-700'
+                                        }`}>
+                                          {task.title}
+                                        </span>
+                                      </button>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Milestone Toggle button */}
+                            <div className="pt-1">
+                              {isCompleted ? (
+                                <div className="w-full py-2.5 bg-emerald-50 text-emerald-600 border border-emerald-200/60 rounded-xl text-[7.5px] font-black uppercase tracking-widest flex items-center justify-center gap-1.5 shadow-sm italic">
+                                  <Check className="w-3.5 h-3.5 stroke-[3]" />
+                                  Paso Completado
+                                </div>
+                              ) : (
+                                <button
+                                  disabled={isToggling || !allSubTasksChecked || !isDayAllowed}
+                                  onClick={() => handleToggleMilestoneClick(milestone, milestone.programId)}
+                                  className={`w-full py-2.5 rounded-xl text-[7.5px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1.5 group italic ${
+                                    !isDayAllowed
+                                      ? 'bg-rose-50 text-rose-400 border border-rose-100 cursor-not-allowed opacity-80'
+                                      : allSubTasksChecked
+                                        ? 'bg-slate-900 hover:bg-[#7B91EB] text-white cursor-pointer shadow-md'
+                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed border-none opacity-60'
+                                  }`}
+                                >
+                                  {isToggling ? (
+                                    <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                  ) : !isDayAllowed ? (
+                                    <>
+                                      <Clock className="w-3.5 h-3.5" />
+                                      No disponible hoy
+                                    </>
+                                  ) : allSubTasksChecked ? (
+                                    <>
+                                      <Check className="w-3.5 h-3.5 group-hover:scale-125 transition-transform" />
+                                      Registrar Paso Completado
+                                    </>
+                                  ) : (
+                                    <>
+                                      <ListTodo className="w-3.5 h-3.5" />
+                                      Completá los ejercicios primero
+                                    </>
+                                  )}
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* 2. Hábitos Diarios */}
+                <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft space-y-4">
+                  <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-4 bg-[#2CD79A] rounded-full animate-pulse" />
+                      <h3 className="text-xs font-black text-[#2C3A50] uppercase tracking-widest italic">
+                        Hábitos del Día
+                      </h3>
+                    </div>
+                    <span className="text-[8px] font-extrabold text-[#7B91EB] bg-[#7B91EB]/10 px-2.5 py-1 rounded-xl uppercase tracking-wider border border-[#7B91EB]/20">
+                      +15 EXP c/u
+                    </span>
+                  </div>
+
+                  {todayHabits.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">
+                        No hay hábitos asignados para hoy.
+                      </p>
+                      <p className="text-[9px] text-slate-400 uppercase mt-1">
+                        Tu coach definirá tus hábitos pronto.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {todayHabits.map((habit) => {
+                        const isChecked = habit.checkedToday;
+                        const isChecking = checkingHabitId === habit.id || togglingMilestoneId === habit.id;
+                        const hasSubTasks = habit.subTasks && habit.subTasks.length > 0;
+                        const completedSubTasks = checkedSubTasks[habit.id] || [];
+                        const allSubTasksChecked = hasSubTasks ? habit.subTasks.every((st: any, i: number) => completedSubTasks.includes(`${st.title}-${i}`)) : true;
+
+                        if (hasSubTasks) {
+                          return (
+                            <div
+                              key={habit.id}
+                              className={`flex flex-col p-5 rounded-[24px] border transition-all duration-500 text-left relative overflow-hidden shadow-sm hover:shadow-md ${
+                                isChecked
+                                  ? 'bg-[#E5FAF0]/40 border-[#D1FAE5]'
+                                  : 'bg-white border-[#EAF0F6]'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-3 mb-4">
+                                <div className="space-y-0.5 max-w-[70%]">
+                                  <span className={`text-[11px] font-black uppercase tracking-tight italic block ${
+                                    isChecked ? 'line-through text-slate-400' : 'text-[#2C3A50]'
+                                  }`}>
+                                    {habit.name}
+                                  </span>
+                                  <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block leading-tight">
+                                    {habit.description || 'Rutina estructurada'}
+                                  </span>
+                                </div>
+
+                                <button
+                                  disabled={isChecked || isChecking || !allSubTasksChecked}
+                                  onClick={() => handleHabitCheckin(habit)}
+                                  className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                                    isChecked
+                                      ? 'bg-[#2CD79A] text-white shadow-lg shadow-[#2CD79A]/20'
+                                      : allSubTasksChecked
+                                        ? 'bg-[#7B91EB] text-white shadow-lg shadow-[#7B91EB]/20 hover:scale-105 active:scale-95'
+                                        : 'bg-slate-100 text-slate-300 cursor-not-allowed opacity-60'
+                                  }`}
+                                >
+                                  {isChecking ? (
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                  ) : isChecked ? (
+                                    <Check size={14} strokeWidth={3} />
+                                  ) : (
+                                    <Check size={14} />
+                                  )}
+                                </button>
+                              </div>
+
+                              {/* Subtasks Checklist */}
+                              <div className="space-y-1.5 bg-slate-50 border border-slate-100 rounded-xl p-3">
+                                <div className="flex items-center gap-1.5 mb-1">
+                                  <ListTodo className="w-3.5 h-3.5 text-[#7B91EB]" />
+                                  <span className="text-[7.5px] font-black text-indigo-500 uppercase tracking-widest italic leading-none">Ejercicios completados ({isChecked ? habit.subTasks.length : completedSubTasks.length}/{habit.subTasks.length})</span>
+                                </div>
+                                {habit.subTasks.map((task: any, idx: number) => {
+                                  const isSubChecked = isChecked || completedSubTasks.includes(`${task.title}-${idx}`);
+                                  return (
+                                    <button
+                                      key={idx}
+                                      disabled={isChecked}
+                                      type="button"
+                                      onClick={() => toggleSubTask(habit.programId || habit.id, habit.id, task.title, idx)}
+                                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left transition-all duration-300 ${
+                                        isSubChecked
+                                          ? 'bg-emerald-50/30 border-emerald-100/50 text-emerald-800'
+                                          : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
+                                      }`}
+                                    >
+                                      <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
+                                        isSubChecked 
+                                          ? 'bg-emerald-600 border-emerald-500 text-white' 
+                                          : 'border-slate-300 bg-white'
+                                      }`}>
+                                        {isSubChecked && <Check size={8} strokeWidth={4} />}
+                                      </div>
+                                      <span className={`text-[9.5px] font-black uppercase tracking-tight italic leading-tight ${isSubChecked ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                        {task.title}
+                                      </span>
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        }
+
+                        return (
+                          <button
+                            key={habit.id}
+                            disabled={isChecked || isChecking}
+                            onClick={() => handleHabitCheckin(habit)}
+                            className={`flex items-center justify-between p-4 rounded-[24px] border transition-all duration-500 text-left relative overflow-hidden group ${
+                              isChecked
+                                ? 'bg-[#E5FAF0]/70 border-[#D1FAE5] text-[#2C3A50]'
+                                : 'bg-white hover:bg-slate-50 border-[#EAF0F6] shadow-sm hover:shadow-md'
+                            }`}
+                          >
+                            <div className="space-y-0.5 max-w-[80%]">
                               <span className={`text-[11px] font-black uppercase tracking-tight italic block ${
                                 isChecked ? 'line-through text-slate-400' : 'text-[#2C3A50]'
                               }`}>
                                 {habit.name}
                               </span>
-                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block leading-tight">
-                                {habit.description || 'Rutina estructurada'}
+                              <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">
+                                {habit.description || 'Hábito de desarrollo'}
                               </span>
-                              <div className="flex items-center gap-1 mt-1">
-                                <span className="text-[6.5px] font-black bg-indigo-50 text-indigo-600 border border-indigo-100 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                                  {habit.frequency === 'WEEKLY' ? 'SEMANAL' : 'DIARIO'}
-                                </span>
-                              </div>
                             </div>
 
-                            {/* Main Check-in Button */}
-                            <button
-                              disabled={isChecked || isChecking || !allSubTasksChecked}
-                              onClick={() => handleHabitCheckin(habit.id)}
-                              className={`w-10 h-10 rounded-2xl flex items-center justify-center transition-all duration-300 ${
-                                isChecked
-                                  ? 'bg-[#2CD79A] text-white shadow-lg shadow-[#2CD79A]/20'
-                                  : allSubTasksChecked
-                                    ? 'bg-[#7B91EB] text-white shadow-lg shadow-[#7B91EB]/20 hover:scale-105 active:scale-95'
-                                    : 'bg-slate-100 text-slate-300 cursor-not-allowed opacity-60'
-                              }`}
-                            >
+                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                              isChecked
+                                ? 'bg-[#2CD79A] text-white shadow-lg shadow-[#2CD79A]/20'
+                                : 'bg-[#F0F3FF] text-[#7B91EB] group-hover:scale-110 group-hover:bg-[#7B91EB] group-hover:text-white'
+                            }`}>
                               {isChecking ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <div className="w-4 h-4 border-2 border-[#7B91EB] border-t-transparent rounded-full animate-spin" />
                               ) : isChecked ? (
-                                <Check size={16} strokeWidth={3} />
+                                <Check size={14} strokeWidth={3} />
                               ) : (
-                                <Check size={16} />
+                                <Check size={14} />
                               )}
-                            </button>
-                          </div>
-
-                          {/* Subtasks Checklist */}
-                          <div className="space-y-1.5 bg-slate-50/50 border border-slate-100 rounded-2xl p-3">
-                            <div className="flex items-center gap-1.5 mb-1">
-                              <ListTodo className="w-3.5 h-3.5 text-indigo-500" />
-                              <span className="text-[7.5px] font-black text-indigo-500 uppercase tracking-widest italic leading-none">Ejercicios completados ({isChecked ? habit.subTasks.length : completedSubTasks.length}/{habit.subTasks.length})</span>
                             </div>
-                            
-                            {habit.subTasks.map((task: any, idx: number) => {
-                              const isSubChecked = isChecked || completedSubTasks.includes(task.title);
-                              return (
-                                <button
-                                  key={idx}
-                                  disabled={isChecked}
-                                  type="button"
-                                  onClick={() => toggleSubTask(habit.id, habit.id, task.title)}
-                                  className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all duration-300 ${
-                                    isSubChecked
-                                      ? 'bg-emerald-50/30 border-emerald-100/50 text-emerald-800'
-                                      : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
-                                  }`}
-                                >
-                                  <div className={`w-4 h-4 rounded-md border flex items-center justify-center transition-all ${
-                                    isSubChecked 
-                                      ? 'bg-emerald-600 border-emerald-500 text-white' 
-                                      : 'border-slate-300 bg-white group-hover:border-indigo-400'
-                                  }`}>
-                                    {isSubChecked && <Check size={10} strokeWidth={4} />}
-                                  </div>
-                                  <span className={`text-[10px] font-black uppercase tracking-tight italic leading-tight ${isSubChecked ? 'line-through text-slate-400' : 'text-slate-700'}`}>
-                                    {task.title}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <button
-                        key={habit.id}
-                        disabled={isChecked || isChecking}
-                        onClick={() => handleHabitCheckin(habit.id)}
-                        className={`flex items-center justify-between p-4 rounded-[24px] border transition-all duration-500 text-left relative overflow-hidden group ${
-                          isChecked
-                            ? 'bg-[#E5FAF0]/70 border-[#D1FAE5] text-[#2C3A50]'
-                            : 'bg-white hover:bg-slate-50 border-[#EAF0F6] shadow-sm hover:shadow-md'
-                        }`}
-                      >
-                        <div className="space-y-1 max-w-[80%]">
-                          <span className={`text-[11px] font-black uppercase tracking-tight italic block ${
-                            isChecked ? 'line-through text-slate-400' : 'text-[#2C3A50]'
-                          }`}>
-                            {habit.name}
-                          </span>
-                          <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest block">
-                            {habit.description || 'Hábito de desarrollo'}
-                          </span>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <span className="text-[6.5px] font-black bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded uppercase tracking-wider">
-                              {habit.frequency === 'WEEKLY' ? 'SEMANAL' : 'DIARIO'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                          isChecked
-                            ? 'bg-[#2CD79A] text-white shadow-lg shadow-[#2CD79A]/20'
-                            : 'bg-[#F0F3FF] text-[#7B91EB] group-hover:scale-110 group-hover:bg-[#7B91EB] group-hover:text-white'
-                        }`}>
-                          {isChecking ? (
-                            <div className="w-4 h-4 border-2 border-[#7B91EB] border-t-transparent rounded-full animate-spin" />
-                          ) : isChecked ? (
-                            <Check size={16} strokeWidth={3} />
-                          ) : (
-                            <Check size={16} />
-                          )}
-                        </div>
-                      </button>
-                    );
-                  })}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {/* Mis Objetivos (vinculados a programas) */}
-            {objectives.length > 0 && (
-              <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft">
-                <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-5">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1.5 h-4 bg-amber-400 rounded-full" />
-                    <h3 className="text-xs font-black text-[#2C3A50] uppercase tracking-widest italic">
-                      Mis Objetivos
+                {/* 3. Tareas Entregables (Assigned Tasks) */}
+                <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft space-y-4">
+                  <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1.5 h-4 bg-amber-500 rounded-full animate-pulse" />
+                      <h3 className="text-xs font-black text-[#2C3A50] uppercase tracking-widest italic">
+                        Tareas y Entregables
+                      </h3>
+                    </div>
+                    <span className="text-[8px] font-extrabold text-[#7B91EB] bg-[#7B91EB]/10 px-2.5 py-1 rounded-xl uppercase tracking-wider border border-[#7B91EB]/20">
+                      {todayTasks.length} en agenda
+                    </span>
+                  </div>
+
+                  {todayTasks.length === 0 ? (
+                    <div className="text-center py-8">
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">
+                        No tenés tareas pendientes para hoy.
+                      </p>
+                      <p className="text-[9px] text-slate-400 uppercase mt-1">
+                        ¡Buen trabajo manteniéndote al día!
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 gap-3">
+                      {todayTasks.map((task) => {
+                        const isCompleted = task.status === 'SUBMITTED' || task.status === 'COMPLETED' || task.status === 'APPROVED';
+                        
+                        return (
+                          <div
+                            key={task.id}
+                            className={`flex items-center justify-between p-4 rounded-[20px] border transition-all duration-300 ${
+                              isCompleted
+                                ? 'bg-emerald-50/20 border-emerald-100/50'
+                                : 'bg-white border-[#EAF0F6] hover:bg-slate-50/50'
+                            }`}
+                          >
+                            <div className="space-y-1 max-w-[70%]">
+                              <span className="text-[7.5px] font-black bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-md uppercase tracking-wider border border-indigo-100 italic w-fit block">
+                                +50 XP
+                              </span>
+                              <h4 className="text-[10px] font-black text-[#2C3A50] uppercase tracking-tight italic mt-1 leading-tight">
+                                {task.title}
+                              </h4>
+                              <p className="text-[8px] text-[#7B91EB] font-bold uppercase tracking-widest">{task.description || 'Tarea especial de tu coach'}</p>
+                              {task.dueDate && (
+                                <span className="text-[7px] font-extrabold text-slate-400 uppercase tracking-widest block mt-0.5">
+                                  Límite: {new Date(task.dueDate).toLocaleDateString('es', { day: '2-digit', month: 'short' })}
+                                </span>
+                              )}
+                            </div>
+
+                            <div>
+                              {isCompleted ? (
+                                <div className="text-[8px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1 italic">
+                                  <Check className="w-3.5 h-3.5" />
+                                  {task.status === 'APPROVED' ? 'Aprobada' : 'Entregada'}
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => setSubmittingTaskId(task.id)}
+                                  className="px-4 py-2 bg-slate-900 hover:bg-[#7B91EB] text-white rounded-xl font-black text-[8px] uppercase tracking-widest shadow-sm hover:shadow-md transition-all italic"
+                                >
+                                  Entregar
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              {/* RIGHT COLUMN: Performance/Sessions */}
+              <div className="lg:col-span-4 space-y-6">
+                
+                {/* 1. Hoy de un vistazo (Circle KPI) */}
+                <div className="glass-card bg-white border border-[#EAF0F6] rounded-[32px] p-6 shadow-soft text-center space-y-4">
+                  <div className="flex items-center gap-2 pb-3 border-b border-slate-100 justify-center">
+                    <h3 className="text-[9px] font-black text-[#2C3A50] uppercase tracking-[0.2em] italic">
+                       Hoy de un Vistazo
                     </h3>
                   </div>
-                  <span className="text-[8px] font-extrabold text-amber-500 bg-amber-50 px-2.5 py-1 rounded-xl uppercase tracking-wider border border-amber-100">
-                    {objectives.length} {objectives.length === 1 ? 'meta' : 'metas'}
-                  </span>
+
+                  <div className="relative w-32 h-32 mx-auto flex items-center justify-center">
+                    <svg className="absolute w-full h-full transform -rotate-90">
+                      <circle cx="64" cy="64" r="54" stroke="#F0F3F7" strokeWidth="8" fill="transparent" />
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="54"
+                        stroke={selectedCoach.color || '#7B91EB'}
+                        strokeWidth="10"
+                        fill="transparent"
+                        strokeDasharray={339}
+                        strokeDashoffset={339 - (339 * dailyProgressMetrics.percent) / 100}
+                        strokeLinecap="round"
+                        className="transition-all duration-1000 ease-out"
+                      />
+                    </svg>
+                    <div className="text-center z-10">
+                      <span className="text-3xl font-black italic tracking-tighter leading-none block text-[#2C3A50]">
+                        {dailyProgressMetrics.percent}%
+                      </span>
+                      <span className="text-[7.5px] font-black text-[#7B91EB] tracking-widest uppercase block mt-1">PROGRESO</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 pt-2 text-center">
+                    <div className="space-y-0.5">
+                      <span className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest block">PASOS</span>
+                      <span className="text-[11px] font-black text-[#2C3A50]">{todayMilestones.filter(t => checkMilestoneCompleted(t, crmMenteeId)).length}/{todayMilestones.length}</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest block">HÁBITOS</span>
+                      <span className="text-[11px] font-black text-[#2C3A50]">{todayHabits.filter(h => h.checkedToday).length}/{todayHabits.length}</span>
+                    </div>
+                    <div className="space-y-0.5">
+                      <span className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest block">TAREAS</span>
+                      <span className="text-[11px] font-black text-[#2C3A50]">{todayTasks.filter(t => t.status === 'SUBMITTED' || t.status === 'COMPLETED' || t.status === 'APPROVED').length}/{todayTasks.length}</span>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {objectives.map((objective: any) => {
-                    // Calcular progreso del objetivo basándonos en los programas asociados
-                    const linkedPrograms = programs.filter((p: any) => p.objectiveId === objective.id);
-                    const totalMilestones = linkedPrograms.reduce((acc: number, p: any) =>
-                      acc + (p.phases?.reduce((a2: number, ph: any) => a2 + (ph.milestones?.length || 0), 0) || 0), 0);
-                    const completedMilestones = linkedPrograms.reduce((acc: number, p: any) =>
-                      acc + (p.phases?.reduce((a2: number, ph: any) =>
-                        a2 + (ph.milestones?.filter((m: any) => checkMilestoneCompleted(m, crmMenteeId)).length || 0), 0) || 0), 0);
-                    const objProgress = totalMilestones > 0 ? Math.round((completedMilestones / totalMilestones) * 100) : 0;
+                {/* 2. Sesiones de hoy */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                     <h3 className="text-[9px] font-black text-[#2C3A50] uppercase tracking-[0.2em] flex items-center gap-1.5 italic">
+                        <div className="w-1.5 h-3 bg-indigo-500 rounded-full" />
+                        Videollamadas Hoy
+                     </h3>
+                     <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-widest italic">{todaySessions.length} hoy</span>
+                  </div>
 
-                    return (
-                      <div
-                        key={objective.id}
-                        className="p-5 rounded-[24px] border border-[#EAF0F6] bg-gradient-to-br from-slate-50/50 to-white hover:shadow-md transition-all duration-300 group"
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded-xl bg-amber-50 text-amber-500 flex items-center justify-center border border-amber-100 group-hover:scale-110 transition-transform">
-                              <Target size={16} />
-                            </div>
-                            <div>
-                              <h4 className="text-[11px] font-black text-[#2C3A50] uppercase tracking-tight italic leading-tight">
-                                {objective.title}
+                  {todaySessions.length === 0 ? (
+                     <div className="glass-card bg-white border border-[#EAF0F6] rounded-[24px] p-5 shadow-soft text-center">
+                        <Video className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                        <h4 className="text-[10px] font-black text-slate-600 uppercase italic">Sin llamadas</h4>
+                        <p className="text-[8px] text-slate-400 uppercase mt-1">
+                           No tenés sesiones virtuales hoy.
+                        </p>
+                     </div>
+                  ) : (
+                     <div className="space-y-3">
+                        {todaySessions.map((session) => (
+                           <div key={session.id} className="bg-white border border-[#EAF0F6] rounded-[20px] p-4 shadow-sm hover:shadow-md transition-all duration-300 space-y-3">
+                              <div className="flex items-center justify-between">
+                                 <span className="text-[7.5px] font-black text-[#7B91EB] uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100 italic">
+                                    En Vivo 🚀
+                                 </span>
+                                 <span className="text-[8.5px] font-bold text-slate-400 uppercase">
+                                    {session.startTime || 'Hoy'}
+                                 </span>
+                              </div>
+                              <h4 className="text-[10px] font-black text-[#2C3A50] uppercase tracking-tight italic leading-tight">
+                                 {session.name || 'Sesión de Alineación'}
                               </h4>
-                              {objective.targetDate && (
-                                <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest">
-                                  Meta: {new Date(objective.targetDate).toLocaleDateString('es', { day: '2-digit', month: 'short', year: 'numeric' })}
-                                </span>
+                              {session.meetingLink ? (
+                                 <a
+                                    href={session.meetingLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="w-full py-2 bg-slate-900 hover:bg-[#7B91EB] text-white rounded-xl font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all italic shadow-sm"
+                                 >
+                                    <Video className="w-3.5 h-3.5" />
+                                    Unirse a Videollamada
+                                 </a>
+                              ) : (
+                                 <div className="w-full py-2 bg-slate-50 text-slate-400 rounded-xl font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-1 border border-slate-100 italic">
+                                    <AlertCircle className="w-3.5 h-3.5" />
+                                    Enlace pendiente
+                                 </div>
                               )}
+                           </div>
+                        ))}
+                     </div>
+                  )}
+                </div>
+
+                {/* 3. Próximas Sesiones */}
+                <div className="glass-card bg-white rounded-[24px] p-5 border border-[#EAF0F6] shadow-soft space-y-3">
+                  <div className="flex items-center justify-between">
+                     <h3 className="text-[9px] font-black text-[#2C3A50] uppercase tracking-[0.2em] italic">
+                       Mis próximas sesiones
+                     </h3>
+                  </div>
+
+                  {filteredSessions.length === 0 ? (
+                    <div className="text-center py-4">
+                      <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest italic">
+                        Sin sesiones agendadas.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2.5">
+                      {filteredSessions.slice(0, 3).map((session) => (
+                        <div key={session.id} className="flex items-center justify-between gap-3 p-2 bg-slate-50/50 rounded-xl border border-slate-100">
+                          <div className="flex items-center gap-2">
+                            <Calendar size={14} className="text-[#7B91EB]" />
+                            <div className="space-y-0.5">
+                              <span className="text-[9px] font-black text-[#2C3A50] uppercase tracking-tight block">
+                                Sesión Especial
+                              </span>
+                              <span className="text-[7.5px] font-extrabold text-[#7B91EB] uppercase tracking-widest block">
+                                {session.date ? format(new Date(session.date), 'dd MMMM - HH:mm', { locale: es }) : 'POR DEFINIR'}
+                              </span>
                             </div>
                           </div>
-                          <span className={`text-[7.5px] font-black px-2 py-0.5 rounded-lg uppercase tracking-wider ${
-                            objProgress === 100
-                              ? 'bg-[#E5FAF0] text-[#2CD79A] border border-[#D1FAE5]'
-                              : 'bg-amber-50 text-amber-500 border border-amber-100'
-                          }`}>
-                            {objProgress}%
+                          <span className="px-2 py-0.5 bg-white text-[6.5px] font-black text-[#2CD79A] rounded border border-slate-100 uppercase">
+                            {session.status || 'CONFIRMADA'}
                           </span>
                         </div>
-
-                        {objective.description && (
-                          <p className="text-[8px] font-bold text-slate-400 uppercase tracking-widest mb-3 line-clamp-2">
-                            {objective.description}
-                          </p>
-                        )}
-
-                        {/* Progress Bar */}
-                        <div className="w-full h-1.5 bg-[#F0F3F7] rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-700 ${
-                              objProgress === 100 ? 'bg-[#2CD79A]' : 'bg-amber-400'
-                            }`}
-                            style={{ width: `${objProgress}%` }}
-                          />
-                        </div>
-
-                        {/* Linked programs summary */}
-                        <div className="flex items-center gap-1.5 mt-2.5">
-                          <Layers size={10} className="text-slate-300" />
-                          <span className="text-[7px] font-bold text-slate-400 uppercase tracking-widest">
-                            {linkedPrograms.length} {linkedPrograms.length === 1 ? 'programa asociado' : 'programas asociados'} · {completedMilestones}/{totalMilestones} hitos
-                          </span>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
-            {/* Próxima Sesión 1:1 */}
-            <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft">
-              <div className="space-y-6 w-full">
-                <div className="flex items-center gap-2 pb-4 border-b border-slate-100">
-                  <div className="w-1.5 h-4 bg-[#7B91EB] rounded-full" />
-                  <h3 className="text-xs font-black text-[#2C3A50] uppercase tracking-widest italic">
-                    Próxima Sesión 1:1
-                  </h3>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {filteredSessions.length === 0 ? (
-                  <div className="text-center py-10 flex flex-col items-center justify-center flex-1">
-                    <Calendar className="w-12 h-12 text-slate-200 mb-3" />
-                    <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic leading-none">
-                      Sin sesiones agendadas.
-                    </p>
-                    <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-1.5">
-                      Coordiná con tu coach la próxima fecha.
-                    </p>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {filteredSessions.slice(0, 3).map((session) => (
-                      <div
-                        key={session.id}
-                        className="bg-slate-50 p-4 rounded-[20px] border border-slate-100 shadow-sm flex items-center justify-between gap-4"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-xl bg-white text-[#7B91EB] flex items-center justify-center shrink-0 border border-slate-100">
-                            <Calendar size={18} className="text-[#7B91EB]" />
-                          </div>
-                          <div className="space-y-0.5">
-                            <span className="text-[10px] font-black text-[#2C3A50] uppercase tracking-tight italic block">
-                              Sesión Estratégica
-                            </span>
-                            <span className="text-[8px] font-extrabold text-[#7B91EB] uppercase tracking-widest block">
-                              {session.date ? format(new Date(session.date), 'dd MMMM - HH:mm', { locale: es }) : 'POR DEFINIR'}
-                            </span>
-                          </div>
-                        </div>
-
-                        <div className="px-2.5 py-1 bg-white text-[7px] font-black text-[#2CD79A] rounded-lg uppercase tracking-wider border border-slate-100">
-                          {session.status || 'CONFIRMADA'}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
               </div>
+
             </div>
+
           </div>
         )}
 
@@ -1426,6 +1831,10 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                                         const hasSubTasks = milestone.subTasks && milestone.subTasks.length > 0;
                                         const isHabitOrRoutine = program.type === 'HABITS' || program.type === 'ROUTINE' || milestone.frequency !== 'ONCE';
 
+                                        const todayIndex = new Date().getDay(); // 0 (Dom) - 6 (Sab)
+                                        const adjustedTodayIndex = todayIndex === 0 ? 6 : todayIndex - 1; // 0 (Lun) - 6 (Dom)
+                                        const isDayAllowed = !milestone.daysOfWeek || milestone.daysOfWeek.length === 0 || milestone.daysOfWeek.includes(adjustedTodayIndex);
+
                                         if (isHabitOrRoutine || hasSubTasks) {
                                           const completedSubTasks = hasSubTasks ? milestone.subTasks.filter((st: any) => st.isCompleted) : [];
                                           const allSubTasksChecked = hasSubTasks ? milestone.subTasks.every((st: any) => st.isCompleted) : true;
@@ -1444,6 +1853,15 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                                                     <div className="px-1.5 py-0.5 bg-indigo-50 rounded text-[6.5px] font-black text-[#7B91EB] uppercase tracking-widest italic border border-indigo-50 shadow-sm">
                                                       {milestone.frequency === 'DAILY' ? 'DIARIO' : milestone.frequency === 'WEEKLY' ? 'SEMANAL' : 'ÚNICO'}
                                                     </div>
+                                                    {milestone.daysOfWeek && milestone.daysOfWeek.length > 0 && (
+                                                      <div className={`px-1.5 py-0.5 rounded text-[6.5px] font-black uppercase tracking-widest italic border shadow-sm ${
+                                                        isDayAllowed
+                                                          ? 'bg-emerald-50 text-[#2CD79A] border-emerald-100'
+                                                          : 'bg-rose-50 text-rose-500 border-rose-100'
+                                                      }`}>
+                                                        Días: {milestone.daysOfWeek.map((d: number) => ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][d]).join(', ')}
+                                                      </div>
+                                                    )}
                                                   </div>
                                                 </div>
                                               </div>
@@ -1461,28 +1879,38 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                                                   <div className="grid grid-cols-1 gap-1">
                                                     {milestone.subTasks.map((task: any, idx: number) => {
                                                       const isSubChecked = isCompleted || task.isCompleted;
-                                                      const isBtnDisabled = isCompleted;
+                                                      const isBtnDisabled = isCompleted || !isDayAllowed;
 
                                                       return (
                                                         <button
                                                           key={idx}
                                                           disabled={isBtnDisabled}
                                                           type="button"
-                                                          onClick={() => toggleSubTask(program.id, milestone.id, task.title)}
+                                                          onClick={() => toggleSubTask(program.id, milestone.id, task.title, idx)}
                                                           className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg border text-left transition-all duration-300 active:scale-[0.98] ${
                                                             isSubChecked
                                                               ? 'bg-emerald-50/30 border-emerald-100/50 text-emerald-800'
-                                                              : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
+                                                              : !isDayAllowed
+                                                                ? 'bg-rose-50/20 border-rose-100/30 text-rose-400 cursor-not-allowed opacity-60'
+                                                                : 'bg-white border-slate-100 text-slate-600 hover:bg-slate-50'
                                                           }`}
                                                         >
                                                           <div className={`w-3.5 h-3.5 rounded border flex items-center justify-center transition-all ${
                                                             isSubChecked 
                                                               ? 'bg-emerald-600 border-emerald-500 text-white' 
-                                                              : 'border-slate-300 bg-white'
+                                                              : !isDayAllowed
+                                                                ? 'border-rose-200 bg-white'
+                                                                : 'border-slate-300 bg-white'
                                                           }`}>
                                                             {isSubChecked && <Check size={8} strokeWidth={4} />}
                                                           </div>
-                                                          <span className={`text-[9px] font-black uppercase tracking-tight italic leading-tight ${isSubChecked ? 'line-through text-slate-400' : 'text-slate-700'}`}>
+                                                          <span className={`text-[9px] font-black uppercase tracking-tight italic leading-tight ${
+                                                            isSubChecked 
+                                                              ? 'line-through text-slate-400' 
+                                                              : !isDayAllowed
+                                                                ? 'text-rose-300'
+                                                                : 'text-slate-700'
+                                                          }`}>
                                                             {task.title}
                                                           </span>
                                                         </button>
@@ -1501,16 +1929,23 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                                                   </div>
                                                 ) : (
                                                   <button
-                                                    disabled={isToggling || !allSubTasksChecked}
+                                                    disabled={isToggling || !allSubTasksChecked || !isDayAllowed}
                                                     onClick={() => handleToggleMilestone(program.id, milestone.id)}
                                                     className={`w-full py-2.5 rounded-xl text-[7.5px] font-black uppercase tracking-widest transition-all active:scale-95 flex items-center justify-center gap-1.5 group italic ${
-                                                      allSubTasksChecked
-                                                        ? 'bg-slate-900 hover:bg-[#7B91EB] text-white cursor-pointer shadow-md'
-                                                        : 'bg-slate-100 text-slate-400 cursor-not-allowed border-none opacity-60'
+                                                      !isDayAllowed
+                                                        ? 'bg-rose-50 text-rose-400 border border-rose-100 cursor-not-allowed opacity-80'
+                                                        : allSubTasksChecked
+                                                          ? 'bg-slate-900 hover:bg-[#7B91EB] text-white cursor-pointer shadow-md'
+                                                          : 'bg-slate-100 text-slate-400 cursor-not-allowed border-none opacity-60'
                                                     }`}
                                                   >
                                                     {isToggling ? (
                                                       <div className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                                                    ) : !isDayAllowed ? (
+                                                      <>
+                                                        <Clock className="w-3.5 h-3.5" />
+                                                        No disponible hoy
+                                                      </>
                                                     ) : allSubTasksChecked ? (
                                                       <>
                                                         <Check className="w-3.5 h-3.5 group-hover:scale-125 transition-transform" />
@@ -1547,27 +1982,45 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                                               <span className="text-[7.5px] font-bold text-slate-400 uppercase tracking-widest block leading-snug">
                                                 {milestone.description || 'Objetivo de aprendizaje'}
                                               </span>
-                                              {milestone.xpReward && (
-                                                <span className="inline-block mt-1.5 text-[6.5px] font-black bg-amber-50 text-amber-500 border border-amber-100 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
-                                                  +{milestone.xpReward} EXP
+                                              <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                                                {milestone.xpReward && (
+                                                  <span className="inline-block text-[6.5px] font-black bg-amber-50 text-amber-500 border border-amber-100 px-1.5 py-0.5 rounded uppercase tracking-wider shadow-sm">
+                                                    +{milestone.xpReward} EXP
+                                                  </span>
+                                                )}
+                                                <span className="inline-block text-[6.5px] font-black bg-slate-100 text-slate-500 border border-slate-200 px-1.5 py-0.5 rounded uppercase tracking-wider">
+                                                  {milestone.frequency === 'DAILY' ? 'DIARIO' : milestone.frequency === 'WEEKLY' ? 'SEMANAL' : 'ÚNICO'}
                                                 </span>
-                                              )}
+                                                {milestone.daysOfWeek && milestone.daysOfWeek.length > 0 && (
+                                                  <span className={`inline-block text-[6.5px] font-black px-1.5 py-0.5 rounded uppercase tracking-wider border shadow-sm ${
+                                                    isDayAllowed
+                                                      ? 'bg-emerald-50 text-[#2CD79A] border-emerald-100'
+                                                      : 'bg-rose-50 text-rose-500 border-rose-100'
+                                                  }`}>
+                                                    Días: {milestone.daysOfWeek.map((d: number) => ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'][d]).join(', ')}
+                                                  </span>
+                                                )}
+                                              </div>
                                             </div>
 
                                             <button
-                                              disabled={isToggling}
+                                              disabled={isToggling || (!isCompleted && !isDayAllowed)}
                                               onClick={() => handleToggleMilestone(program.id, milestone.id)}
                                               className={`w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0 shadow-sm active:scale-90 cursor-pointer ${
                                                 isCompleted
                                                   ? 'bg-[#2CD79A] text-white hover:bg-[#23be87]'
-                                                  : 'bg-[#F0F3FF] text-[#7B91EB] hover:bg-[#7B91EB] hover:text-white'
+                                                  : !isDayAllowed
+                                                    ? 'bg-rose-50 text-rose-300 border border-rose-100 cursor-not-allowed opacity-80'
+                                                    : 'bg-[#F0F3FF] text-[#7B91EB] hover:bg-[#7B91EB] hover:text-white'
                                               }`}
-                                              title={isCompleted ? "Marcar como incompleto" : "Completar hito"}
+                                              title={isCompleted ? "Marcar como incompleto" : !isDayAllowed ? "No disponible hoy" : "Completar hito"}
                                             >
                                               {isToggling ? (
                                                 <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                               ) : isCompleted ? (
                                                 <Check size={14} strokeWidth={3.5} className="animate-bounce" />
+                                              ) : !isDayAllowed ? (
+                                                <Clock size={14} strokeWidth={2.5} />
                                               ) : (
                                                 <Check size={14} strokeWidth={2.5} />
                                               )}
@@ -1586,366 +2039,6 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                     </div>
                   );
                 })}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* GRUPOS TAB */}
-        {panelSubTab === 'groups' && (
-          <div className="space-y-6">
-            <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft">
-              <h2 className="text-xl font-black uppercase tracking-tight italic flex items-center gap-2 text-[#2C3A50]">
-                <Users className="w-6 h-6 text-[#7B91EB] animate-pulse" />
-                Mis Grupos de Aprendizaje
-              </h2>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                Formás parte activa de estos grupos de ITER liderados por {selectedCoach.name}.
-              </p>
-            </div>
-
-            {filteredGroups.length === 0 ? (
-              <div className="glass-card bg-white rounded-[32px] p-16 border border-[#EAF0F6] shadow-soft text-center flex flex-col items-center justify-center">
-                <Users className="w-16 h-16 text-slate-200 mb-3" />
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">
-                  No pertenecés a ningún grupo de este coach actualmente.
-                </p>
-                <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-1">
-                  Tu coach te añadirá a un grupo para clases y dinámicas compartidas.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredGroups.map((group) => (
-                  <div
-                    key={group.id}
-                    className="glass-card bg-white border border-[#EAF0F6] shadow-soft hover:shadow-xl hover:shadow-[#7B91EB]/5 hover:-translate-y-1 transition-all duration-500 p-6 rounded-[32px] flex flex-col justify-between"
-                  >
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-[7.5px] font-black bg-[#2CD79A]/10 text-[#2CD79A] border border-[#2CD79A]/20 px-2.5 py-1 rounded-xl uppercase tracking-wider">
-                          {group.status || 'ACTIVO'}
-                        </span>
-                        <div className="flex items-center gap-1.5 text-slate-400">
-                          <Users size={12} />
-                          <span className="text-[8px] font-black uppercase tracking-wider">
-                            {group._count?.members || group.members?.length || 0} alumnos
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <h4 className="text-sm font-black text-[#2C3A50] uppercase tracking-tight italic leading-tight">
-                          {group.name}
-                        </h4>
-                        <p className="text-[8.5px] text-slate-400 font-bold uppercase tracking-wide leading-relaxed">
-                          {group.description || 'Grupo operativo de entrenamiento e intercambio de hábitos.'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="border-t border-slate-50 pt-4 mt-5 flex items-center justify-between text-[8px] font-black uppercase tracking-widest">
-                      <div className="flex items-center gap-1.5">
-                        <div className="w-5 h-5 rounded-full overflow-hidden border border-slate-100">
-                          <img src={selectedCoach.avatarUrl} alt={selectedCoach.name} className="w-full h-full object-cover" />
-                        </div>
-                        <span className="text-slate-400">LIDERADO POR COACH</span>
-                      </div>
-                      <span className="text-[#7B91EB] italic">MÁS INFO →</span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* AGENDA TAB */}
-        {panelSubTab === 'agenda' && (
-          <div className="space-y-6">
-            <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft">
-              <h2 className="text-xl font-black uppercase tracking-tight italic flex items-center gap-2 text-[#2C3A50]">
-                <Calendar className="w-6 h-6 text-[#7B91EB] animate-pulse" />
-                Mi Agenda Operativa
-              </h2>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                Visualizá sesiones activas, hitos del programa y tus hábitos diarios agendados en el calendario de ITER.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Calendario Mensual */}
-              <div className="lg:col-span-5">
-                <div className="glass-card bg-white/70 backdrop-blur-xl rounded-[32px] border border-white/60 p-1.5 shadow-soft">
-                  <MonthlyCalendar
-                    selectedDate={selectedDate}
-                    onDateSelect={setSelectedDate}
-                    busyDates={busyDates}
-                  />
-                </div>
-              </div>
-
-              {/* Eventos del Día Seleccionado */}
-              <div className="lg:col-span-7 space-y-4">
-                <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft space-y-4">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                    <div>
-                      <span className="text-[7.5px] font-black uppercase tracking-widest text-[#7B91EB] block">HISTORIAL Y PROYECCIÓN PARA:</span>
-                      <h3 className="text-xs font-black text-[#2C3A50] uppercase tracking-widest italic mt-0.5">
-                        {format(selectedDate, "eeee, dd 'de' MMMM", { locale: es })}
-                      </h3>
-                    </div>
-                    <Calendar size={18} className="text-[#7B91EB]" />
-                  </div>
-
-                  {(() => {
-                    const daySessions = filteredSessions.filter(s => s.date && isSameDay(new Date(s.date), selectedDate));
-                    const dayTasks = filteredTasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), selectedDate));
-                    
-                    // Derivar hitos completados en esta fecha
-                    const dayMilestones = filteredPrograms.flatMap(p => p.phases || []).flatMap(ph => ph.milestones || []).filter(m => 
-                      m.completions?.some((c: any) => c.date && isSameDay(new Date(c.date), selectedDate) && c.menteeId === crmMenteeId)
-                    );
-
-                    // Derivar checkins de hábitos en esta fecha
-                    const dayHabits = filteredHabits.filter(h => 
-                      h.checkins?.some((c: any) => c.date && isSameDay(new Date(c.date), selectedDate))
-                    );
-
-                    const hasAnyEvents = daySessions.length > 0 || dayTasks.length > 0 || dayMilestones.length > 0 || dayHabits.length > 0;
-
-                    if (!hasAnyEvents) {
-                      return (
-                        <div className="text-center py-12 flex flex-col items-center justify-center">
-                          <Smile className="w-12 h-12 text-slate-200 mb-2" />
-                          <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">
-                            Sin actividades registradas para hoy.
-                          </p>
-                          <p className="text-[8.5px] text-slate-400 uppercase tracking-wider mt-1">
-                            ¡Disfrutá de tu día o seleccioná otra fecha!
-                          </p>
-                        </div>
-                      );
-                    }
-
-                    return (
-                      <div className="space-y-4">
-                        {/* Sesiones de Agenda */}
-                        {daySessions.map((session) => (
-                          <div key={session.id} className="flex items-center justify-between p-3.5 bg-indigo-50/50 border border-indigo-100 rounded-2xl gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-white border border-indigo-200 flex items-center justify-center text-[#7B91EB] shrink-0 shadow-sm">
-                                <Calendar size={14} />
-                              </div>
-                              <div>
-                                <span className="text-[9.5px] font-black text-[#2C3A50] uppercase tracking-tight italic block">Sesión con Coach</span>
-                                <span className="text-[7.5px] font-extrabold text-[#7B91EB] uppercase tracking-widest block mt-0.5">
-                                  {session.date ? format(new Date(session.date), 'HH:mm') : 'HORA PENDIENTE'}
-                                </span>
-                              </div>
-                            </div>
-                            <span className="text-[7px] font-black bg-[#2CD79A] text-white px-2 py-0.5 rounded uppercase tracking-wider shadow-sm">
-                              {session.status || 'CONFIRMADA'}
-                            </span>
-                          </div>
-                        ))}
-
-                        {/* Tareas que vencen hoy */}
-                        {dayTasks.map((task) => (
-                          <div key={task.id} className="flex items-center justify-between p-3.5 bg-amber-50/50 border border-amber-200 rounded-2xl gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-white border border-amber-200 flex items-center justify-center text-amber-500 shrink-0 shadow-sm">
-                                <Clock size={14} />
-                              </div>
-                              <div>
-                                <span className="text-[9.5px] font-black text-[#2C3A50] uppercase tracking-tight italic block">{task.title}</span>
-                                <span className="text-[7.5px] font-extrabold text-amber-500 uppercase tracking-widest block mt-0.5">Vencimiento de Tarea</span>
-                              </div>
-                            </div>
-                            <span className={`text-[7px] font-black px-2 py-0.5 rounded uppercase tracking-wider border shadow-sm ${
-                              task.status === 'APPROVED' ? 'bg-[#E5FAF0] text-[#2CD79A] border-[#2CD79A]/20' : 'bg-amber-100 text-amber-600 border-amber-200'
-                            }`}>
-                              {task.status || 'PENDIENTE'}
-                            </span>
-                          </div>
-                        ))}
-
-                        {/* Hitos Completados */}
-                        {dayMilestones.map((milestone) => (
-                          <div key={milestone.id} className="flex items-center justify-between p-3.5 bg-[#E5FAF0]/30 border border-[#D1FAE5] rounded-2xl gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-white border border-[#D1FAE5] flex items-center justify-center text-[#2CD79A] shrink-0 shadow-sm">
-                                <Trophy size={14} />
-                              </div>
-                              <div>
-                                <span className="text-[9.5px] font-black text-[#2C3A50] uppercase tracking-tight italic block line-through text-slate-400">{milestone.title}</span>
-                                <span className="text-[7.5px] font-extrabold text-[#2CD79A] uppercase tracking-widest block mt-0.5">Hito Completado</span>
-                              </div>
-                            </div>
-                            <span className="text-[7px] font-black bg-[#2CD79A]/10 text-[#2CD79A] border border-[#2CD79A]/20 px-2 py-0.5 rounded uppercase tracking-wider">
-                              + {milestone.xpReward || 30} EXP
-                            </span>
-                          </div>
-                        ))}
-
-                        {/* Hábitos Completados */}
-                        {dayHabits.map((habit) => (
-                          <div key={habit.id} className="flex items-center justify-between p-3.5 bg-emerald-50/30 border border-emerald-100 rounded-2xl gap-3">
-                            <div className="flex items-center gap-3">
-                              <div className="w-8 h-8 rounded-xl bg-white border border-emerald-200 flex items-center justify-center text-emerald-500 shrink-0 shadow-sm">
-                                <Zap size={14} />
-                              </div>
-                              <div>
-                                <span className="text-[9.5px] font-black text-[#2C3A50] uppercase tracking-tight italic block">{habit.name}</span>
-                                <span className="text-[7.5px] font-extrabold text-emerald-500 uppercase tracking-widest block mt-0.5">Hábito Completado</span>
-                              </div>
-                            </div>
-                            <span className="text-[7px] font-black bg-emerald-100 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded uppercase tracking-wider">
-                              +15 EXP
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* CAMINO TAB (LOGROS) */}
-        {panelSubTab === 'journey' && (
-          <div className="space-y-6">
-            <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft">
-              <h2 className="text-xl font-black uppercase tracking-tight italic flex items-center gap-2 text-[#2C3A50]">
-                <Trophy className="w-6 h-6 text-[#7B91EB] animate-pulse" />
-                Tus Insignias y Logros
-              </h2>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                Desbloqueá logros a medida que avanzás en tus hábitos, tareas y niveles con {selectedCoach.name}.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
-              {[
-                { id: '1', title: 'Iniciado Táctico', desc: 'Comenzá tu camino. Alcanzá el nivel 1.', icon: Shield, unlocked: activeCoachStats.level >= 1, color: 'from-[#7B91EB] to-[#99A7EE]' },
-                { id: '2', title: 'Titán de Acero', desc: 'Llegá al codiciado nivel 3.', icon: Award, unlocked: activeCoachStats.level >= 3, color: 'from-amber-400 to-orange-500' },
-                { id: '3', title: 'Racha Dorada', desc: 'Lográ una racha de 5 días seguidos.', icon: Flame, unlocked: activeCoachStats.currentStreak >= 5, color: 'from-[#2CD79A] to-teal-500' },
-                { id: '4', title: 'Hábito Sagrado', desc: 'Completá una tarea del coach.', icon: Trophy, unlocked: filteredTasks.some(t => t.status === 'APPROVED'), color: 'from-fuchsia-400 to-purple-600' },
-                { id: '5', title: 'Erudito Activo', desc: 'Accedé y leé los recursos de la biblioteca.', icon: BookOpen, unlocked: true, color: 'from-sky-400 to-[#7B91EB]' }
-              ].map((badge) => {
-                const Icon = badge.icon;
-                return (
-                  <div
-                    key={badge.id}
-                    className={`glass-card rounded-[32px] p-5 border border-[#EAF0F6] shadow-soft flex flex-col items-center text-center relative overflow-hidden transition-all duration-500 ${
-                      badge.unlocked
-                        ? 'bg-white hover:shadow-xl hover:shadow-[#7B91EB]/5 group hover:-translate-y-1'
-                        : 'bg-slate-50/50 opacity-60'
-                    }`}
-                  >
-                    {badge.unlocked && (
-                      <div className={`absolute -top-12 w-24 h-24 bg-gradient-to-br ${badge.color} rounded-full blur-2xl opacity-20 group-hover:scale-150 transition-all duration-700`} />
-                    )}
-
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg relative z-10 transition-transform duration-500 ${
-                      badge.unlocked
-                        ? `bg-gradient-to-br ${badge.color} text-white group-hover:rotate-6`
-                        : 'bg-slate-200 text-slate-400'
-                    }`}>
-                      {badge.unlocked ? <Icon size={24} /> : <Lock size={20} />}
-                    </div>
-
-                    <div className="mt-4 space-y-1 relative z-10">
-                      <span className={`text-[10px] font-black uppercase tracking-tight italic block ${
-                        badge.unlocked ? 'text-[#2C3A50]' : 'text-slate-400'
-                      }`}>
-                        {badge.title}
-                      </span>
-                      <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wide leading-relaxed">
-                        {badge.desc}
-                      </p>
-                    </div>
-
-                    {badge.unlocked && (
-                      <div className="absolute top-2 right-2 bg-[#2CD79A] text-white rounded-full p-0.5 shadow-sm">
-                        <Check size={8} strokeWidth={4} />
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* BIBLIOTECA TAB (RECURSOS) */}
-        {panelSubTab === 'library' && (
-          <div className="space-y-6">
-            <div className="glass-card bg-white rounded-[32px] p-6 border border-[#EAF0F6] shadow-soft">
-              <h2 className="text-xl font-black uppercase tracking-tight italic flex items-center gap-2 text-[#2C3A50]">
-                <BookOpen className="w-6 h-6 text-[#7B91EB] animate-pulse" />
-                Biblioteca y Recursos Compartidos
-              </h2>
-              <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest mt-1">
-                Accedé a materiales, PDFs, guías y enlaces compartidos exclusivamente por {selectedCoach.name}.
-              </p>
-            </div>
-
-            {filteredResources.length === 0 ? (
-              <div className="glass-card bg-white rounded-[32px] p-16 border border-[#EAF0F6] shadow-soft text-center flex flex-col items-center justify-center">
-                <BookOpen className="w-16 h-16 text-slate-200 mb-3" />
-                <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest italic">
-                  No hay recursos disponibles por ahora.
-                </p>
-                <p className="text-[9px] text-slate-400 uppercase tracking-wider mt-1">
-                  Tu coach subirá guías de interés pronto.
-                </p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredResources.map((resource) => (
-                  <div
-                    key={resource.id}
-                    className="glass-card bg-white border border-[#EAF0F6] shadow-soft hover:shadow-xl hover:shadow-[#7B91EB]/5 hover:-translate-y-1 transition-all duration-500 group flex flex-col justify-between p-6 rounded-[32px]"
-                  >
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <div className="w-10 h-10 rounded-xl bg-slate-50 text-[#7B91EB] border border-slate-100 flex items-center justify-center">
-                          <BookOpen size={18} className="text-[#7B91EB]" />
-                        </div>
-                        <span className="text-[7px] font-black px-2.5 py-0.5 bg-slate-100 rounded-full text-slate-500 uppercase tracking-widest border border-slate-200">
-                          {resource.type || 'DOCUMENTO'}
-                        </span>
-                      </div>
-
-                      <div className="space-y-1">
-                        <span className="text-[11px] font-black text-[#2C3A50] uppercase tracking-tight italic block">
-                          {resource.name}
-                        </span>
-                        <p className="text-[9px] text-slate-400 font-bold uppercase tracking-wider leading-relaxed">
-                          {resource.description || 'Guía o enlace de interés compartido.'}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="pt-6 border-t border-slate-50 mt-4 flex items-center justify-between">
-                      <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest">
-                        COMPARTIDO
-                      </span>
-                      <a
-                        href={resource.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-4 py-2 bg-[#2C3A50] hover:bg-[#7B91EB] text-white rounded-xl font-black text-[8px] uppercase tracking-widest transition-all italic flex items-center gap-1.5 shadow-sm group-hover:scale-105 active:scale-95"
-                      >
-                        ABRIR RECURSO
-                        <ExternalLink size={10} />
-                      </a>
-                    </div>
-                  </div>
-                ))}
               </div>
             )}
           </div>
@@ -2028,7 +2121,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
             {/* User Avatar */}
             <div className="w-24 h-24 rounded-[32px] overflow-hidden border-2 border-[#7B91EB] bg-slate-100 shrink-0 shadow-lg">
               {user?.avatarUrl ? (
-                <img src={user.avatarUrl.startsWith('/') ? user.avatarUrl : `/avatars/${user.avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+                <img src={user.avatarUrl.startsWith('/') || user.avatarUrl.startsWith('http') ? user.avatarUrl : `/avatars/${user.avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 <div className="w-full h-full flex items-center justify-center bg-[#7B91EB]/10 text-[#7B91EB] text-2xl font-black uppercase">
                   {user?.firstName?.charAt(0) || 'E'}

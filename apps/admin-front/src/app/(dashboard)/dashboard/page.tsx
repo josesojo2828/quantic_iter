@@ -26,27 +26,26 @@ const UserAvatar = ({ user }: { user: any }) => (
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const dashboardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    // Mock stats for demo
-    setStats({
-      tenants: { total: 124, growth: 12, newThisWeek: 8 },
-      users: { total: 1542, growth: 24, latest: [
-        { id: '1', firstName: 'Juan', lastName: 'Perez', avatarUrl: null },
-        { id: '2', firstName: 'Maria', lastName: 'Gomez', avatarUrl: null },
-        { id: '3', firstName: 'Alex', lastName: 'Rider', avatarUrl: null }
-      ]},
-      subscriptions: { 
-        activeCount: 89, 
-        totalMrr: 12400,
-        plans: [
-          { planName: 'Basic', total: 3200 },
-          { planName: 'Pro', total: 6800 },
-          { planName: 'Enterprise', total: 2400 }
-        ]
-      }
-    });
+    loadStats();
+  }, []);
+
+  const loadStats = async () => {
+    try {
+      const data = await adminService.getStats();
+      setStats(data);
+    } catch (error) {
+      console.error('Error loading dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (loading || !stats) return;
 
     const ctx = gsap.context(() => {
       gsap.from(".stat-card", {
@@ -65,9 +64,18 @@ export default function DashboardPage() {
         ease: "elastic.out(1, 0.5)",
         delay: 0.8
       });
-    });
+    }, dashboardRef);
     return () => ctx.revert();
-  }, []);
+  }, [loading, stats]);
+
+
+  if (loading || !stats) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-primary/20 border-t-primary rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div ref={dashboardRef} className="space-y-10">

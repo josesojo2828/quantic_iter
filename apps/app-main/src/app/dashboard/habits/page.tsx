@@ -55,7 +55,7 @@ export default function HabitsPage() {
       
       const habitsData = Array.isArray(response) ? response : [];
       
-      const allExecutions = habitsData.filter(p => !p.isTemplate && (p.type === 'HABITS' || p.type === 'ROUTINE'));
+      const allExecutions = habitsData.filter(p => !p.isTemplate && p.type === 'HABITS');
       const uniqueMentees = new Set(allExecutions.map(e => e.menteeId)).size;
       
       setStats(prev => ({
@@ -65,7 +65,7 @@ export default function HabitsPage() {
       }));
 
       const filtered = habitsData.filter(p => {
-        const isHabit = p.type === 'HABITS' || p.type === 'ROUTINE';
+        const isHabit = p.type === 'HABITS';
         return activeTab === 'templates' 
           ? (p.isTemplate && isHabit)
           : (!p.isTemplate && isHabit);
@@ -76,7 +76,7 @@ export default function HabitsPage() {
       if (activeTab === 'templates') {
         setTemplates(filtered);
       } else {
-        const allTemplates = habitsData.filter(p => p.isTemplate && (p.type === 'HABITS' || p.type === 'ROUTINE'));
+        const allTemplates = habitsData.filter(p => p.isTemplate && p.type === 'HABITS');
         setTemplates(allTemplates);
       }
     } catch (error) {
@@ -373,8 +373,8 @@ export default function HabitsPage() {
       </div>
 
       {/* Main Content Area */}
-      <div className="glass-card bg-white/60 backdrop-blur-xl rounded-[24px] border border-white p-6 lg:p-8 shadow-soft min-h-[400px] relative overflow-hidden group">
-        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-indigo-500/[0.03] blur-[80px] rounded-full -mr-20 -mt-20 group-hover:bg-indigo-500/[0.05] transition-all duration-1000" />
+      <div className="glass-card bg-white/60 backdrop-blur-xl rounded-[24px] border border-white p-6 lg:p-8 shadow-soft min-h-[400px] relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-[300px] h-[300px] bg-indigo-500/[0.03] blur-[80px] rounded-full -mr-20 -mt-20 transition-all duration-1000" />
         
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 space-y-3">

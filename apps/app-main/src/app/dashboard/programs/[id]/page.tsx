@@ -44,7 +44,7 @@ export default function ProgramDetailPage() {
    const [selectedPhaseId, setSelectedPhaseId] = useState<string | null>(null);
    const [evidenceTarget, setEvidenceTarget] = useState<any>(null);
 
-   const toggleSubTask = async (milestoneId: string, title: string) => {
+   const toggleSubTask = async (milestoneId: string, title: string, index?: number) => {
      let isCurrentlyCompleted = false;
      
      // 1. Optimistic UI update on program object
@@ -58,8 +58,8 @@ export default function ProgramDetailPage() {
              if (m.id !== milestoneId) return m;
              return {
                ...m,
-               subTasks: m.subTasks?.map((st: any) => {
-                 if (st.title === title) {
+               subTasks: m.subTasks?.map((st: any, i: number) => {
+                 if (index !== undefined ? i === index : st.title === title) {
                    isCurrentlyCompleted = st.isCompleted || false;
                    return { ...st, isCompleted: !isCurrentlyCompleted };
                  }
@@ -74,6 +74,7 @@ export default function ProgramDetailPage() {
      try {
        await apiClient.post(`/mentor/programs/${params.id}/milestones/${milestoneId}/subtasks/toggle`, {
          title,
+         index,
          isCompleted: !isCurrentlyCompleted,
        });
      } catch (error) {
@@ -89,8 +90,8 @@ export default function ProgramDetailPage() {
                if (m.id !== milestoneId) return m;
                return {
                  ...m,
-                 subTasks: m.subTasks?.map((st: any) => {
-                   if (st.title === title) {
+                 subTasks: m.subTasks?.map((st: any, i: number) => {
+                   if (index !== undefined ? i === index : st.title === title) {
                      return { ...st, isCompleted: isCurrentlyCompleted };
                    }
                    return st;
@@ -141,16 +142,17 @@ export default function ProgramDetailPage() {
   };
 
   const handleQuickInitializePhase = async () => {
+    const isRoutine = program?.type === 'ROUTINE';
     try {
       await apiClient.post(`/mentor/programs/${params.id}/phases`, {
-        name: 'Hábitos del Protocolo',
-        description: 'Lista de hábitos diarios y semanales asignados a este protocolo.',
+        name: isRoutine ? 'Pasos de la Rutina' : 'Hábitos del Protocolo',
+        description: isRoutine ? 'Lista de pasos semanales asignados a esta rutina.' : 'Lista de hábitos diarios y semanales asignados a este protocolo.',
         order: 0
       });
-      toast.success('¡Lista de hábitos inicializada!');
+      toast.success(isRoutine ? '¡Lista de pasos inicializada!' : '¡Lista de hábitos inicializada!');
       fetchProgram();
     } catch (error) {
-      toast.error('Error al inicializar los hábitos');
+      toast.error(isRoutine ? 'Error al inicializar los pasos' : 'Error al inicializar los hábitos');
     }
   };
 
@@ -355,6 +357,7 @@ export default function ProgramDetailPage() {
   const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
   const from = searchParams ? searchParams.get('from') : null;
   const isHabits = program.type === 'HABITS' || program.type === 'ROUTINE' || from === 'habits';
+  const isRoutine = program.type === 'ROUTINE';
 
   return (
     <div className="w-full p-4 lg:p-6 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 pb-20">
@@ -369,6 +372,7 @@ export default function ProgramDetailPage() {
         onClose={() => setIsMilestoneModalOpen(false)}
         onSubmit={handleAddMilestone}
         isHabitOnly={isHabits}
+        programType={program?.type}
       />
       <EvidenceModal
         isOpen={isEvidenceModalOpen}
@@ -393,7 +397,7 @@ export default function ProgramDetailPage() {
             <div className="w-8 h-8 bg-white border border-slate-100 rounded-xl flex items-center justify-center group-hover:scale-110 group-hover:shadow-md transition-all">
               <ChevronLeft className="w-4 h-4" />
             </div>
-            {isHabits ? 'Regresar a Hábitos' : 'Regresar a Programas'}
+            {isHabits ? (isRoutine ? 'Regresar a Rutinas' : 'Regresar a Hábitos') : 'Regresar a Programas'}
           </button>
 
           <div className="tactical-header">
@@ -434,7 +438,7 @@ export default function ProgramDetailPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'Arquitectura', val: program.phases?.length || 0, unit: 'Fases', icon: Layers, color: 'text-indigo-600', bg: 'bg-indigo-50' },
-          { label: 'Objetivos', val: program.phases?.reduce((acc: number, p: any) => acc + (p.milestones?.length || 0), 0) || 0, unit: 'Hitos', icon: Target, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+          { label: 'Objetivos', val: program.phases?.reduce((acc: number, p: any) => acc + (p.milestones?.length || 0), 0) || 0, unit: isRoutine ? 'Pasos' : (isHabits ? 'Hábitos' : 'Hitos'), icon: Target, color: 'text-emerald-600', bg: 'bg-emerald-50' },
           { label: 'Potencial XP', val: program.phases?.reduce((acc: number, p: any) => acc + (p.milestones?.reduce((mAcc: number, m: any) => mAcc + (m.xpReward || 0), 0) || 0), 0) || 0, unit: 'Puntos', icon: Trophy, color: 'text-amber-500', bg: 'bg-amber-50' },
           { label: 'Cronograma', val: program.duration || '--', unit: 'Tiempo', icon: Clock, color: 'text-slate-600', bg: 'bg-slate-50' },
         ].map((stat, i) => (
@@ -463,7 +467,7 @@ export default function ProgramDetailPage() {
                 {isHabits ? (
                   <>
                     <Flame className="w-4 h-4 text-orange-500 animate-pulse" />
-                    Panel de Consistencia de Hábitos
+                    Panel de Consistencia de {isRoutine ? 'Pasos' : 'Hábitos'}
                   </>
                 ) : (
                   <>
@@ -474,7 +478,9 @@ export default function ProgramDetailPage() {
               </h2>
               {isHabits && (
                 <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.25em] italic opacity-60 mt-1">
-                  Registrá y gestioná las rutinas diarias y semanales de este protocolo.
+                  {isRoutine 
+                    ? 'Registrá y gestioná los pasos y rutinas semanales de este protocolo.'
+                    : 'Registrá y gestioná las rutinas diarias y semanales de este protocolo.'}
                 </p>
               )}
             </div>
@@ -496,7 +502,7 @@ export default function ProgramDetailPage() {
                   className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 transition-colors font-bold text-[9px] uppercase tracking-widest group"
                 >
                   <Plus className="w-3.5 h-3.5 p-0.5 bg-indigo-100 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all animate-pulse" />
-                  Añadir Hábito
+                  Añadir {isRoutine ? 'Paso' : 'Hábito'}
                 </button>
               ) : (
                 <button
@@ -504,7 +510,7 @@ export default function ProgramDetailPage() {
                   className="flex items-center gap-1.5 text-indigo-600 hover:text-indigo-700 transition-colors font-bold text-[9px] uppercase tracking-widest group"
                 >
                   <Plus className="w-3.5 h-3.5 p-0.5 bg-indigo-100 rounded-lg group-hover:bg-indigo-600 group-hover:text-white transition-all" />
-                  Inicializar Hábitos
+                  Inicializar {isRoutine ? 'Pasos' : 'Hábitos'}
                 </button>
               )
             )}
@@ -518,13 +524,13 @@ export default function ProgramDetailPage() {
                   <Flame className="w-10 h-10 text-indigo-400 mx-auto animate-pulse" />
                   <div className="space-y-1">
                     <h3 className="text-base font-black text-slate-900 uppercase tracking-tighter italic leading-none">Sin Consistencia Inicial</h3>
-                    <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.2em] italic">Para poder incorporar hábitos y rutinas, inicializá la lista de consistencia.</p>
+                    <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.2em] italic">Para poder incorporar {isRoutine ? 'pasos' : 'hábitos y rutinas'}, inicializá la lista de consistencia.</p>
                   </div>
                   <button
                     onClick={handleQuickInitializePhase}
                     className="px-6 py-3 bg-indigo-600 text-white rounded-[16px] font-black text-[8px] uppercase tracking-[0.3em] hover:bg-slate-900 transition-all shadow-lg active:scale-95 italic"
                   >
-                    Inicializar Hábitos del Protocolo
+                    Inicializar {isRoutine ? 'Pasos de la Rutina' : 'Hábitos del Protocolo'}
                   </button>
                 </div>
               ) : (
@@ -570,7 +576,9 @@ export default function ProgramDetailPage() {
                         {(!phase.milestones || phase.milestones.length === 0) ? (
                           <div className="glass-card bg-white border border-dashed border-slate-200 p-8 rounded-[24px] text-center space-y-3 shadow-sm">
                             <p className="text-[8px] text-slate-400 font-black uppercase tracking-[0.2em] italic">
-                              {isHabits ? 'No hay hábitos definidos en este protocolo.' : 'Sin hábitos asignados en esta categoría.'}
+                              {isHabits 
+                                ? (isRoutine ? 'No hay pasos definidos en esta rutina.' : 'No hay hábitos definidos en este protocolo.') 
+                                : 'Sin hitos asignados en esta categoría.'}
                             </p>
                             <button
                               onClick={() => {
@@ -579,7 +587,7 @@ export default function ProgramDetailPage() {
                               }}
                               className="px-4 py-2 bg-slate-900 hover:bg-indigo-600 text-white rounded-[12px] font-black text-[8px] uppercase tracking-[0.3em] transition-all active:scale-95 italic"
                             >
-                              {isHabits ? 'Crear primer Hábito' : 'Crear Hábito'}
+                              {isHabits ? (isRoutine ? 'Crear primer Paso' : 'Crear primer Hábito') : 'Crear Hito'}
                             </button>
                           </div>
                         ) : (
@@ -653,7 +661,7 @@ export default function ProgramDetailPage() {
                                             key={idx}
                                             disabled={isBtnDisabled}
                                             type="button"
-                                            onClick={() => toggleSubTask(milestone.id, task.title)}
+                                            onClick={() => toggleSubTask(milestone.id, task.title, idx)}
                                             className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl border text-left transition-all duration-300 active:scale-[0.98] ${
                                               isSubChecked
                                                 ? 'bg-emerald-50/30 border-emerald-100/50 text-emerald-800'
@@ -682,7 +690,7 @@ export default function ProgramDetailPage() {
                                   {isCompletedToday ? (
                                     <div className="w-full py-4 bg-emerald-50 text-emerald-600 border border-emerald-200/60 rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] flex items-center justify-center gap-2 shadow-sm italic">
                                       <Check className="w-4 h-4 stroke-[3] animate-bounce" />
-                                      Hábito Registrado (Límite Alcanzado)
+                                      {isRoutine ? 'Paso' : 'Hábito'} Registrado (Límite Alcanzado)
                                     </div>
                                   ) : (
                                     <button
@@ -997,12 +1005,12 @@ export default function ProgramDetailPage() {
                 )}
               </div>
               <h3 className="text-base font-black uppercase tracking-tighter italic leading-none mb-3">
-                {(program.type === 'HABITS' || program.type === 'ROUTINE') ? 'Diseño de Hábitos' : 'Diseño Curricular'}
+                {(program.type === 'HABITS' || program.type === 'ROUTINE') ? (isRoutine ? 'Diseño de Rutinas' : 'Diseño de Hábitos') : 'Diseño Curricular'}
               </h3>
               <p className="text-slate-400 text-[8px] leading-relaxed font-black uppercase tracking-widest mb-5 italic opacity-80">
                 {(program.type === 'HABITS' || program.type === 'ROUTINE') ? (
                   <>
-                    Diseñá protocolos de consistencia simples con metas de <span className="text-white">5 a 15 XP</span>. Un hábito diario claro y bien delimitado estimula el streak de tus mentoreados.
+                    Diseñá protocolos de consistencia simples con metas de <span className="text-white">5 a 15 XP</span>. Un {isRoutine ? 'paso' : 'hábito'} diario claro y bien delimitado estimula el streak de tus mentoreados.
                   </>
                 ) : (
                   <>
@@ -1019,7 +1027,7 @@ export default function ProgramDetailPage() {
 
           <div className="glass-card bg-white/70 backdrop-blur-xl p-5 rounded-[20px] border border-white shadow-soft">
             <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.3em] mb-5 italic border-b border-slate-100 pb-3">
-              {(program.type === 'HABITS' || program.type === 'ROUTINE') ? 'Protocolos de Consistencia' : 'Protocolos de Despliegue'}
+              {(program.type === 'HABITS' || program.type === 'ROUTINE') ? (isRoutine ? 'Protocolos de Rutinas' : 'Protocolos de Consistencia') : 'Protocolos de Despliegue'}
             </h3>
             <div className="space-y-4">
               {((program.type === 'HABITS' || program.type === 'ROUTINE') ? (

@@ -70,8 +70,8 @@ export class ProgramService {
     return this.programRepository.toggleMilestone(milestoneId, program.menteeId, date);
   }
 
-  async toggleSubTask(milestoneId: string, title: string, isCompleted: boolean) {
-    return this.programRepository.toggleSubTask(milestoneId, title, isCompleted);
+  async toggleSubTask(milestoneId: string, title: string, isCompleted: boolean, index?: number) {
+    return this.programRepository.toggleSubTask(milestoneId, title, isCompleted, index);
   }
 
   async togglePhase(programId: string, phaseId: string, scope: QueryScope, date?: Date) {

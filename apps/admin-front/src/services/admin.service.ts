@@ -124,6 +124,12 @@ export const adminService = {
     return response.data;
   },
 
+  deletePlan: async (id: string) => {
+    const response = await apiClient.delete<any>(`/admin/plans/${id}`);
+    return response.data;
+  },
+
+
   getTenantSubscriptionHistory: async (tenantId: string) => {
     const response = await apiClient.get<any>(`/admin/tenants/${tenantId}/subscription-history`);
     return response.data;
