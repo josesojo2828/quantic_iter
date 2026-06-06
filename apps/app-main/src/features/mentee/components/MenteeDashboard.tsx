@@ -940,7 +940,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                     {coach.bio}
                   </p>
 
-                  {/* Coach Specific Metrics Row */}
+                  {/* Coach Specific Metrics Row - Oculto temporalmente
                   <div className="grid grid-cols-2 gap-3 pt-4 border-t border-slate-50">
                     <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-100 flex flex-col items-center justify-center text-center">
                       <span className="text-[8px] font-black text-slate-400 uppercase tracking-widest block leading-none">NIVEL</span>
@@ -953,7 +953,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                         {stats.currentStreak}
                       </span>
                     </div>
-                  </div>
+                  </div> */>
                 </div>
 
                 <div className="pt-6 mt-4">
@@ -1062,7 +1062,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
 
               <div className="relative z-10 grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
                 {/* Level Circle */}
-                <div className="md:col-span-4 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-[#EAF0F6] pb-6 md:pb-0 md:pr-6">
+                {/* <div className="md:col-span-4 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-[#EAF0F6] pb-6 md:pb-0 md:pr-6">
                   <div className="relative w-24 h-24 flex items-center justify-center">
                     <svg className="absolute w-full h-full transform -rotate-90">
                       <circle cx="48" cy="48" r="42" stroke="#F0F3F7" strokeWidth="6" fill="transparent" />
@@ -1089,7 +1089,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                   <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.2em] mt-3 italic">
                     {activeCoachStats.xp} / {getNextLevelXp(activeCoachStats.level)} EXP total
                   </p>
-                </div>
+                </div> */}
 
                 {/* Progress Details */}
                 <div className="md:col-span-8 space-y-4">
@@ -1104,7 +1104,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                       </p>
                     </div>
                     {/* Streaks */}
-                    <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 px-4 py-2 rounded-2xl">
+                    {/* <div className="flex items-center gap-2 bg-orange-50 border border-orange-100 px-4 py-2 rounded-2xl">
                       <Flame className="w-5 h-5 text-orange-500 animate-pulse fill-orange-500" />
                       <div className="text-left">
                         <span className="text-[13px] font-black text-[#2C3A50] italic tracking-tighter leading-none block">
@@ -1114,10 +1114,10 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                           DÍAS RACHA
                         </span>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
 
-                  <div className="space-y-1">
+                  {/* <div className="space-y-1">
                     <div className="w-full bg-[#F0F3F7] rounded-full h-3.5 p-0.5 overflow-hidden border border-[#EAF0F6]">
                       <div
                         className="h-full rounded-full transition-all duration-1000 shadow-md"
@@ -1133,7 +1133,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                       <span>{Math.round(Math.min(100, Math.max(0, ((activeCoachStats.xp - getCurrentLevelXpFloor(activeCoachStats.level)) / (getNextLevelXp(activeCoachStats.level) - getCurrentLevelXpFloor(activeCoachStats.level) || 1)) * 100)))}% completado</span>
                       <span>Nivel {activeCoachStats.level + 1}</span>
                     </div>
-                  </div>
+                  </div> */}
                 </div>
               </div>
             </div>
@@ -1589,67 +1589,15 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                       <span className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest block">HÁBITOS</span>
                       <span className="text-[11px] font-black text-[#2C3A50]">{todayHabits.filter(h => h.checkedToday).length}/{todayHabits.length}</span>
                     </div>
+                    {/* TAREAS summary - Oculto temporalmente
                     <div className="space-y-0.5">
                       <span className="text-[7.5px] font-black text-slate-400 uppercase tracking-widest block">TAREAS</span>
                       <span className="text-[11px] font-black text-[#2C3A50]">{todayTasks.filter(t => t.status === 'SUBMITTED' || t.status === 'COMPLETED' || t.status === 'APPROVED').length}/{todayTasks.length}</span>
-                    </div>
+                    </div> */}
                   </div>
                 </div>
 
-                {/* 2. Sesiones de hoy */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                     <h3 className="text-[9px] font-black text-[#2C3A50] uppercase tracking-[0.2em] flex items-center gap-1.5 italic">
-                        <div className="w-1.5 h-3 bg-indigo-500 rounded-full" />
-                        Videollamadas Hoy
-                     </h3>
-                     <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-widest italic">{todaySessions.length} hoy</span>
-                  </div>
-
-                  {todaySessions.length === 0 ? (
-                     <div className="glass-card bg-white border border-[#EAF0F6] rounded-[24px] p-5 shadow-soft text-center">
-                        <Video className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                        <h4 className="text-[10px] font-black text-slate-600 uppercase italic">Sin llamadas</h4>
-                        <p className="text-[8px] text-slate-400 uppercase mt-1">
-                           No tenés sesiones virtuales hoy.
-                        </p>
-                     </div>
-                  ) : (
-                     <div className="space-y-3">
-                        {todaySessions.map((session) => (
-                           <div key={session.id} className="bg-white border border-[#EAF0F6] rounded-[20px] p-4 shadow-sm hover:shadow-md transition-all duration-300 space-y-3">
-                              <div className="flex items-center justify-between">
-                                 <span className="text-[7.5px] font-black text-[#7B91EB] uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100 italic">
-                                    En Vivo 🚀
-                                 </span>
-                                 <span className="text-[8.5px] font-bold text-slate-400 uppercase">
-                                    {session.startTime || 'Hoy'}
-                                 </span>
-                              </div>
-                              <h4 className="text-[10px] font-black text-[#2C3A50] uppercase tracking-tight italic leading-tight">
-                                 {session.name || 'Sesión de Alineación'}
-                              </h4>
-                              {session.meetingLink ? (
-                                 <a
-                                    href={session.meetingLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full py-2 bg-slate-900 hover:bg-[#7B91EB] text-white rounded-xl font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all italic shadow-sm"
-                                 >
-                                    <Video className="w-3.5 h-3.5" />
-                                    Unirse a Videollamada
-                                 </a>
-                              ) : (
-                                 <div className="w-full py-2 bg-slate-50 text-slate-400 rounded-xl font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-1 border border-slate-100 italic">
-                                    <AlertCircle className="w-3.5 h-3.5" />
-                                    Enlace pendiente
-                                 </div>
-                              )}
-                           </div>
-                        ))}
-                     </div>
-                  )}
-                </div>
+                {/* 2. Videollamadas Hoy - Oculto temporalmente */}
 
                 {/* 3. Próximas Sesiones */}
                 <div className="glass-card bg-white rounded-[24px] p-5 border border-[#EAF0F6] shadow-soft space-y-3">
@@ -2143,7 +2091,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
               </div>
             </div>
 
-            {/* Aggregate Progress Badge */}
+            {/* Aggregate Progress Badge - Oculto temporalmente
             <div className="md:ml-auto bg-gradient-to-tr from-[#7B91EB] to-[#99A7EE] text-white px-6 py-4 rounded-[24px] shadow-lg shadow-[#7B91EB]/20 flex items-center gap-4 text-left">
               <Award size={32} className="animate-pulse shrink-0 animate-bounce-subtle" />
               <div>
@@ -2153,7 +2101,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                   {totalXp} XP Totales
                 </span>
               </div>
-            </div>
+            </div> */>
           </div>
         </div>
 
@@ -2188,6 +2136,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                       </div>
                     </div>
 
+                    {/* XP/Level progress bar - Oculto temporalmente
                     <div className="space-y-1">
                       <div className="w-full bg-[#F0F3F7] rounded-full h-2 overflow-hidden border border-[#EAF0F6]">
                         <div
@@ -2203,7 +2152,7 @@ export const MenteeDashboard: React.FC<MenteeDashboardProps> = ({
                         <span>{Math.round(cPercent)}%</span>
                         <span>Nivel {cStats.level + 1}</span>
                       </div>
-                    </div>
+                    </div> */}
                   </div>
 
                   <button

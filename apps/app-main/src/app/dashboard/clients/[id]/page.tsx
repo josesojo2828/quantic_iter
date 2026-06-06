@@ -234,6 +234,7 @@ export default function StudentProfilePage() {
             
             {/* Details */}
             <div className="text-center lg:text-left space-y-2">
+              {/* Racha badge - Oculto temporalmente
               <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2">
                 {streak > 0 && (
                   <span className="px-2.5 py-1 rounded bg-orange-50 text-orange-600 text-xs font-semibold border border-orange-100 flex items-center gap-1.5 animate-pulse">
@@ -241,7 +242,7 @@ export default function StudentProfilePage() {
                     Racha: {streak} días
                   </span>
                 )}
-              </div>
+              </div> */}
               <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
                 {contact.name}
               </h1>

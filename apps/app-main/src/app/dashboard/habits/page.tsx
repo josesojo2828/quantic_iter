@@ -353,7 +353,8 @@ export default function HabitsPage() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: 'HÁBITOS ACTIVOS', value: stats.activeHabits, unit: 'SISTEMAS', icon: Zap, color: 'text-indigo-600', bg: 'bg-indigo-50/50' },
-          { label: 'RACHA GLOBAL', value: stats.globalStreak, unit: 'LOGRADA', icon: Flame, color: 'text-amber-500', bg: 'bg-amber-50/50' },
+          // RACHA GLOBAL - Oculto temporalmente
+          // { label: 'RACHA GLOBAL', value: stats.globalStreak, unit: 'LOGRADA', icon: Flame, color: 'text-amber-500', bg: 'bg-amber-50/50' },
           { label: 'ACTIVOS COMPROMETIDOS', value: stats.committedMentees, unit: 'USUARIOS', icon: Users, color: 'text-emerald-600', bg: 'bg-emerald-50/50' },
           { label: 'TASA DE ÉXITO', value: stats.successRate, unit: 'GLOBAL', icon: Trophy, color: 'text-blue-600', bg: 'bg-blue-50/50' },
         ].map((stat, i) => (
@@ -480,7 +481,7 @@ export default function HabitsPage() {
                   onClick={() => router.push(`/dashboard/programs/${item.id}?from=habits`)}
                   className="w-full py-3 bg-white border border-slate-200 text-slate-900 rounded-[18px] text-[8px] font-black uppercase tracking-[0.25em] hover:bg-slate-900 hover:text-white hover:border-slate-900 transition-all active:scale-95 shadow-soft group/btn relative z-10 italic"
                 >
-                  {item.mentee ? 'Supervisar Racha' : 'Configurar Protocolo'}
+                  {item.mentee ? 'Ver Detalle' : 'Configurar Protocolo'}
                   <ChevronRight className="w-4 h-4 inline-block ml-1.5 group-hover/btn:translate-x-1.5 transition-transform" />
                 </button>
               </div>

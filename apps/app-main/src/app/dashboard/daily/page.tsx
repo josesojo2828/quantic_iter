@@ -347,6 +347,7 @@ export default function DailyDashboardPage() {
                </p>
             </div>
 
+            {/* Racha de Hoy - Oculto temporalmente
             <div className="flex items-center gap-4 bg-white/50 backdrop-blur-md p-3.5 rounded-[18px] border border-white shadow-soft">
                <div className="text-right">
                   <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest mb-0.5 italic">Racha de Hoy</p>
@@ -361,6 +362,7 @@ export default function DailyDashboardPage() {
                   ))}
                </div>
             </div>
+            */}
          </header>
 
          {/* KPI Stats & Unified Progress */}
@@ -382,7 +384,8 @@ export default function DailyDashboardPage() {
             {[
                { label: 'Pasos Activos', value: `${completedTasksCount} / ${dailyTasks.length}`, icon: ListTodo, color: 'text-indigo-600', bg: 'bg-indigo-50', sub: 'Programas' },
                { label: 'Hábitos Diario', value: `${completedHabitsCount} / ${todayHabits.length}`, icon: Sparkles, color: 'text-amber-600', bg: 'bg-amber-50', sub: 'Consistencia' },
-               { label: 'Tareas Pendientes', value: `${completedAssignedTasksCount} / ${todayTasks.length}`, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', sub: 'Entregables' },
+               // Tareas/Entregables KPI - Oculto temporalmente
+               // { label: 'Tareas Pendientes', value: `${completedAssignedTasksCount} / ${todayTasks.length}`, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50', sub: 'Entregables' },
             ].map((kpi, i) => (
                <div key={i} className="glass-card bg-white/70 backdrop-blur-xl p-4.5 rounded-[20px] border border-white shadow-soft group hover:scale-[1.02] transition-transform duration-500 flex items-center gap-4">
                   <div className={`w-9 h-9 ${kpi.bg} ${kpi.color} rounded-lg flex-shrink-0 flex items-center justify-center shadow-inner group-hover:rotate-6 transition-transform`}>
@@ -539,11 +542,7 @@ export default function DailyDashboardPage() {
                                              </>
                                           ) : allSubTasksChecked ? (
                                              <>
-                                                {milestone.requiredEvidence !== 'NONE' ? (
-                                                   <Camera className="w-3.5 h-3.5 group-hover:scale-125 transition-transform" />
-                                                ) : (
-                                                   <Check className="w-3.5 h-3.5 group-hover:scale-125 transition-transform" />
-                                                )}
+                                                <Check className="w-3.5 h-3.5 group-hover:scale-125 transition-transform" />
                                                 Registrar Hito
                                              </>
                                           ) : (
@@ -669,129 +668,14 @@ export default function DailyDashboardPage() {
                   )}
                </div>
 
-               {/* 3. Tareas Asignadas (Entregables) */}
-               <div className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                     <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2 italic">
-                        <div className="w-1.5 h-3 bg-blue-500 rounded-full" />
-                        Tareas Entregables
-                     </h3>
-                     <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-widest italic">{todayTasks.length} activas</span>
-                  </div>
-
-                  {todayTasks.length === 0 ? (
-                     <div className="glass-card bg-white/70 backdrop-blur-xl p-8 rounded-[24px] border border-white shadow-soft text-center">
-                        <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                        <h4 className="text-xs font-black text-slate-600 uppercase italic">Sin tareas pendientes</h4>
-                        <p className="text-[8px] text-slate-400 uppercase mt-1">
-                           ¡Buen trabajo! No tenés tareas ni entregas agendadas para hoy.
-                        </p>
-                     </div>
-                  ) : (
-                     <div className="space-y-3">
-                        {todayTasks.map((task) => {
-                           const isCompleted = task.status === 'SUBMITTED' || task.status === 'COMPLETED' || task.status === 'APPROVED';
-
-                           return (
-                              <div key={task.id} className={`glass-card p-4 rounded-[20px] border transition-all duration-300 flex items-center justify-between bg-white border-[#EAF0F6] shadow-sm hover:shadow-md`}>
-                                 <div className="flex items-center gap-4">
-                                    <button
-                                       onClick={() => handleTaskClick(task)}
-                                       className={`w-9 h-9 rounded-xl flex items-center justify-center transition-all ${isCompleted
-                                             ? 'bg-emerald-600 text-white shadow-md'
-                                             : 'bg-[#F0F3FF] text-[#7B91EB] hover:bg-[#7B91EB] hover:text-white active:scale-95'
-                                          }`}
-                                    >
-                                       {isCompleted ? <Check className="w-4 h-4 stroke-[3]" /> : <Camera className="w-4 h-4" />}
-                                    </button>
-                                    <div>
-                                       <span className="text-[7.5px] font-black text-indigo-500 uppercase tracking-widest block mb-0.5 italic">Entregable</span>
-                                       <h4 className={`text-[10px] font-black uppercase tracking-tight transition-all italic ${isCompleted ? 'text-slate-400 line-through' : 'text-slate-900'}`}>
-                                          {task.title}
-                                       </h4>
-                                       <p className="text-[8px] text-slate-400 font-bold uppercase tracking-wider leading-relaxed mt-0.5">
-                                          {task.description || 'Entrega especial solicitada por tu mentor'}
-                                       </p>
-                                    </div>
-                                 </div>
-
-                                 <div className="flex flex-col items-end gap-2">
-                                    <div className="bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full text-[7px] font-black uppercase tracking-widest border border-indigo-100 italic">
-                                       +{task.xpReward || 50} XP
-                                    </div>
-                                    {isCompleted && (
-                                       <div className="text-[7px] font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1 italic">
-                                          <div className="w-1 h-1 bg-emerald-500 rounded-full animate-pulse" />
-                                          {task.status === 'APPROVED' ? 'Aprobada' : 'Entregada'}
-                                       </div>
-                                    )}
-                                 </div>
-                              </div>
-                           );
-                        })}
-                     </div>
-                  )}
-               </div>
+               {/* 3. Tareas Asignadas (Entregables) - Oculto temporalmente */}
 
             </div>
 
             {/* RIGHT COLUMN: Sessions & Stats */}
             <div className="lg:col-span-4 space-y-6">
 
-               {/* 1. Sesiones de hoy */}
-               <div className="space-y-3">
-                  <div className="flex items-center justify-between px-1">
-                     <h3 className="text-[9px] font-black text-slate-900 uppercase tracking-[0.2em] flex items-center gap-2 italic">
-                        <div className="w-1.5 h-3 bg-indigo-500 rounded-full" />
-                        Sesiones de Mentoría
-                     </h3>
-                     <span className="text-[8.5px] font-black text-slate-400 uppercase tracking-widest italic">{todaySessions.length} agendadas</span>
-                  </div>
-
-                  {todaySessions.length === 0 ? (
-                     <div className="glass-card bg-white/70 backdrop-blur-xl p-6 rounded-[24px] border border-white shadow-soft text-center">
-                        <Video className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                        <h4 className="text-xs font-black text-slate-600 uppercase italic">Sin videollamadas</h4>
-                        <p className="text-[8px] text-slate-400 uppercase mt-1">
-                           No tenés sesiones virtuales agendadas para hoy.
-                        </p>
-                     </div>
-                  ) : (
-                     <div className="space-y-3">
-                        {todaySessions.map((session) => (
-                           <div key={session.id} className="bg-white border border-[#EAF0F6] rounded-[20px] p-4 shadow-sm hover:shadow-md transition-all duration-300 space-y-3">
-                              <div className="flex items-center justify-between">
-                                 <span className="text-[8px] font-black text-[#7B91EB] uppercase tracking-widest bg-indigo-50 px-2 py-0.5 rounded-lg border border-indigo-100 italic">
-                                    En Vivo 🚀
-                                 </span>
-                                 <span className="text-[8.5px] font-bold text-slate-400 uppercase">
-                                    {session.startTime || 'Hora pautada'}
-                                 </span>
-                              </div>
-                              <h4 className="text-[10px] font-black text-[#2C3A50] uppercase tracking-tight italic leading-tight">
-                                 {session.name || 'Sesión de Alineación'}
-                              </h4>
-                              {session.meetingLink ? (
-                                 <a
-                                    href={session.meetingLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="w-full py-2 bg-slate-900 hover:bg-[#7B91EB] text-white rounded-xl font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-1.5 transition-all italic shadow-sm"
-                                 >
-                                    <Video className="w-3 h-3" />
-                                    Unirse a Videollamada
-                                 </a>
-                              ) : (
-                                 <div className="w-full py-2 bg-slate-50 text-slate-400 rounded-xl font-black text-[8px] uppercase tracking-widest flex items-center justify-center gap-1 border border-slate-100 italic">
-                                    <AlertCircle className="w-3 h-3" />
-                                    Enlace pendiente
-                                 </div>
-                              )}
-                           </div>
-                        ))}
-                     </div>
-                  )}
-               </div>
+               {/* 1. Sesiones / Videollamadas - Oculto temporalmente */}
 
                {/* 2. Desafío del Día */}
                <div className="bg-slate-900 p-5 rounded-[24px] text-white overflow-hidden relative group shadow-2xl shadow-slate-200">

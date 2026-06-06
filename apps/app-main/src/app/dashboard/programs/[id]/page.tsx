@@ -618,20 +618,17 @@ export default function ProgramDetailPage() {
                                       <div className="px-2 py-0.5 bg-emerald-50 rounded text-[7px] font-black text-emerald-600 uppercase tracking-widest italic border border-emerald-100 shadow-sm">
                                         {milestone.frequency === 'DAILY' ? 'DIARIO' : milestone.frequency === 'WEEKLY' ? 'SEMANAL' : 'ÚNICO'}
                                       </div>
+                                      {/* Evidence badge - Oculto temporalmente
                                       {milestone.requiredEvidence !== 'NONE' && (
                                         <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded text-[7px] font-black text-amber-600 uppercase tracking-widest italic border border-amber-100 shadow-sm">
                                           <Zap className="w-2.5 h-2.5 animate-pulse" />
                                           EVIDENCIA
                                         </div>
-                                      )}
+                                      )} */}
                                     </div>
                                   </div>
 
-                                  <div className="flex items-center gap-1.5">
-                                    <div className={`flex items-center gap-1 px-2.5 py-1 rounded-full border text-[7.5px] font-black uppercase tracking-widest italic shadow-sm shrink-0 ${streakColor}`}>
-                                      <Flame className={`w-3.5 h-3.5 fill-current ${currentStreak > 0 ? 'animate-pulse' : ''}`} />
-                                      RACHA: {currentStreak}D
-                                    </div>
+                                    {/* Racha badge - Oculto temporalmente */}
                                     <button
                                       onClick={() => handleDeleteMilestone(phase.id, milestone.id)}
                                       className="w-8 h-8 flex items-center justify-center text-slate-300 hover:text-red-500 hover:bg-slate-50 rounded-xl transition-all active:scale-90 border border-transparent hover:border-slate-100"
@@ -836,21 +833,23 @@ export default function ProgramDetailPage() {
                                         <div className="px-2 py-0.5 bg-emerald-50 rounded text-[7px] font-black text-emerald-600 uppercase tracking-widest italic border border-emerald-100 shadow-sm">
                                           {milestone.frequency}
                                         </div>
+                                        {/* Evidence badge - Oculto temporalmente
                                         {milestone.requiredEvidence !== 'NONE' && (
                                           <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded text-[7px] font-black text-amber-600 uppercase tracking-widest italic border border-amber-100 shadow-sm">
                                             <Zap className="w-2.5 h-2.5 animate-pulse" />
                                             EVIDENCIA
                                           </div>
-                                        )}
+                                        )} */}
                                       </div>
                                     </div>
                                   </div>
 
                                   <div className="flex items-center gap-2">
+                                    {/* Racha badge - Oculto temporalmente
                                     <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-[7.5px] font-black uppercase tracking-widest italic shadow-sm shrink-0 ${streakColor}`}>
                                       <Flame className="w-3.5 h-3.5 fill-current" />
                                       Racha: {currentStreak}D
-                                    </div>
+                                    </div> */}
                                     <button
                                       onClick={() => handleDeleteMilestone(phase.id, milestone.id)}
                                       className="w-8 h-8 flex items-center justify-center text-slate-200 hover:text-red-500 hover:bg-slate-50 rounded-xl transition-all active:scale-90"
@@ -950,12 +949,13 @@ export default function ProgramDetailPage() {
                                         {milestone.frequency}
                                       </div>
                                     )}
+                                    {/* Evidence badge - Oculto temporalmente
                                     {milestone.requiredEvidence !== 'NONE' && (
                                       <div className="flex items-center gap-1 px-2 py-0.5 bg-amber-50 rounded text-[7px] font-black text-amber-600 uppercase tracking-widest italic border border-amber-100 shadow-sm">
                                         <Zap className="w-2.5 h-2.5 animate-pulse" />
                                         EVIDENCIA
                                       </div>
-                                    )}
+                                    )} */}
                                   </div>
                                 </div>
                               </div>
