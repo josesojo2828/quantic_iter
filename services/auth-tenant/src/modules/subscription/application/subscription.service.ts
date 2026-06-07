@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, ForbiddenException, OnModuleInit } from '@nestjs/common';
 import type { ISubscriptionRepository } from '../domain/subscription.repository';
 import { ClientKafka } from '@nestjs/microservices';
 import { AuditAction, AuditPayload } from '@mentor/shared';
@@ -8,7 +8,11 @@ import { SubscriptionCreatedEvent } from '../domain/events/subscription-created.
 import { SubscriptionUpdatedEvent } from '../domain/events/subscription-updated.event';
 
 @Injectable()
-export class SubscriptionService {
+export class SubscriptionService implements OnModuleInit {
+  async onModuleInit() {
+    await this.auditClient.connect();
+  }
+
   constructor(
     @Inject('ISubscriptionRepository')
     private readonly subscriptionRepository: ISubscriptionRepository,

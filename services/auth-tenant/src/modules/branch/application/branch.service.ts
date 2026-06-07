@@ -1,11 +1,15 @@
-import { Injectable, Inject, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, BadRequestException, OnModuleInit } from '@nestjs/common';
 import type { IBranchRepository, BranchQuery, CreateBranchDto, UpdateBranchDto } from '../domain/branch.repository';
 import { SubscriptionService } from '../../subscription/application/subscription.service';
 import { ClientKafka } from '@nestjs/microservices';
 import { AuditAction, AuditPayload } from '@mentor/shared';
 
 @Injectable()
-export class BranchService {
+export class BranchService implements OnModuleInit {
+  async onModuleInit() {
+    await this.auditClient.connect();
+  }
+
   constructor(
     @Inject('IBranchRepository')
     private readonly repository: IBranchRepository,

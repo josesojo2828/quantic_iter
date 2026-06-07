@@ -4,6 +4,7 @@ import {
   BadRequestException,
   Inject,
   NotFoundException,
+  OnModuleInit,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
@@ -15,7 +16,11 @@ import { SubscriptionService } from '../../subscription/application/subscription
 import { SidebarService } from './sidebar.service';
 
 @Injectable()
-export class AuthService {
+export class AuthService implements OnModuleInit {
+  async onModuleInit() {
+    await this.auditClient.connect();
+  }
+
   constructor(
     @Inject('IAuthRepository')
     private readonly authRepository: IAuthRepository,

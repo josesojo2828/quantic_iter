@@ -1,4 +1,4 @@
-import { Injectable, Inject, NotFoundException } from '@nestjs/common';
+import { Injectable, Inject, NotFoundException, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../../../common/prisma/prisma.service';
 import { JwtService } from '@nestjs/jwt';
 import { AuditAction } from '@mentor/shared';
@@ -9,7 +9,11 @@ import { SidebarService } from '../../auth/application/sidebar.service';
 import { SubscriptionService } from '../../subscription/application/subscription.service';
 
 @Injectable()
-export class AdminService {
+export class AdminService implements OnModuleInit {
+  async onModuleInit() {
+    await this.auditClient.connect();
+  }
+
   constructor(
     private readonly prisma: PrismaService,
     @Inject('ITenantRepository')
