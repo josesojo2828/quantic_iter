@@ -157,18 +157,18 @@ export default function LandingPage() {
             <a href="#benefits" className="hover:text-slate-900 transition-colors">Beneficios</a>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 md:gap-4">
             <a
               href={`${APP_URL}/login`}
-              className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-950 transition-colors"
+              className="text-[9px] md:text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-950 transition-colors"
             >
               Iniciar Sesión
             </a>
             <a
               href={`${APP_URL}/register`}
-              className="relative inline-flex items-center justify-center p-0.5 overflow-hidden text-[10px] font-black uppercase tracking-widest text-white rounded-full group bg-gradient-to-br from-indigo-400 to-indigo-600 hover:text-white focus:ring-4 focus:outline-none focus:ring-indigo-300 transition-all shadow-lg shadow-indigo-500/20"
+              className="relative inline-flex items-center justify-center p-0.5 overflow-hidden text-[9px] md:text-[10px] font-black uppercase tracking-widest text-white rounded-full group bg-gradient-to-br from-indigo-400 to-indigo-600 hover:text-white focus:ring-4 focus:outline-none focus:ring-indigo-300 transition-all shadow-lg shadow-indigo-500/20"
             >
-              <span className="relative px-6 py-2.5 transition-all ease-in duration-75 bg-[#0C0D0E]/10 rounded-full group-hover:bg-opacity-0">
+              <span className="relative px-3 md:px-6 py-2 md:py-2.5 transition-all ease-in duration-75 bg-[#0C0D0E]/10 rounded-full group-hover:bg-opacity-0">
                 Comenzar Gratis
               </span>
             </a>
@@ -254,7 +254,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── The Problem Section ─── */}
-      <section id="problem" className="relative py-32 px-4 md:px-8 border-t border-slate-200/60 bg-white">
+      <section id="problem" className="relative py-32 px-4 md:px-8 border-t border-slate-200/60 bg-white scroll-mt-24">
         <div className="max-w-7xl mx-auto">
           <div className="max-w-3xl mb-24">
             <span className="text-indigo-600 text-xs font-black uppercase tracking-[0.25em] bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
@@ -302,7 +302,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── What you can build (Exercise, Wellness, Education) ─── */}
-      <section id="use-cases" className="relative py-32 px-4 md:px-8 bg-white/40 border-t border-slate-200/50">
+      <section id="use-cases" className="relative py-32 px-4 md:px-8 bg-white/40 border-t border-slate-200/50 scroll-mt-24">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
             <span className="text-indigo-600 text-xs font-black uppercase tracking-[0.25em] bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
@@ -338,7 +338,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Product Showcase (Vistas Reales en orden cronológico) ─── */}
-      <section id="showcase" className="relative py-32 px-4 md:px-8 border-t border-slate-200/50">
+      <section id="showcase" className="relative py-32 px-4 md:px-8 border-t border-slate-200/50 scroll-mt-24">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-28">
             <span className="text-indigo-600 text-xs font-black uppercase tracking-[0.25em] bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">
@@ -420,7 +420,7 @@ export default function LandingPage() {
       </section>
 
       {/* ─── Benefits Section ─── */}
-      <section id="benefits" className="relative py-32 px-4 md:px-8 border-t border-slate-200/60 bg-white">
+      <section id="benefits" className="relative py-32 px-4 md:px-8 border-t border-slate-200/60 bg-white scroll-mt-24">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-24">
             <span className="text-indigo-600 text-xs font-black uppercase tracking-[0.25em] bg-indigo-50 px-4 py-2 rounded-full border border-indigo-100">

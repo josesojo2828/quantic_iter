@@ -257,7 +257,7 @@ export const RegisterForm = () => {
       )}
 
       {/* ... (fields remain the same) ... */}
-      <div className="grid grid-cols-2 gap-4 form-field">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 form-field">
         <div>
           <label className={labelClasses}>Nombre</label>
           <div className="relative group">
@@ -294,7 +294,7 @@ export const RegisterForm = () => {
       {!invitationCode && !token && (
         <div className="form-field space-y-3">
           <label className={labelClasses}>Tipo de Cuenta / Registro</label>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* OPCION ACADEMIA */}
             <button
               type="button"
@@ -347,7 +347,7 @@ export const RegisterForm = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-4 form-field">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 form-field">
         <div>
           <label className={labelClasses}>Contraseña</label>
           <div className="relative group">
@@ -369,7 +369,7 @@ export const RegisterForm = () => {
       {/* SELECCIÓN DE GÉNERO / IDENTIDAD */}
       <div className="form-field space-y-3">
         <label className={labelClasses}>Género / Identidad</label>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {[
             { id: 'male', label: 'Masculino', desc: 'Coach Chico' },
             { id: 'female', label: 'Femenino', desc: 'Coach Chica' },

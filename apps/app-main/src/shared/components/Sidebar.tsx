@@ -17,7 +17,8 @@ import {
   Layers,
   Zap,
   Target,
-  Globe
+  Globe,
+  X
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -54,7 +55,7 @@ const GROUP_CONFIG: Record<string, { label: string; order: number }> = {
   settings: { label: 'SISTEMA', order: 3 },
 };
 
-export const Sidebar = ({ disabled }: { disabled?: boolean }) => {
+export const Sidebar = ({ disabled, isOpen, onClose }: { disabled?: boolean; isOpen?: boolean; onClose?: () => void }) => {
   const pathname = usePathname();
   const { user, loading, logout, refreshProfile } = useAuth();
 
@@ -77,7 +78,7 @@ export const Sidebar = ({ disabled }: { disabled?: boolean }) => {
   };
 
   if (loading) return (
-    <aside className="w-72 bg-white border-r border-slate-100 flex flex-col py-10 z-50 h-screen sticky top-0 animate-pulse">
+    <aside className={`w-72 bg-white border-r border-slate-100 flex flex-col py-10 z-50 h-screen fixed md:sticky top-0 left-0 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 animate-pulse`}>
       <div className="px-8 mb-12">
         <div className="w-12 h-12 bg-slate-50 rounded-2xl"></div>
       </div>
@@ -191,40 +192,50 @@ export const Sidebar = ({ disabled }: { disabled?: boolean }) => {
   });
 
   return (
-    <aside className="w-72 bg-white/80 backdrop-blur-3xl border-r border-white/60 flex flex-col py-10 z-50 h-screen sticky top-0 overflow-y-auto mentor-scroll shadow-2xl shadow-slate-200/50">
+    <aside className={`w-72 bg-white/85 backdrop-blur-3xl border-r border-white/60 flex flex-col py-10 z-50 h-screen fixed md:sticky top-0 left-0 overflow-y-auto mentor-scroll shadow-2xl shadow-slate-200/50 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0`}>
 
       {/* Brand Unit */}
-      {disabled ? (
-        <div className="px-8 mb-8 flex items-center gap-4 select-none">
-          <div className="w-12 h-12 relative flex items-center justify-center transition-all duration-500 hover:scale-105">
-            <img
-              src="/assets/logo_iter_vector.svg"
-              alt="ITER Logo"
-              className="w-full h-full drop-shadow-[0_10px_20px_rgba(138,148,244,0.15)]"
-            />
+      <div className="px-8 mb-8 flex items-center justify-between gap-4">
+        {disabled ? (
+          <div className="flex items-center gap-4 select-none">
+            <div className="w-12 h-12 relative flex items-center justify-center transition-all duration-500 hover:scale-105">
+              <img
+                src="/assets/logo_iter_vector.svg"
+                alt="ITER Logo"
+                className="w-full h-full drop-shadow-[0_10px_20px_rgba(138,148,244,0.15)]"
+              />
+            </div>
+            <div>
+              <h2 className="text-3xl font-black bg-gradient-to-r from-[#8A94F4] to-[#B1B8F9] bg-clip-text text-transparent uppercase italic tracking-wider pr-3">
+                ITER
+              </h2>
+            </div>
           </div>
-          <div>
-            <h2 className="text-3xl font-black bg-gradient-to-r from-[#8A94F4] to-[#B1B8F9] bg-clip-text text-transparent uppercase italic tracking-wider pr-3">
-              ITER
-            </h2>
-          </div>
-        </div>
-      ) : (
-        <Link href="/dashboard" className="px-8 mb-8 flex items-center gap-4 group cursor-pointer">
-          <div className="w-12 h-12 relative flex items-center justify-center transition-all duration-500 group-hover:scale-110">
-            <img
-              src="/assets/logo_iter_vector.svg"
-              alt="ITER Logo"
-              className="w-full h-full drop-shadow-[0_10px_20px_rgba(138,148,244,0.15)]"
-            />
-          </div>
-          <div>
-            <h2 className="text-3xl font-black bg-gradient-to-r from-[#8A94F4] to-[#B1B8F9] bg-clip-text text-transparent uppercase italic pr-3">
-              ITER
-            </h2>
-          </div>
-        </Link>
-      )}
+        ) : (
+          <Link href="/dashboard" onClick={onClose} className="flex items-center gap-4 group cursor-pointer">
+            <div className="w-12 h-12 relative flex items-center justify-center transition-all duration-500 group-hover:scale-110">
+              <img
+                src="/assets/logo_iter_vector.svg"
+                alt="ITER Logo"
+                className="w-full h-full drop-shadow-[0_10px_20px_rgba(138,148,244,0.15)]"
+              />
+            </div>
+            <div>
+              <h2 className="text-3xl font-black bg-gradient-to-r from-[#8A94F4] to-[#B1B8F9] bg-clip-text text-transparent uppercase italic pr-3">
+                ITER
+              </h2>
+            </div>
+          </Link>
+        )}
+
+        {/* Mobile Close Button */}
+        <button
+          onClick={onClose}
+          className="md:hidden p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-50 rounded-xl transition-colors"
+        >
+          <X className="w-5 h-5" />
+        </button>
+      </div>
 
       {/* Navigation Groups */}
       <nav className="flex flex-col gap-10 flex-1 w-full px-5 font-sans">
@@ -267,6 +278,7 @@ export const Sidebar = ({ disabled }: { disabled?: boolean }) => {
                     <Link
                       key={item.key}
                       href={item.path}
+                      onClick={onClose}
                       className={`relative flex items-center gap-4 px-5 py-3.5 rounded-[20px] transition-all duration-500 group overflow-hidden ${isActive
                         ? 'bg-[#8A94F4]/10 text-[#8A94F4]'
                         : 'text-slate-400 hover:text-[#8A94F4] hover:bg-[#8A94F4]/5'

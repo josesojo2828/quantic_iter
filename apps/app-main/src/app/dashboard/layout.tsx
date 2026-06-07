@@ -13,7 +13,8 @@ import {
   Loader2, 
   Sparkles, 
   ArrowRight,
-  Lock
+  Lock,
+  Menu
 } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { subscriptionService, Plan } from '@/services/subscription.service';
@@ -38,6 +39,7 @@ export default function DashboardLayout({
   const [plans, setPlans] = useState<Plan[]>([]);
   const [loadingPlans, setLoadingPlans] = useState<boolean>(false);
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
 
   const plansSectionRef = useRef<HTMLDivElement>(null);
 
@@ -200,9 +202,42 @@ export default function DashboardLayout({
   const isPricingPage = pathname === '/dashboard/pricing';
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-[#F8F9FD] to-[#F1F4FF]">
-      <Sidebar disabled={!hasSubscription} />
-      <main className="flex-1 transition-all duration-500 min-h-screen relative z-10 overflow-y-auto mentor-scroll">
+    <div className="flex min-h-screen bg-gradient-to-br from-[#F8F9FD] to-[#F1F4FF] overflow-x-hidden">
+      {/* Backdrop for mobile */}
+      {isSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-40 md:hidden transition-all duration-300"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
+
+      <Sidebar
+        disabled={!hasSubscription}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
+
+      <main className="flex-1 transition-all duration-500 min-h-screen relative z-10 overflow-y-auto mentor-scroll flex flex-col">
+        {/* Mobile Header Bar */}
+        <div className="md:hidden flex items-center justify-between px-6 py-4 bg-white/80 backdrop-blur-md border-b border-slate-100 sticky top-0 z-30 shadow-sm">
+          <button
+            onClick={() => setIsSidebarOpen(true)}
+            className="p-2 hover:bg-slate-100 rounded-xl transition-colors text-slate-600"
+          >
+            <Menu className="w-5.5 h-5.5" />
+          </button>
+          <div className="flex items-center gap-2">
+            <img src="/assets/logo_iter_vector.svg" alt="ITER Logo" className="w-7 h-7" />
+            <span className="text-lg font-black bg-gradient-to-r from-[#8A94F4] to-[#B1B8F9] bg-clip-text text-transparent italic uppercase text-xs">ITER</span>
+          </div>
+          <div className="w-9 h-9 rounded-xl bg-slate-900 text-white flex items-center justify-center overflow-hidden font-black text-xs shadow-inner">
+            {user?.avatarUrl ? (
+              <img src={`/avatars/${user.avatarUrl}`} alt="" className="w-full h-full object-cover" />
+            ) : (
+              <span>{user?.firstName?.charAt(0)}{user?.lastName?.charAt(0)}</span>
+            )}
+          </div>
+        </div>
         {!hasSubscription && !isPricingPage ? (
           /* Premium Setup State Paywall - Aura 2.0 Aesthetic */
           <div className="w-full flex flex-col items-center justify-start p-4 lg:p-8 py-16 gap-16 animate-in fade-in zoom-in-95 duration-700">
