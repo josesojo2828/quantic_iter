@@ -25,26 +25,20 @@ export class PrismaContactsRepository implements IContactsRepository {
   }
 
   async findByEmail(tenantId: string, email: string) {
-    return this.prisma.contact.findUnique({
-      where: {
-        tenantId_email: { tenantId, email },
-      },
+    return this.prisma.contact.findFirst({
+      where: { tenantId, email },
     });
   }
 
   async findByPhone(tenantId: string, phone: string) {
-    return this.prisma.contact.findUnique({
-      where: {
-        tenantId_phone: { tenantId, phone },
-      },
+    return this.prisma.contact.findFirst({
+      where: { tenantId, phone },
     });
   }
 
   async findByGlobalId(tenantId: string, globalUserId: string) {
-    return this.prisma.contact.findUnique({
-      where: {
-        tenantId_globalUserId: { tenantId, globalUserId },
-      },
+    return this.prisma.contact.findFirst({
+      where: { tenantId, globalUserId },
     });
   }
 
