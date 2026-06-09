@@ -37,4 +37,11 @@ export class MeasurementRepository extends BaseRepository<Measurement> {
       orderBy: { date: 'desc' },
     }) as unknown as Measurement[];
   }
+
+  async delete(id: string, scope: QueryScope): Promise<boolean> {
+    const deleted = await this.prisma.measurement.deleteMany({
+      where: this.applyScope({ id }, scope),
+    });
+    return deleted.count > 0;
+  }
 }

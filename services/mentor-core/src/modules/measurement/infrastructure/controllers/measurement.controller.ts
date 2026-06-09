@@ -1,4 +1,4 @@
-import { Controller, Post, Get, Body, Param, UseGuards, Req, Query } from '@nestjs/common';
+import { Controller, Post, Get, Body, Param, UseGuards, Req, Query, Delete } from '@nestjs/common';
 import { MeasurementService } from '../../application/measurement.service';
 import { MeasurementAnalyticsService } from '../../application/measurement-analytics.service';
 import { ScopeGuard } from '../../../../common/guards/scope.guard';
@@ -77,5 +77,11 @@ export class MeasurementController {
   ) {
     const scope = (req as any).scope;
     return this.analyticsService.getComparison(indicator, scope);
+  }
+
+  @Delete(':id')
+  async delete(@Param('id') id: string, @Req() req: Request) {
+    const scope = (req as any).scope;
+    return this.service.deleteMeasurement(id, scope);
   }
 }

@@ -7,15 +7,13 @@ import {
   Mail, 
   Phone, 
   Calendar as CalendarIcon, 
-  History, 
   BookOpen, 
   MessageSquare,
   TrendingUp,
   ChevronRight,
   Loader2,
   Plus,
-  Flame,
-  Award
+  Flame
 } from 'lucide-react';
 import { contactsService, Contact } from '@/features/crm/services/contacts.service';
 import { crmService, Interaction, Review } from '@/features/crm/services/crm.service';
@@ -26,13 +24,7 @@ import { apiClient } from '@/core/api/api.client';
 import { toast } from 'react-hot-toast';
 import gsap from 'gsap';
 
-export interface CombinedTimelineItem {
-  id: string;
-  type: 'crm' | 'activity';
-  title: string;
-  description?: string;
-  date: string;
-}
+import { MeasurementsTab } from '@/features/crm/components/MeasurementsTab';
 
 export default function StudentProfilePage() {
   const { id } = useParams();
@@ -42,8 +34,7 @@ export default function StudentProfilePage() {
   
   const [contact, setContact] = useState<Contact | null>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'timeline' | 'programs' | 'reviews'>('timeline');
-  const [timeline, setTimeline] = useState<CombinedTimelineItem[]>([]);
+  const [activeTab, setActiveTab] = useState<'measurements' | 'programs' | 'reviews'>('measurements');
   const [reviews, setReviews] = useState<Review[]>([]);
   const [programs, setPrograms] = useState<any[]>([]);
   const [streak, setStreak] = useState(0);
@@ -100,12 +91,10 @@ export default function StudentProfilePage() {
     try {
       const studentId = (Array.isArray(id) ? id[0] : id) as string;
       
-      const [contactData, interData, revData, programsData, timelineData] = await Promise.all([
+      const [contactData, revData, programsData] = await Promise.all([
         contactsService.getContactById(studentId),
-        crmService.getInteractions(studentId),
         crmService.getReviews?.(studentId) || Promise.resolve([]),
-        apiClient.get<any[]>('/mentor/programs').catch(() => []),
-        apiClient.get<any[]>(`/mentor/progress/timeline/${studentId}`).catch(() => [])
+        apiClient.get<any[]>('/mentor/programs').catch(() => [])
       ]);
       
       setContact(contactData);
@@ -125,27 +114,6 @@ export default function StudentProfilePage() {
         });
       });
       setStreak(calculateStreak(allCompletions));
-
-      const crmItems: CombinedTimelineItem[] = (interData || []).map((i: any) => ({
-        id: i.id,
-        type: 'crm',
-        title: i.action || i.type || 'Nota de CRM',
-        description: i.content || '',
-        date: i.timestamp || i.createdAt
-      }));
-
-      const activityItems: CombinedTimelineItem[] = (timelineData || []).map((a: any) => ({
-        id: a.id,
-        type: 'activity',
-        title: a.title || 'Actividad registrada',
-        description: a.description || '',
-        date: a.createdAt
-      }));
-
-      const combined = [...crmItems, ...activityItems].sort(
-        (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
-      );
-      setTimeline(combined);
 
     } catch (err) {
       console.error('Error fetching student profile:', err);
@@ -197,7 +165,7 @@ export default function StudentProfilePage() {
   }
 
   const tabs = [
-    { id: 'timeline', label: 'Historial', icon: History },
+    { id: 'measurements', label: 'Medición', icon: TrendingUp },
     { id: 'programs', label: 'Programas', icon: BookOpen },
     { id: 'reviews', label: 'Reseñas', icon: MessageSquare }
   ] as const;
@@ -316,49 +284,8 @@ export default function StudentProfilePage() {
 
             {/* Tab Contents */}
             <div className="tactical-tab-content">
-              {activeTab === 'timeline' && (
-                <div className="space-y-6 relative before:absolute before:left-4 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-100">
-                  {timeline.length > 0 ? (
-                    timeline.map((item) => (
-                      <div key={item.id} className="flex gap-4 group relative z-10">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center border shrink-0 ${
-                          item.type === 'activity' 
-                            ? 'bg-indigo-50 border-indigo-100 text-indigo-600' 
-                            : 'bg-slate-50 border-slate-150 text-slate-500'
-                        }`}>
-                          {item.type === 'activity' ? <Award className="w-4 h-4" /> : <History className="w-4 h-4" />}
-                        </div>
-                        <div className="flex-1 bg-slate-50/50 p-4 rounded-lg border border-slate-100 hover:border-slate-200 hover:bg-white transition-all shadow-sm">
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="text-xs font-bold text-slate-800">
-                              {item.title}
-                            </p>
-                            <span className="text-[10px] text-slate-400 font-medium">
-                              {new Date(item.date).toLocaleString('es-ES', { 
-                                day: '2-digit', 
-                                month: 'short', 
-                                hour: '2-digit', 
-                                minute: '2-digit' 
-                              })}
-                            </span>
-                          </div>
-                          {item.description && (
-                            <p className="text-xs text-slate-600 leading-relaxed font-medium">
-                              {item.description}
-                            </p>
-                          )}
-                        </div>
-                      </div>
-                    ))
-                  ) : (
-                    <div className="py-20 flex flex-col items-center justify-center text-center space-y-4 opacity-50">
-                      <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-lg flex items-center justify-center">
-                         <History className="w-6 h-6 text-slate-400" />
-                      </div>
-                      <p className="text-xs font-semibold text-slate-500">Sin registros de actividad</p>
-                    </div>
-                  )}
-                </div>
+              {activeTab === 'measurements' && (
+                <MeasurementsTab menteeId={contact.id} />
               )}
 
               {activeTab === 'programs' && (

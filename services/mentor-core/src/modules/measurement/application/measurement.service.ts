@@ -18,4 +18,8 @@ export class MeasurementService {
   async getAllMeasurements(scope: QueryScope): Promise<Measurement[]> {
     return this.repository.findAll(scope);
   }
+
+  async deleteMeasurement(id: string, scope: QueryScope): Promise<boolean> {
+    return this.repository.delete(id, scope);
+  }
 }
